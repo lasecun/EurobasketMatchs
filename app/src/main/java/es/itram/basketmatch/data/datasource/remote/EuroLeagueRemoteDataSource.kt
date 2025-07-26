@@ -43,7 +43,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
     /**
      * Obtiene todos los partidos
      */
-    suspend fun getAllMatches(season: String = "2024-25"): Result<List<MatchWebDto>> {
+    suspend fun getAllMatches(season: String = "2025-26"): Result<List<MatchWebDto>> {
         return try {
             Log.d(TAG, "Obteniendo partidos desde web scraping...")
             val matches = webScraper.getMatches(season)
