@@ -3,6 +3,9 @@ package es.itram.basketmatch.testutil
 import es.itram.basketmatch.data.datasource.local.entity.MatchEntity
 import es.itram.basketmatch.data.datasource.local.entity.StandingEntity
 import es.itram.basketmatch.data.datasource.local.entity.TeamEntity
+import es.itram.basketmatch.data.datasource.remote.dto.MatchStatus as WebMatchStatus
+import es.itram.basketmatch.data.datasource.remote.dto.MatchWebDto
+import es.itram.basketmatch.data.datasource.remote.dto.TeamWebDto
 import es.itram.basketmatch.domain.entity.Match
 import es.itram.basketmatch.domain.entity.MatchStatus
 import es.itram.basketmatch.domain.entity.SeasonType
@@ -205,5 +208,61 @@ object TestDataFactory {
         createTestMatch("1"),
         createTestMatch("2"),
         createTestMatch("3")
+    )
+
+    /**
+     * Creates a test TeamWebDto for web scraping tests
+     */
+    fun createTestTeamWebDto(
+        id: String = "1",
+        name: String = "Real Madrid",
+        fullName: String = "Real Madrid Baloncesto",
+        shortCode: String = "RMA",
+        logoUrl: String? = "https://example.com/logo.png",
+        country: String? = "España",
+        venue: String? = "WiZink Center, Madrid",
+        profileUrl: String = "https://euroleaguebasketball.net/teams/real-madrid"
+    ) = TeamWebDto(
+        id = id,
+        name = name,
+        fullName = fullName,
+        shortCode = shortCode,
+        logoUrl = logoUrl,
+        country = country,
+        venue = venue,
+        profileUrl = profileUrl
+    )
+
+    /**
+     * Creates a test MatchWebDto for web scraping tests
+     */
+    fun createTestMatchWebDto(
+        id: String = "1",
+        homeTeamId: String = "1",
+        homeTeamName: String = "Real Madrid",
+        awayTeamId: String = "2",
+        awayTeamName: String = "FC Barcelona",
+        date: String = "2024-03-15",
+        time: String? = "20:30",
+        venue: String? = "WiZink Center",
+        status: WebMatchStatus = WebMatchStatus.SCHEDULED,
+        homeScore: Int? = null,
+        awayScore: Int? = null,
+        round: String? = "Round 1",
+        season: String = "2024-25"
+    ) = MatchWebDto(
+        id = id,
+        homeTeamId = homeTeamId,
+        homeTeamName = homeTeamName,
+        awayTeamId = awayTeamId,
+        awayTeamName = awayTeamName,
+        date = date,
+        time = time,
+        venue = venue,
+        status = status,
+        homeScore = homeScore,
+        awayScore = awayScore,
+        round = round,
+        season = season
     )
 }

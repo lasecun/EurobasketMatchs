@@ -34,6 +34,15 @@ object MatchWebMapper {
         return dtos.map { toDomain(it) }
     }
     
+    private fun parseRound(round: String?): Int {
+        return try {
+            // Intentar extraer número del string "Round 1", "Jornada 5", etc.
+            round?.filter { it.isDigit() }?.toIntOrNull() ?: 1
+        } catch (e: Exception) {
+            1
+        }
+    }
+    
     private fun parseDateTime(date: String?, time: String?): LocalDateTime {
         if (date.isNullOrBlank()) {
             return LocalDateTime.now()
@@ -71,19 +80,6 @@ object MatchWebMapper {
             LocalDateTime.now()
         } catch (e: Exception) {
             LocalDateTime.now()
-        }
-    }
-    
-    private fun parseRound(roundStr: String?): Int {
-        if (roundStr.isNullOrBlank()) return 1
-        
-        return try {
-            // Intentar extraer número de strings como "Round 1", "Jornada 5", etc.
-            val numberRegex = "\\d+".toRegex()
-            val match = numberRegex.find(roundStr)
-            match?.value?.toInt() ?: 1
-        } catch (e: Exception) {
-            1
         }
     }
     
