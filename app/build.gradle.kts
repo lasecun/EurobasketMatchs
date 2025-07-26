@@ -17,7 +17,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "es.itram.basketmatch.HiltTestRunner"
         
         // Room schema export configuration
         ksp {
@@ -102,6 +102,10 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.arch.core.testing)
+    testImplementation(libs.turbine)
+    testImplementation(libs.truth)
+    testImplementation(libs.hilt.android.testing)
+    kspTest(libs.hilt.compiler)
     
     // Testing - Instrumented Tests
     androidTestImplementation(libs.androidx.junit)
@@ -109,6 +113,8 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(libs.hilt.android.testing)
+    kspAndroidTest(libs.hilt.compiler)
     
     // Debug
     debugImplementation(libs.androidx.ui.tooling)
