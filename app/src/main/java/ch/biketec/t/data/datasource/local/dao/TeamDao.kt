@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import ch.biketec.t.data.datasource.local.entity.TeamEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -16,8 +17,14 @@ interface TeamDao {
     @Query("SELECT * FROM teams ORDER BY name ASC")
     fun getAllTeams(): Flow<List<TeamEntity>>
 
+    @Query("SELECT * FROM teams ORDER BY name ASC")
+    suspend fun getAllTeamsSync(): List<TeamEntity>
+
     @Query("SELECT * FROM teams WHERE id = :teamId")
     fun getTeamById(teamId: String): Flow<TeamEntity?>
+
+    @Query("SELECT * FROM teams WHERE is_favorite = 1 ORDER BY name ASC")
+    fun getFavoriteTeams(): Flow<List<TeamEntity>>
 
     @Query("SELECT * FROM teams WHERE name LIKE '%' || :query || '%' OR city LIKE '%' || :query || '%'")
     fun searchTeams(query: String): Flow<List<TeamEntity>>
@@ -27,6 +34,15 @@ interface TeamDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTeam(team: TeamEntity)
+
+    @Update
+    suspend fun updateTeam(team: TeamEntity)
+
+    @Query("UPDATE teams SET is_favorite = :isFavorite WHERE id = :teamId")
+    suspend fun updateFavoriteStatus(teamId: String, isFavorite: Boolean)
+
+    @Query("DELETE FROM teams WHERE id = :teamId")
+    suspend fun deleteTeam(teamId: String)
 
     @Query("DELETE FROM teams")
     suspend fun deleteAllTeams()

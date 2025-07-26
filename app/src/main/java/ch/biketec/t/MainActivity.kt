@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import ch.biketec.t.presentation.navigation.EuroLeagueNavigation
 import ch.biketec.t.ui.theme.TTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -21,29 +22,16 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             TTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "EuroLeague 2026",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                EuroLeagueNavigation()
             }
         }
     }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Welcome to $name!",
-        modifier = modifier
-    )
 }
 
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
     TTheme {
-        Greeting("EuroLeague 2026")
+        EuroLeagueNavigation()
     }
 }

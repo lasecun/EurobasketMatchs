@@ -3,6 +3,13 @@ package ch.biketec.t.di
 import android.content.Context
 import androidx.room.Room
 import ch.biketec.t.data.datasource.local.EuroLeagueDatabase
+import ch.biketec.t.data.repository.MatchRepositoryImpl
+import ch.biketec.t.data.repository.StandingRepositoryImpl
+import ch.biketec.t.data.repository.TeamRepositoryImpl
+import ch.biketec.t.domain.repository.MatchRepository
+import ch.biketec.t.domain.repository.StandingRepository
+import ch.biketec.t.domain.repository.TeamRepository
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -39,4 +46,24 @@ object DatabaseModule {
 
     @Provides
     fun provideStandingDao(database: EuroLeagueDatabase) = database.standingDao()
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class RepositoryModule {
+
+    @Binds
+    abstract fun bindMatchRepository(
+        matchRepositoryImpl: MatchRepositoryImpl
+    ): MatchRepository
+
+    @Binds
+    abstract fun bindTeamRepository(
+        teamRepositoryImpl: TeamRepositoryImpl
+    ): TeamRepository
+
+    @Binds
+    abstract fun bindStandingRepository(
+        standingRepositoryImpl: StandingRepositoryImpl
+    ): StandingRepository
 }

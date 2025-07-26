@@ -1,5 +1,6 @@
 package ch.biketec.t.data.datasource.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -15,7 +16,8 @@ data class TeamEntity(
     val city: String,
     val country: String,
     val logoUrl: String,
-    val venue: String,
-    val website: String? = null,
-    val founded: Int? = null
+    val primaryColor: String,
+    val secondaryColor: String,
+    @ColumnInfo(name = "is_favorite")
+    val isFavorite: Boolean = false
 )

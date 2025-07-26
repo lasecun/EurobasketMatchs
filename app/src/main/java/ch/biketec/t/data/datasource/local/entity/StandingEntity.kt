@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import ch.biketec.t.domain.entity.SeasonType
 
 /**
  * Entidad de Room para representar la clasificación en la base de datos local
@@ -19,12 +20,14 @@ import androidx.room.PrimaryKey
         )
     ],
     indices = [
-        Index(value = ["teamId"], unique = true),
-        Index(value = ["position"])
+        Index(value = ["teamId"]),
+        Index(value = ["position"]),
+        Index(value = ["seasonType"])
     ]
 )
 data class StandingEntity(
     @PrimaryKey
+    val id: String,
     val teamId: String,
     val position: Int,
     val gamesPlayed: Int,
@@ -32,5 +35,5 @@ data class StandingEntity(
     val losses: Int,
     val pointsFor: Int,
     val pointsAgainst: Int,
-    val winPercentage: Double
+    val seasonType: SeasonType
 )

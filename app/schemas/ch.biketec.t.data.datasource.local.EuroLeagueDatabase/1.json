@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "2c36670f44dd64a741c24580ace21e2f",
+    "identityHash": "091680ebfad117674134db946c285019",
     "entities": [
       {
         "tableName": "teams",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `shortName` TEXT NOT NULL, `city` TEXT NOT NULL, `country` TEXT NOT NULL, `logoUrl` TEXT NOT NULL, `venue` TEXT NOT NULL, `website` TEXT, `founded` INTEGER, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `shortName` TEXT NOT NULL, `city` TEXT NOT NULL, `country` TEXT NOT NULL, `logoUrl` TEXT NOT NULL, `primaryColor` TEXT NOT NULL, `secondaryColor` TEXT NOT NULL, `is_favorite` INTEGER NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -45,22 +45,22 @@
             "notNull": true
           },
           {
-            "fieldPath": "venue",
-            "columnName": "venue",
+            "fieldPath": "primaryColor",
+            "columnName": "primaryColor",
             "affinity": "TEXT",
             "notNull": true
           },
           {
-            "fieldPath": "website",
-            "columnName": "website",
+            "fieldPath": "secondaryColor",
+            "columnName": "secondaryColor",
             "affinity": "TEXT",
-            "notNull": false
+            "notNull": true
           },
           {
-            "fieldPath": "founded",
-            "columnName": "founded",
+            "fieldPath": "isFavorite",
+            "columnName": "is_favorite",
             "affinity": "INTEGER",
-            "notNull": false
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -74,7 +74,7 @@
       },
       {
         "tableName": "matches",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `homeTeamId` TEXT NOT NULL, `awayTeamId` TEXT NOT NULL, `dateTime` INTEGER NOT NULL, `venue` TEXT NOT NULL, `round` INTEGER NOT NULL, `status` TEXT NOT NULL, `homeScore` INTEGER, `awayScore` INTEGER, `seasonType` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`homeTeamId`) REFERENCES `teams`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`awayTeamId`) REFERENCES `teams`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `homeTeamId` TEXT NOT NULL, `awayTeamId` TEXT NOT NULL, `dateTime` INTEGER NOT NULL, `arena` TEXT NOT NULL, `city` TEXT NOT NULL, `round` INTEGER NOT NULL, `status` TEXT NOT NULL, `homeScore` INTEGER, `awayScore` INTEGER, `seasonType` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`homeTeamId`) REFERENCES `teams`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`awayTeamId`) REFERENCES `teams`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -101,8 +101,14 @@
             "notNull": true
           },
           {
-            "fieldPath": "venue",
-            "columnName": "venue",
+            "fieldPath": "arena",
+            "columnName": "arena",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "city",
+            "columnName": "city",
             "affinity": "TEXT",
             "notNull": true
           },
@@ -217,8 +223,14 @@
       },
       {
         "tableName": "standings",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`teamId` TEXT NOT NULL, `position` INTEGER NOT NULL, `gamesPlayed` INTEGER NOT NULL, `wins` INTEGER NOT NULL, `losses` INTEGER NOT NULL, `pointsFor` INTEGER NOT NULL, `pointsAgainst` INTEGER NOT NULL, `winPercentage` REAL NOT NULL, PRIMARY KEY(`teamId`), FOREIGN KEY(`teamId`) REFERENCES `teams`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `teamId` TEXT NOT NULL, `position` INTEGER NOT NULL, `gamesPlayed` INTEGER NOT NULL, `wins` INTEGER NOT NULL, `losses` INTEGER NOT NULL, `pointsFor` INTEGER NOT NULL, `pointsAgainst` INTEGER NOT NULL, `seasonType` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`teamId`) REFERENCES `teams`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
           {
             "fieldPath": "teamId",
             "columnName": "teamId",
@@ -262,27 +274,27 @@
             "notNull": true
           },
           {
-            "fieldPath": "winPercentage",
-            "columnName": "winPercentage",
-            "affinity": "REAL",
+            "fieldPath": "seasonType",
+            "columnName": "seasonType",
+            "affinity": "TEXT",
             "notNull": true
           }
         ],
         "primaryKey": {
           "autoGenerate": false,
           "columnNames": [
-            "teamId"
+            "id"
           ]
         },
         "indices": [
           {
             "name": "index_standings_teamId",
-            "unique": true,
+            "unique": false,
             "columnNames": [
               "teamId"
             ],
             "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_standings_teamId` ON `${TABLE_NAME}` (`teamId`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_standings_teamId` ON `${TABLE_NAME}` (`teamId`)"
           },
           {
             "name": "index_standings_position",
@@ -292,6 +304,15 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_standings_position` ON `${TABLE_NAME}` (`position`)"
+          },
+          {
+            "name": "index_standings_seasonType",
+            "unique": false,
+            "columnNames": [
+              "seasonType"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_standings_seasonType` ON `${TABLE_NAME}` (`seasonType`)"
           }
         ],
         "foreignKeys": [
@@ -312,7 +333,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2c36670f44dd64a741c24580ace21e2f')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '091680ebfad117674134db946c285019')"
     ]
   }
 }

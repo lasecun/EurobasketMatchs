@@ -1,5 +1,6 @@
 package ch.biketec.t.domain.repository
 
+import ch.biketec.t.domain.entity.SeasonType
 import ch.biketec.t.domain.entity.Standing
 import kotlinx.coroutines.flow.Flow
 
@@ -12,6 +13,11 @@ interface StandingRepository {
      * Obtiene la clasificación actual de la EuroLeague 2026
      */
     suspend fun getCurrentStandings(): Flow<List<Standing>>
+    
+    /**
+     * Obtiene la clasificación por tipo de temporada
+     */
+    suspend fun getStandingsBySeasonType(seasonType: SeasonType): Flow<List<Standing>>
     
     /**
      * Obtiene la clasificación de un equipo específico

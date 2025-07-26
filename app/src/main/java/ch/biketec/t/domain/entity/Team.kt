@@ -10,7 +10,7 @@ data class Team(
     val city: String,
     val country: String,
     val logoUrl: String,
-    val venue: String,
-    val website: String? = null,
-    val founded: Int? = null
+    val primaryColor: String,
+    val secondaryColor: String,
+    val isFavorite: Boolean = false
 )

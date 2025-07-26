@@ -24,6 +24,21 @@ interface TeamRepository {
     suspend fun searchTeams(query: String): Flow<List<Team>>
     
     /**
+     * Obtiene todos los equipos favoritos
+     */
+    suspend fun getFavoriteTeams(): Flow<List<Team>>
+    
+    /**
+     * Añade un equipo a favoritos
+     */
+    suspend fun addToFavorites(teamId: String): Result<Unit>
+    
+    /**
+     * Quita un equipo de favoritos
+     */
+    suspend fun removeFromFavorites(teamId: String): Result<Unit>
+    
+    /**
      * Sincroniza equipos desde la fuente remota
      */
     suspend fun syncTeams(): Result<Unit>
