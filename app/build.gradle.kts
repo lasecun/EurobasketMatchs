@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "ch.biketec.t"
+    namespace = "es.itram.basketmatch"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "ch.biketec.t"
+        applicationId = "es.itram.basketmatch"
         minSdk = 31
         targetSdk = 36
         versionCode = 1
