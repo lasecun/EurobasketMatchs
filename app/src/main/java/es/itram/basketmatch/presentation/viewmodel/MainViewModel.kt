@@ -127,4 +127,13 @@ class MainViewModel @Inject constructor(
     fun clearError() {
         _error.value = null
     }
+    
+    /**
+     * Fuerza un refresh manual de los datos reales desde la web
+     * Útil para pull-to-refresh y obtener los datos más actualizados
+     */
+    fun refreshRealData() {
+        Log.d("MainViewModel", "🔄 Iniciando refresh manual de datos reales...")
+        loadData()
+    }
 }
