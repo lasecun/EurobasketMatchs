@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +25,7 @@ import es.itram.basketmatch.presentation.component.ErrorMessage
 
 /**
  * Pantalla principal que muestra los partidos del día seleccionado
+ * Incluye refresh manual para obtener datos reales actualizados
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,7 +102,55 @@ fun MainScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Calendario")
                     }
+                    
+                    OutlinedButton(
+                        onClick = { viewModel.refreshRealData() },
+                        enabled = !isLoading
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("🌐")
+                    }
                 }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        // Banner informativo sobre datos reales
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("🏀", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "Datos reales de EuroLeague",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("🌐", style = MaterialTheme.typography.titleMedium)
             }
         }
 
