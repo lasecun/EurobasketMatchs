@@ -11,7 +11,7 @@ import es.itram.basketmatch.domain.usecase.GetAllTeamsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -55,19 +55,19 @@ class MainViewModel @Inject constructor(
             
             try {
                 Log.d("MainViewModel", "Cargando equipos...")
-                // Cargar equipos primero
-                getAllTeamsUseCase().collect { teams ->
-                    Log.d("MainViewModel", "Equipos cargados: ${teams.size}")
-                    _teams.value = teams.associateBy { it.id }
-                }
+                // Cargar equipos primero - solo el primer valor
+                val teams = getAllTeamsUseCase().first()
+                Log.d("MainViewModel", "Equipos cargados: ${teams.size}")
+                _teams.value = teams.associateBy { it.id }
                 
                 Log.d("MainViewModel", "Cargando partidos...")
-                // Luego cargar partidos
-                getAllMatchesUseCase().collect { matches ->
-                    Log.d("MainViewModel", "Partidos cargados: ${matches.size}")
-                    filterMatchesByDate(matches)
-                    _isLoading.value = false
-                }
+                // Luego cargar partidos - solo el primer valor
+                val matches = getAllMatchesUseCase().first()
+                Log.d("MainViewModel", "Partidos cargados: ${matches.size}")
+                filterMatchesByDate(matches)
+                _isLoading.value = false
+                
+                Log.d("MainViewModel", "Carga de datos completada")
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error cargando datos: ${e.message}", e)
                 _error.value = e.message ?: "Error desconocido"
@@ -98,8 +98,11 @@ class MainViewModel @Inject constructor(
 
     private fun filterMatchesBySelectedDate() {
         viewModelScope.launch {
-            getAllMatchesUseCase().collect { allMatches ->
+            try {
+                val allMatches = getAllMatchesUseCase().first()
                 filterMatchesByDate(allMatches)
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error filtrando partidos: ${e.message}", e)
             }
         }
     }

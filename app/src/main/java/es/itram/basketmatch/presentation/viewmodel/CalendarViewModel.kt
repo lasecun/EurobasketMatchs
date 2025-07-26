@@ -10,7 +10,7 @@ import es.itram.basketmatch.domain.usecase.GetAllTeamsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
@@ -51,14 +51,13 @@ class CalendarViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                combine(
-                    getAllTeamsUseCase(),
-                    getAllMatchesUseCase()
-                ) { teams, matches ->
-                    _teams.value = teams.associateBy { it.id }
-                    _matches.value = matches
-                    _error.value = null
-                }.collect { }
+                // Cargar equipos y partidos de manera simple
+                val teams = getAllTeamsUseCase().first()
+                val matches = getAllMatchesUseCase().first()
+                
+                _teams.value = teams.associateBy { it.id }
+                _matches.value = matches
+                _error.value = null
             } catch (e: Exception) {
                 _error.value = e.message ?: "Error desconocido"
             } finally {
