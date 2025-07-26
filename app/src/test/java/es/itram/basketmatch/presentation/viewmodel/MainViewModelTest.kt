@@ -7,11 +7,17 @@ import es.itram.basketmatch.domain.usecase.GetAllMatchesUseCase
 import es.itram.basketmatch.domain.usecase.GetAllTeamsUseCase
 import es.itram.basketmatch.testutil.MainDispatcherRule
 import es.itram.basketmatch.testutil.TestDataFactory
-import io.mockk.coEvery
+import io.mockk.clearMocks
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.delay
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -27,8 +33,8 @@ class MainViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     // Mocks
-    private val getAllTeamsUseCase: GetAllTeamsUseCase = mockk()
-    private val getAllMatchesUseCase: GetAllMatchesUseCase = mockk()
+    private val getAllTeamsUseCase: GetAllTeamsUseCase = mockk(relaxed = true)
+    private val getAllMatchesUseCase: GetAllMatchesUseCase = mockk(relaxed = true)
 
     // System under test
     private lateinit var viewModel: MainViewModel
@@ -38,20 +44,39 @@ class MainViewModelTest {
     private val testMatches = TestDataFactory.createTestMatchList()
 
     @Before
-    fun setup() {
+    fun setup() = runTest {
+        // Mock Android Log with literal strings
+        mockkStatic(android.util.Log::class)
+        every { android.util.Log.d("MainViewModel", "Inicializando MainViewModel...") } returns 0
+        every { android.util.Log.d("MainViewModel", "Iniciando carga de datos...") } returns 0
+        every { android.util.Log.d("MainViewModel", "Cargando equipos...") } returns 0
+        every { android.util.Log.d("MainViewModel", match { it.contains("Equipos cargados:") }) } returns 0
+        every { android.util.Log.d("MainViewModel", "Cargando partidos...") } returns 0
+        every { android.util.Log.d("MainViewModel", match { it.contains("Partidos cargados:") }) } returns 0
+        every { android.util.Log.d("MainViewModel", "Carga de datos completada") } returns 0
+        every { android.util.Log.e("MainViewModel", match { it.contains("Error") }) } returns 0
+        
         // Setup default mock behavior
-        coEvery { getAllTeamsUseCase() } returns flowOf(testTeams)
-        coEvery { getAllMatchesUseCase() } returns flowOf(testMatches)
+        every { getAllTeamsUseCase() } returns flowOf(testTeams)
+        every { getAllMatchesUseCase() } returns flowOf(testMatches)
+        
+        // Create ViewModel after mocks are set up
+        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase)
+        
+        // Allow initialization to complete
+        delay(100)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
     }
 
     @Test
     fun `when ViewModel is created, then loads teams and matches`() = runTest {
-        // Given - mocks are already set up
+        // Given - ViewModel is created in setup with mocks configured
 
-        // When
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase)
-
-        // Then
+        // Then - Wait for data to load and verify
         viewModel.teams.test {
             val teams = awaitItem()
             assertThat(teams).hasSize(2)
@@ -67,12 +92,7 @@ class MainViewModelTest {
 
     @Test
     fun `when loadData succeeds, then error is null`() = runTest {
-        // Given
-        coEvery { getAllTeamsUseCase() } returns flowOf(testTeams)
-        coEvery { getAllMatchesUseCase() } returns flowOf(testMatches)
-
-        // When
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase)
+        // Given - ViewModel is created in setup with successful mocks
 
         // Then
         viewModel.error.test {
@@ -85,13 +105,26 @@ class MainViewModelTest {
     fun `when loadData fails, then error is set`() = runTest {
         // Given
         val errorMessage = "Network error"
-        coEvery { getAllTeamsUseCase() } throws RuntimeException(errorMessage)
+        // Re-setup Android Log mocking for this specific test
+        mockkStatic(android.util.Log::class)
+        every { android.util.Log.d("MainViewModel", "Inicializando MainViewModel...") } returns 0
+        every { android.util.Log.d("MainViewModel", "Iniciando carga de datos...") } returns 0
+        every { android.util.Log.d("MainViewModel", "Cargando equipos...") } returns 0
+        every { android.util.Log.e("MainViewModel", match { it.contains("Error cargando datos:") }, any()) } returns 0
+        
+        // Clear previous mocks and set new ones
+        clearMocks(getAllTeamsUseCase)
+        every { getAllTeamsUseCase() } returns flow { throw RuntimeException(errorMessage) }
+        every { getAllMatchesUseCase() } returns flowOf(testMatches)
 
-        // When
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase)
+        // When - Create a new ViewModel with the error mock
+        val failingViewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase)
+        
+        // Allow some time for the error to be set
+        delay(200)
 
         // Then
-        viewModel.error.test {
+        failingViewModel.error.test {
             val error = awaitItem()
             assertThat(error).isEqualTo(errorMessage)
         }
@@ -99,8 +132,7 @@ class MainViewModelTest {
 
     @Test
     fun `when selectDate is called, then selectedDate is updated`() = runTest {
-        // Given
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase)
+        // Given - ViewModel is created in setup
         val newDate = LocalDate.of(2024, 12, 25)
 
         // When
@@ -115,8 +147,7 @@ class MainViewModelTest {
 
     @Test
     fun `when goToPreviousDay is called, then selectedDate goes back one day`() = runTest {
-        // Given
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase)
+        // Given - ViewModel is created in setup
         val initialDate = LocalDate.now()
         
         // When
@@ -131,8 +162,7 @@ class MainViewModelTest {
 
     @Test
     fun `when goToNextDay is called, then selectedDate goes forward one day`() = runTest {
-        // Given
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase)
+        // Given - ViewModel is created in setup
         val initialDate = LocalDate.now()
 
         // When
@@ -147,8 +177,7 @@ class MainViewModelTest {
 
     @Test
     fun `when goToToday is called, then selectedDate is set to today`() = runTest {
-        // Given
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase)
+        // Given - ViewModel is created in setup
         viewModel.selectDate(LocalDate.of(2020, 1, 1)) // Set to a different date
 
         // When
@@ -163,8 +192,7 @@ class MainViewModelTest {
 
     @Test
     fun `when getTeamById is called with valid id, then returns correct team`() = runTest {
-        // Given
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase)
+        // Given - ViewModel is created in setup
 
         // Wait for teams to load
         viewModel.teams.test {
@@ -180,8 +208,7 @@ class MainViewModelTest {
 
     @Test
     fun `when getTeamById is called with invalid id, then returns null`() = runTest {
-        // Given
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase)
+        // Given - ViewModel is created in setup
 
         // Wait for teams to load
         viewModel.teams.test {
@@ -197,15 +224,26 @@ class MainViewModelTest {
 
     @Test
     fun `when clearError is called, then error is set to null`() = runTest {
-        // Given
-        coEvery { getAllTeamsUseCase() } throws RuntimeException("Test error")
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase)
+        // Given - Create ViewModel with error condition
+        // Re-setup Android Log mocking for this specific test
+        mockkStatic(android.util.Log::class)
+        every { android.util.Log.d("MainViewModel", "Inicializando MainViewModel...") } returns 0
+        every { android.util.Log.d("MainViewModel", "Iniciando carga de datos...") } returns 0
+        every { android.util.Log.d("MainViewModel", "Cargando equipos...") } returns 0
+        every { android.util.Log.e("MainViewModel", match { it.contains("Error cargando datos:") }, any()) } returns 0
+        
+        clearMocks(getAllTeamsUseCase)
+        every { getAllTeamsUseCase() } returns flow { throw RuntimeException("Test error") }
+        val errorViewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase)
+        
+        // Allow time for error to be set first
+        delay(200)
 
         // When
-        viewModel.clearError()
+        errorViewModel.clearError()
 
         // Then
-        viewModel.error.test {
+        errorViewModel.error.test {
             val error = awaitItem()
             assertThat(error).isNull()
         }
@@ -213,8 +251,7 @@ class MainViewModelTest {
 
     @Test
     fun `when getFormattedSelectedDate is called, then returns formatted date string`() = runTest {
-        // Given
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase)
+        // Given - ViewModel is created in setup
         val testDate = LocalDate.of(2024, 12, 25)
         viewModel.selectDate(testDate)
 

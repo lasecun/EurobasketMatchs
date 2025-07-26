@@ -48,7 +48,7 @@ class TeamRepositoryImpl @Inject constructor(
 
     override suspend fun updateTeam(team: Team) {
         val entity = TeamMapper.fromDomain(team)
-        teamDao.insertTeam(entity)
+        teamDao.updateTeam(entity)
     }
 
     override suspend fun deleteAllTeams() {

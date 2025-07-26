@@ -11,7 +11,7 @@ import javax.inject.Inject
 class GetAllMatchesUseCase @Inject constructor(
     private val matchRepository: MatchRepository
 ) {
-    suspend operator fun invoke(): Flow<List<Match>> {
+    operator fun invoke(): Flow<List<Match>> {
         return matchRepository.getAllMatches()
     }
 }

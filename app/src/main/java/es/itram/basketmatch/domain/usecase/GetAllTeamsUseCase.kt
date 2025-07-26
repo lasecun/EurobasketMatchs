@@ -11,7 +11,7 @@ import javax.inject.Inject
 class GetAllTeamsUseCase @Inject constructor(
     private val teamRepository: TeamRepository
 ) {
-    suspend operator fun invoke(): Flow<List<Team>> {
+    operator fun invoke(): Flow<List<Team>> {
         return teamRepository.getAllTeams()
     }
 }
