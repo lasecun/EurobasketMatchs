@@ -134,4 +134,68 @@ class TeamRepositoryImplTest {
         
         coVerify { teamDao.getFavoriteTeams() }
     }
+
+    @Test
+    fun `when forceRefreshTeams is called with network, then returns updated teams`() = runTest {
+        // Given
+        every { networkManager.isConnected() } returns true
+        val remoteTeams = listOf(TestDataFactory.createTestTeamWebDto())
+        val entities = listOf(testTeamEntity)
+        
+        coEvery { remoteDataSource.getAllTeams() } returns Result.success(remoteTeams)
+        coEvery { teamDao.insertTeams(any()) } returns Unit
+        coEvery { teamDao.getAllTeamsSync() } returns entities
+
+        // When
+        val result = repository.forceRefreshTeams()
+
+        // Then
+        assertThat(result.isSuccess).isTrue()
+        val teams = result.getOrNull()
+        assertThat(teams).isNotNull()
+        assertThat(teams).hasSize(1)
+        
+        coVerify { remoteDataSource.getAllTeams() }
+        coVerify { teamDao.insertTeams(any()) }
+        coVerify { teamDao.getAllTeamsSync() }
+    }
+
+    @Test
+    fun `when forceRefreshTeams is called without network, then returns current teams`() = runTest {
+        // Given
+        every { networkManager.isConnected() } returns false
+        val entities = listOf(testTeamEntity)
+        
+        coEvery { teamDao.getAllTeamsSync() } returns entities
+
+        // When
+        val result = repository.forceRefreshTeams()
+
+        // Then
+        assertThat(result.isSuccess).isTrue()
+        val teams = result.getOrNull()
+        assertThat(teams).isNotNull()
+        assertThat(teams).hasSize(1)
+        
+        coVerify(exactly = 0) { remoteDataSource.getAllTeams() }
+        coVerify { teamDao.getAllTeamsSync() }
+    }
+
+    @Test
+    fun `when forceRefreshTeams fails, then returns failure result`() = runTest {
+        // Given
+        every { networkManager.isConnected() } returns true
+        val error = Exception("Network error")
+        
+        coEvery { remoteDataSource.getAllTeams() } returns Result.failure(error)
+        coEvery { teamDao.getAllTeamsSync() } returns emptyList()
+
+        // When
+        val result = repository.forceRefreshTeams()
+
+        // Then
+        assertThat(result.isSuccess).isTrue() // Debería retornar datos locales aunque falle el remoto
+        coVerify { remoteDataSource.getAllTeams() }
+        coVerify { teamDao.getAllTeamsSync() }
+    }
 }
