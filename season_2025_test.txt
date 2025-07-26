@@ -1,0 +1,12 @@
+🏀 VERIFICANDO TEMPORADA 2025-26
+========================================
+📡 Conectando a: https://www.euroleaguebasketball.net/en/euroleague/game-center/
+✅ Conexión exitosa
+✅ Temporada 2025-26 encontrada en la página
+🏀 Equipos encontrados: 4
+   - Real Madrid
+   - Barcelona
+   - Panathinaikos
+   - Fenerbahce
+📅 Partidos programados encontrados
+✅ Test completado
