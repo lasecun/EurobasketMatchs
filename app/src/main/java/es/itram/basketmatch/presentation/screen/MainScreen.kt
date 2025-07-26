@@ -123,6 +123,31 @@ fun MainScreen(
                         Text("🌐")
                     }
                 }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Botón especial para reemplazar datos mockeados con datos reales
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    OutlinedButton(
+                        onClick = { viewModel.replaceWithRealData() },
+                        enabled = !isLoading,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("🔄 Reemplazar con datos reales")
+                        }
+                    }
+                }
             }
         }
 
