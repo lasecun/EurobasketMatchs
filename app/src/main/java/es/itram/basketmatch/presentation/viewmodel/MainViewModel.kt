@@ -1,5 +1,6 @@
 package es.itram.basketmatch.presentation.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -42,25 +43,34 @@ class MainViewModel @Inject constructor(
     val error: StateFlow<String?> = _error.asStateFlow()
 
     init {
+        Log.d("MainViewModel", "Inicializando MainViewModel...")
         loadData()
     }
 
     private fun loadData() {
+        Log.d("MainViewModel", "Iniciando carga de datos...")
         viewModelScope.launch {
             _isLoading.value = true
+            _error.value = null
+            
             try {
-                // Cargar equipos y partidos en paralelo
-                combine(
-                    getAllTeamsUseCase(),
-                    getAllMatchesUseCase()
-                ) { teams, matches ->
+                Log.d("MainViewModel", "Cargando equipos...")
+                // Cargar equipos primero
+                getAllTeamsUseCase().collect { teams ->
+                    Log.d("MainViewModel", "Equipos cargados: ${teams.size}")
                     _teams.value = teams.associateBy { it.id }
+                }
+                
+                Log.d("MainViewModel", "Cargando partidos...")
+                // Luego cargar partidos
+                getAllMatchesUseCase().collect { matches ->
+                    Log.d("MainViewModel", "Partidos cargados: ${matches.size}")
                     filterMatchesByDate(matches)
-                    _error.value = null
-                }.collect { }
+                    _isLoading.value = false
+                }
             } catch (e: Exception) {
+                Log.e("MainViewModel", "Error cargando datos: ${e.message}", e)
                 _error.value = e.message ?: "Error desconocido"
-            } finally {
                 _isLoading.value = false
             }
         }

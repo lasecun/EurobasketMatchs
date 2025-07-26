@@ -1,5 +1,6 @@
 package es.itram.basketmatch.data.datasource.local.seed
 
+import android.util.Log
 import es.itram.basketmatch.data.datasource.local.EuroLeagueDatabase
 import es.itram.basketmatch.data.mapper.TeamMapper
 import es.itram.basketmatch.data.mapper.MatchMapper
@@ -20,20 +21,21 @@ class DatabaseSeeder @Inject constructor(
 ) {
 
     suspend fun seedDatabase() = withContext(Dispatchers.IO) {
-        val teamDao = database.teamDao()
-        val matchDao = database.matchDao()
-        val standingDao = database.standingDao()
+        try {
+            Log.d("DatabaseSeeder", "Iniciando seed de base de datos...")
+            
+            val teamDao = database.teamDao()
+            val matchDao = database.matchDao()
+            val standingDao = database.standingDao()
 
-        // Verificar si ya hay datos
-        val existingTeamsCount = teamDao.getAllTeams().let { flow ->
-            var count = 0
-            flow.collect { teams -> count = teams.size }
-            count
-        }
+            // Verificar si ya hay datos
+            val existingTeamsCount = teamDao.getTeamCount()
+            Log.d("DatabaseSeeder", "Equipos existentes: $existingTeamsCount")
 
-        if (existingTeamsCount > 0) {
-            return@withContext // Ya hay datos, no seedear
-        }
+            if (existingTeamsCount > 0) {
+                Log.d("DatabaseSeeder", "Ya hay datos en la base de datos, saltando seed")
+                return@withContext // Ya hay datos, no seedear
+            }
 
         // Equipos de EuroLeague
         val teams = listOf(
@@ -160,19 +162,28 @@ class DatabaseSeeder @Inject constructor(
         )
 
         // Insertar equipos
+        Log.d("DatabaseSeeder", "Insertando ${teams.size} equipos...")
         val teamEntities = TeamMapper.fromDomainList(teams)
         teamDao.insertTeams(teamEntities)
 
         // Generar partidos de ejemplo para los próximos días
+        Log.d("DatabaseSeeder", "Generando partidos...")
         val matches = generateSampleMatches(teams)
         val matchEntities = MatchMapper.fromDomainList(matches)
         matchDao.insertMatches(matchEntities)
 
         // Generar clasificación de ejemplo
+        Log.d("DatabaseSeeder", "Generando clasificación...")
         val standings = generateSampleStandings(teams)
         val standingEntities = StandingMapper.fromDomainList(standings)
         standingDao.insertStandings(standingEntities)
+        
+        Log.d("DatabaseSeeder", "Seed completado exitosamente")
+    } catch (e: Exception) {
+        Log.e("DatabaseSeeder", "Error durante el seed: ${e.message}", e)
+        throw e
     }
+}
 
     private fun generateSampleMatches(teams: List<Team>): List<Match> {
         val matches = mutableListOf<Match>()

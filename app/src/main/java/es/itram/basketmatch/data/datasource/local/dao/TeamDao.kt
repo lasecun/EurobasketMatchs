@@ -20,6 +20,9 @@ interface TeamDao {
     @Query("SELECT * FROM teams ORDER BY name ASC")
     suspend fun getAllTeamsSync(): List<TeamEntity>
 
+    @Query("SELECT COUNT(*) FROM teams")
+    suspend fun getTeamCount(): Int
+
     @Query("SELECT * FROM teams WHERE id = :teamId")
     fun getTeamById(teamId: String): Flow<TeamEntity?>
 
