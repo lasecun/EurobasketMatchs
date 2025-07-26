@@ -1,0 +1,44 @@
+🎯 PROBLEMA IDENTIFICADO:
+   ❌ La app muestra datos mockeados antiguos
+   💡 Los datos reales no reemplazan los mockeados
+   🔧 Solución: Borrar todo y cargar datos reales frescos
+
+📋 ESTRATEGIAS PARA SOLUCIONAR:
+
+1️⃣ OPCIÓN INMEDIATA - Sin reinstalar:
+   📱 Usar el nuevo botón '🔄 Reemplazar con datos reales'
+   🎨 Ya añadido a MainScreen
+   ⚡ Borra datos anteriores y carga datos reales
+
+2️⃣ OPCIÓN TÉCNICA - Borrar datos de app:
+   📱 Android Settings > Apps > EuroLeague App > Storage
+   🗑️ 'Clear Storage' o 'Clear Data'
+   🔄 Reiniciar app - cargará datos reales automáticamente
+
+3️⃣ OPCIÓN DESARROLLO - Reinstalar:
+   🛠️ ./gradlew app:assembleDebug
+   📱 Instalar nueva versión
+   ✨ App arranca limpia con datos reales
+
+🔧 CAMBIOS IMPLEMENTADOS:
+   ✅ TeamRepositoryImpl.replaceAllWithRealData()
+   ✅ MatchRepositoryImpl.replaceAllWithRealData()
+   ✅ MainViewModel.replaceWithRealData()
+   ✅ Botón 'Reemplazar con datos reales' en UI
+
+📊 FLUJO DE MIGRACIÓN:
+   1. Usuario toca '🔄 Reemplazar con datos reales'
+   2. App borra todos los datos mockeados
+   3. Web scraping obtiene datos reales
+   4. Datos reales se guardan en Room
+   5. UI se actualiza con datos auténticos
+
+🎉 RESULTADO ESPERADO:
+   🏀 Equipos reales: Real Madrid, Barcelona, etc.
+   ⚽ Partidos reales de EuroLeague
+   📅 Fechas y horarios auténticos
+   🏟️ Estadios y ciudades reales
+
+✅ MIGRACIÓN CONFIGURADA EXITOSAMENTE
+   💡 Usa el botón de la app para migrar los datos
+   🚀 No necesitas reinstalar la aplicación

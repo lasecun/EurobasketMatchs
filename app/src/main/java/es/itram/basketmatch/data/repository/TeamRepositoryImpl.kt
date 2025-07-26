@@ -104,6 +104,49 @@ class TeamRepositoryImpl @Inject constructor(
     }
     
     /**
+     * Reemplaza completamente todos los datos con datos reales frescos
+     * Útil para migrar de datos mockeados a datos reales
+     */
+    suspend fun replaceAllWithRealData(): Result<List<Team>> {
+        return try {
+            Log.d(TAG, "🔄 Reemplazando todos los datos con datos reales...")
+            
+            // 1. Obtener datos reales
+            val remoteResult = remoteDataSource.getAllTeams()
+            
+            if (remoteResult.isSuccess) {
+                val remoteTeams = remoteResult.getOrNull() ?: emptyList()
+                
+                if (remoteTeams.isNotEmpty()) {
+                    Log.d(TAG, "📊 Obtenidos ${remoteTeams.size} equipos reales de la web")
+                    
+                    // 2. Borrar todos los datos existentes
+                    teamDao.deleteAllTeams()
+                    Log.d(TAG, "🗑️ Datos anteriores eliminados")
+                    
+                    // 3. Convertir y guardar datos reales
+                    val domainTeams = TeamWebMapper.toDomainList(remoteTeams)
+                    val entities = TeamMapper.fromDomainList(domainTeams)
+                    teamDao.insertTeams(entities)
+                    
+                    Log.d(TAG, "✅ ${domainTeams.size} equipos reales guardados")
+                    
+                    Result.success(domainTeams)
+                } else {
+                    Log.w(TAG, "⚠️ No se obtuvieron equipos reales")
+                    Result.failure(Exception("No se obtuvieron equipos reales"))
+                }
+            } else {
+                Log.e(TAG, "❌ Error obteniendo datos remotos")
+                Result.failure(remoteResult.exceptionOrNull() ?: Exception("Error desconocido"))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error en replaceAllWithRealData: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+    
+    /**
      * Sincroniza equipos desde la web si es necesario
      */
     private suspend fun refreshTeamsIfNeeded() {

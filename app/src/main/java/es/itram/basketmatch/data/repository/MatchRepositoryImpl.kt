@@ -157,4 +157,47 @@ class MatchRepositoryImpl @Inject constructor(
             // Continuar con datos locales en caso de error
         }
     }
+    
+    /**
+     * Reemplaza completamente todos los partidos con datos reales frescos
+     * Útil para migrar de datos mockeados a datos reales
+     */
+    suspend fun replaceAllWithRealData(): Result<List<Match>> {
+        return try {
+            Log.d(TAG, "🔄 Reemplazando todos los partidos con datos reales...")
+            
+            // 1. Obtener datos reales
+            val remoteResult = remoteDataSource.getAllMatches()
+            
+            if (remoteResult.isSuccess) {
+                val remoteMatches = remoteResult.getOrNull() ?: emptyList()
+                
+                if (remoteMatches.isNotEmpty()) {
+                    Log.d(TAG, "📊 Obtenidos ${remoteMatches.size} partidos reales de la web")
+                    
+                    // 2. Borrar todos los datos existentes
+                    matchDao.deleteAllMatches()
+                    Log.d(TAG, "🗑️ Partidos anteriores eliminados")
+                    
+                    // 3. Convertir y guardar datos reales
+                    val domainMatches = MatchWebMapper.toDomainList(remoteMatches)
+                    val entities = MatchMapper.fromDomainList(domainMatches)
+                    matchDao.insertMatches(entities)
+                    
+                    Log.d(TAG, "✅ ${domainMatches.size} partidos reales guardados")
+                    
+                    Result.success(domainMatches)
+                } else {
+                    Log.w(TAG, "⚠️ No se obtuvieron partidos reales")
+                    Result.failure(Exception("No se obtuvieron partidos reales"))
+                }
+            } else {
+                Log.e(TAG, "❌ Error obteniendo partidos remotos")
+                Result.failure(remoteResult.exceptionOrNull() ?: Exception("Error desconocido"))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error en replaceAllWithRealData: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
 }
