@@ -4,9 +4,12 @@ import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import es.itram.basketmatch.data.datasource.local.dao.TeamDao
 import es.itram.basketmatch.data.datasource.local.entity.TeamEntity
+import es.itram.basketmatch.data.datasource.remote.EuroLeagueRemoteDataSource
+import es.itram.basketmatch.data.network.NetworkManager
 import es.itram.basketmatch.testutil.TestDataFactory
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -15,8 +18,10 @@ import org.junit.Test
 
 class TeamRepositoryImplTest {
 
-    // Mock
+    // Mocks
     private val teamDao: TeamDao = mockk()
+    private val remoteDataSource: EuroLeagueRemoteDataSource = mockk()
+    private val networkManager: NetworkManager = mockk()
 
     // System under test
     private lateinit var repository: TeamRepositoryImpl
@@ -27,7 +32,13 @@ class TeamRepositoryImplTest {
 
     @Before
     fun setup() {
-        repository = TeamRepositoryImpl(teamDao)
+        // Mock network manager para prevenir llamadas de red en tests
+        every { networkManager.isConnected() } returns false
+        
+        // Mock remote data source para prevenir llamadas reales
+        coEvery { remoteDataSource.getAllTeams() } returns Result.failure(Exception("No network in tests"))
+        
+        repository = TeamRepositoryImpl(teamDao, remoteDataSource, networkManager)
     }
 
     @Test
