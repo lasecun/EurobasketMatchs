@@ -1,7 +1,5 @@
 package es.itram.basketmatch.data.repository
 
-import es.itram.basketmatch.data.datasource.local.dao.PlayerDao
-import es.itram.basketmatch.data.datasource.local.dao.TeamRosterDao
 import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueJsonApiScraper
 import es.itram.basketmatch.testutil.TestDataFactory
 import io.mockk.coEvery
@@ -15,16 +13,12 @@ import org.junit.Test
 class TeamRosterRepositoryImplTest {
 
     private lateinit var apiScraper: EuroLeagueJsonApiScraper
-    private lateinit var playerDao: PlayerDao
-    private lateinit var teamRosterDao: TeamRosterDao
     private lateinit var repository: TeamRosterRepositoryImpl
 
     @Before
     fun setup() {
         apiScraper = mockk()
-        playerDao = mockk()
-        teamRosterDao = mockk()
-        repository = TeamRosterRepositoryImpl(apiScraper, playerDao, teamRosterDao)
+        repository = TeamRosterRepositoryImpl(apiScraper)
     }
 
     @Test

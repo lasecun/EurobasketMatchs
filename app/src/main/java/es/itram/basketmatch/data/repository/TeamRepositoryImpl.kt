@@ -42,11 +42,19 @@ class TeamRepositoryImpl @Inject constructor(
             Log.d(TAG, "📱 [LOCAL] ✅ Equipos obtenidos desde BD local: ${entities.size}")
             TeamMapper.toDomainList(entities)
         }.onStart {
-            // Solo ejecutar refresh si hay conexión, evitando problemas en tests
+            // Solo ejecutar refresh si la BD local está vacía y hay conexión
             if (networkManager.isConnected()) {
                 backgroundScope.launch {
                     try {
-                        refreshTeamsIfNeeded()
+                        val localTeamCount = teamDao.getTeamCount()
+                        Log.d(TAG, "📱 [LOCAL] Verificando cache: $localTeamCount equipos en BD local")
+                        
+                        if (localTeamCount == 0) {
+                            Log.d(TAG, "📱 [LOCAL] ⚠️ Cache vacío, iniciando descarga desde API...")
+                            refreshTeamsIfNeeded()
+                        } else {
+                            Log.d(TAG, "📱 [LOCAL] ✅ Cache disponible, usando datos locales")
+                        }
                     } catch (e: Exception) {
                         // En producción se loggearía, en tests se ignora silenciosamente
                         // Log.w(TAG, "Error en refresh en background", e)
