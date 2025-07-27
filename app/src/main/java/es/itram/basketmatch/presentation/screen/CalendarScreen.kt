@@ -40,6 +40,7 @@ import java.util.*
 fun CalendarScreen(
     onNavigateBack: () -> Unit,
     onNavigateToTeamDetail: (String) -> Unit,
+    onNavigateToMatchDetail: (String) -> Unit,
     viewModel: CalendarViewModel = hiltViewModel()
 ) {
     val currentMonth by viewModel.currentMonth.collectAsStateWithLifecycle()
@@ -163,6 +164,7 @@ fun CalendarScreen(
                                         items(dayMatches) { match ->
                                             MatchCard(
                                                 match = match,
+                                                onMatchClick = onNavigateToMatchDetail,
                                                 onTeamClick = onNavigateToTeamDetail
                                             )
                                         }

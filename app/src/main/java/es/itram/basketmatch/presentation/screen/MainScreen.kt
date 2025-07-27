@@ -55,6 +55,7 @@ import es.itram.basketmatch.presentation.viewmodel.MainViewModel
 fun MainScreen(
     onNavigateToCalendar: () -> Unit,
     onNavigateToTeamDetail: (String) -> Unit,
+    onNavigateToMatchDetail: (String) -> Unit,
     viewModel: MainViewModel = hiltViewModel()
 ) {
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
@@ -260,6 +261,7 @@ fun MainScreen(
                         items(matches) { match ->
                             MatchCard(
                                 match = match,
+                                onMatchClick = onNavigateToMatchDetail,
                                 onTeamClick = onNavigateToTeamDetail
                             )
                         }

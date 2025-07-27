@@ -32,10 +32,12 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun MatchCard(
     match: Match,
+    onMatchClick: (String) -> Unit = {},
     onTeamClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
+        onClick = { onMatchClick(match.id) },
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
