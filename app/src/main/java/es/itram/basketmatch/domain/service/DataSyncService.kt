@@ -63,6 +63,10 @@ class DataSyncService @Inject constructor(
             val isDataPopulated = prefs.getBoolean(KEY_DATA_POPULATED, false)
             val matchCount = matchDao.getMatchCount()
             
+            Log.d(TAG, "🔍 Verificando necesidad de sync:")
+            Log.d(TAG, "   - DATA_POPULATED flag: $isDataPopulated")
+            Log.d(TAG, "   - Matches en BD: $matchCount")
+            
             if (!isDataPopulated || matchCount == 0) {
                 Log.d(TAG, "🆕 Base de datos vacía - sync necesario")
                 return@withContext true
@@ -71,6 +75,9 @@ class DataSyncService @Inject constructor(
             val lastSync = prefs.getLong(KEY_LAST_SYNC, 0)
             val currentTime = System.currentTimeMillis()
             val timeSinceLastSync = currentTime - lastSync
+            val hoursSinceLastSync = timeSinceLastSync / (1000 * 60 * 60)
+            
+            Log.d(TAG, "   - Última sync: ${if (lastSync == 0L) "nunca" else "$hoursSinceLastSync horas atrás"}")
             
             if (timeSinceLastSync > SYNC_INTERVAL_MS) {
                 Log.d(TAG, "⏰ Hace más de 24h desde última sync - sync necesario")
