@@ -258,13 +258,8 @@ fun MainScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(matches) { match ->
-                            val homeTeam = teams[match.homeTeamId]
-                            val awayTeam = teams[match.awayTeamId]
-
                             MatchCard(
                                 match = match,
-                                homeTeam = homeTeam,
-                                awayTeam = awayTeam,
                                 onTeamClick = onNavigateToTeamDetail
                             )
                         }

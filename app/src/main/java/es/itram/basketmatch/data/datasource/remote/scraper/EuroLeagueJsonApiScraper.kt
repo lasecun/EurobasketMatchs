@@ -272,8 +272,10 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
             id = feedsGame.id,
             homeTeamId = feedsGame.home.code,
             homeTeamName = feedsGame.home.name,
+            homeTeamLogo = feedsGame.home.imageUrls?.crest,
             awayTeamId = feedsGame.away.code,
             awayTeamName = feedsGame.away.name,
+            awayTeamLogo = feedsGame.away.imageUrls?.crest,
             date = feedsGame.date.substringBefore("T"), // Extraer solo la fecha (YYYY-MM-DD)
             time = feedsGame.date,
             venue = feedsGame.venue?.name,
@@ -309,8 +311,10 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
             id = matchId,
             homeTeamId = game.home.code,
             homeTeamName = game.home.name,
+            homeTeamLogo = game.home.imageUrls, // En la API legacy es String?, no objeto
             awayTeamId = game.away.code,
             awayTeamName = game.away.name,
+            awayTeamLogo = game.away.imageUrls, // En la API legacy es String?, no objeto
             date = game.date.substringBefore("T"), // Extraer solo la fecha (YYYY-MM-DD)
             time = game.date,
             venue = game.venue?.name,

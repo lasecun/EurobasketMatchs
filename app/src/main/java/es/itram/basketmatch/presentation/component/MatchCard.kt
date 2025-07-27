@@ -2,33 +2,36 @@ package es.itram.basketmatch.presentation.component
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import es.itram.basketmatch.domain.entity.Match
 import es.itram.basketmatch.domain.entity.MatchStatus
-import es.itram.basketmatch.domain.entity.Team
 import java.time.format.DateTimeFormatter
 
 /**
- * Componente para mostrar la información de un partido
+ * Componente para mostrar la información de un partido usando datos directamente del Match
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MatchCard(
     match: Match,
-    homeTeam: Team?,
-    awayTeam: Team?,
-    onTeamClick: (String) -> Unit,
+    onTeamClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -74,7 +77,9 @@ fun MatchCard(
             ) {
                 // Equipo local
                 TeamInfo(
-                    team = homeTeam,
+                    teamId = match.homeTeamId,
+                    teamName = match.homeTeamName,
+                    teamLogo = match.homeTeamLogo,
                     score = match.homeScore,
                     isHome = true,
                     onTeamClick = onTeamClick,
@@ -105,7 +110,9 @@ fun MatchCard(
                 
                 // Equipo visitante
                 TeamInfo(
-                    team = awayTeam,
+                    teamId = match.awayTeamId,
+                    teamName = match.awayTeamName,
+                    teamLogo = match.awayTeamLogo,
                     score = match.awayScore,
                     isHome = false,
                     onTeamClick = onTeamClick,
@@ -141,31 +148,84 @@ fun MatchCard(
 
 @Composable
 private fun TeamInfo(
-    team: Team?,
+    teamId: String,
+    teamName: String,
+    teamLogo: String?,
     score: Int?,
     isHome: Boolean,
     onTeamClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
+    Row(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
-            .clickable { team?.let { onTeamClick(it.id) } }
+            .clickable { onTeamClick(teamId) }
             .padding(8.dp),
-        horizontalAlignment = if (isHome) Alignment.Start else Alignment.End
+        horizontalArrangement = if (isHome) Arrangement.Start else Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (isHome) {
+            // Para equipo local: logo - nombre
+            TeamLogo(logoUrl = teamLogo)
+            Spacer(modifier = Modifier.width(8.dp))
+            TeamNameColumn(
+                teamName = teamName,
+                alignment = Alignment.Start
+            )
+        } else {
+            // Para equipo visitante: nombre - logo
+            TeamNameColumn(
+                teamName = teamName,
+                alignment = Alignment.End
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            TeamLogo(logoUrl = teamLogo)
+        }
+    }
+}
+
+@Composable
+private fun TeamLogo(
+    logoUrl: String?,
+    modifier: Modifier = Modifier
+) {
+    if (!logoUrl.isNullOrBlank()) {
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(logoUrl)
+                .crossfade(true)
+                .build(),
+            contentDescription = "Logo del equipo",
+            modifier = modifier
+                .size(32.dp)
+                .clip(CircleShape),
+            contentScale = ContentScale.Fit
+        )
+    } else {
+        // Fallback icon cuando no hay logo
+        Icon(
+            Icons.Default.Person,
+            contentDescription = "Logo del equipo",
+            modifier = modifier.size(32.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun TeamNameColumn(
+    teamName: String,
+    alignment: Alignment.Horizontal,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = alignment
     ) {
         Text(
-            text = team?.shortName ?: "TBD",
+            text = teamName,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        
-        Text(
-            text = team?.name ?: "Por determinar",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )

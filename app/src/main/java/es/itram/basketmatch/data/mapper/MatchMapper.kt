@@ -12,7 +12,11 @@ object MatchMapper {
         return Match(
             id = entity.id,
             homeTeamId = entity.homeTeamId,
+            homeTeamName = entity.homeTeamName,
+            homeTeamLogo = entity.homeTeamLogo,
             awayTeamId = entity.awayTeamId,
+            awayTeamName = entity.awayTeamName,
+            awayTeamLogo = entity.awayTeamLogo,
             dateTime = entity.dateTime,
             venue = entity.venue,
             round = entity.round,
@@ -27,7 +31,11 @@ object MatchMapper {
         return MatchEntity(
             id = domain.id,
             homeTeamId = domain.homeTeamId,
+            homeTeamName = domain.homeTeamName,
+            homeTeamLogo = domain.homeTeamLogo,
             awayTeamId = domain.awayTeamId,
+            awayTeamName = domain.awayTeamName,
+            awayTeamLogo = domain.awayTeamLogo,
             dateTime = domain.dateTime,
             venue = domain.venue,
             round = domain.round,

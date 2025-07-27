@@ -19,7 +19,11 @@ object MatchWebMapper {
         return Match(
             id = dto.id,
             homeTeamId = dto.homeTeamId,
+            homeTeamName = dto.homeTeamName,
+            homeTeamLogo = dto.homeTeamLogo,
             awayTeamId = dto.awayTeamId,
+            awayTeamName = dto.awayTeamName,
+            awayTeamLogo = dto.awayTeamLogo,
             dateTime = parseDateTime(dto.date, dto.time),
             venue = dto.venue ?: "TBD",
             round = parseRound(dto.round),

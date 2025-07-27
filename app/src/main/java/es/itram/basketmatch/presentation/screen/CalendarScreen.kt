@@ -161,13 +161,8 @@ fun CalendarScreen(
                                         modifier = Modifier.heightIn(max = 300.dp)
                                     ) {
                                         items(dayMatches) { match ->
-                                            val homeTeam = teams[match.homeTeamId]
-                                            val awayTeam = teams[match.awayTeamId]
-                                            
                                             MatchCard(
                                                 match = match,
-                                                homeTeam = homeTeam,
-                                                awayTeam = awayTeam,
                                                 onTeamClick = onNavigateToTeamDetail
                                             )
                                         }
