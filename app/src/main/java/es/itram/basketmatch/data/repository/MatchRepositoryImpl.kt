@@ -43,7 +43,9 @@ class MatchRepositoryImpl @Inject constructor(
     private val backgroundScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override fun getAllMatches(): Flow<List<Match>> {
+        Log.d(TAG, "📱 [LOCAL] Iniciando obtención de partidos desde cache local...")
         return matchDao.getAllMatches().map { entities ->
+            Log.d(TAG, "📱 [LOCAL] ✅ Partidos obtenidos desde BD local: ${entities.size}")
             MatchMapper.toDomainList(entities)
         }.onStart {
             // Solo ejecutar refresh si hay conexión, evitando problemas en tests
@@ -61,31 +63,45 @@ class MatchRepositoryImpl @Inject constructor(
     }
 
     override fun getMatchesByDate(date: LocalDateTime): Flow<List<Match>> {
+        Log.d(TAG, "📱 [LOCAL] Obteniendo partidos por fecha desde BD local: $date")
         return matchDao.getMatchesByDate(date).map { entities ->
+            Log.d(TAG, "📱 [LOCAL] ✅ Partidos encontrados para $date: ${entities.size}")
             MatchMapper.toDomainList(entities)
         }
     }
 
     override fun getMatchesByTeam(teamId: String): Flow<List<Match>> {
+        Log.d(TAG, "📱 [LOCAL] Obteniendo partidos por equipo desde BD local: $teamId")
         return matchDao.getMatchesByTeam(teamId).map { entities ->
+            Log.d(TAG, "📱 [LOCAL] ✅ Partidos encontrados para $teamId: ${entities.size}")
             MatchMapper.toDomainList(entities)
         }
     }
 
     override fun getMatchesByStatus(status: MatchStatus): Flow<List<Match>> {
+        Log.d(TAG, "📱 [LOCAL] Obteniendo partidos por estado desde BD local: $status")
         return matchDao.getMatchesByStatus(status).map { entities ->
+            Log.d(TAG, "📱 [LOCAL] ✅ Partidos encontrados con estado $status: ${entities.size}")
             MatchMapper.toDomainList(entities)
         }
     }
 
     override fun getMatchesBySeasonType(seasonType: SeasonType): Flow<List<Match>> {
+        Log.d(TAG, "📱 [LOCAL] Obteniendo partidos por temporada desde BD local: $seasonType")
         return matchDao.getMatchesBySeasonType(seasonType).map { entities ->
+            Log.d(TAG, "📱 [LOCAL] ✅ Partidos encontrados para temporada $seasonType: ${entities.size}")
             MatchMapper.toDomainList(entities)
         }
     }
 
     override fun getMatchById(matchId: String): Flow<Match?> {
+        Log.d(TAG, "📱 [LOCAL] Obteniendo partido específico desde BD local: $matchId")
         return matchDao.getMatchById(matchId).map { entity ->
+            if (entity != null) {
+                Log.d(TAG, "📱 [LOCAL] ✅ Partido encontrado: $matchId")
+            } else {
+                Log.d(TAG, "📱 [LOCAL] ⚠️ Partido no encontrado: $matchId")
+            }
             entity?.let { MatchMapper.toDomain(it) }
         }
     }
@@ -110,13 +126,17 @@ class MatchRepositoryImpl @Inject constructor(
      */
     suspend fun forceRefreshMatches(): Result<List<Match>> {
         return try {
+            Log.d(TAG, "🔄 [NETWORK] Forzando actualización de partidos desde API...")
             refreshMatchesIfNeeded()
             
-            // Devolver los partidos actualizados
+            // Devolver los partidos actualizados desde BD local
+            Log.d(TAG, "📱 [LOCAL] Obteniendo partidos actualizados desde BD local...")
             val entities = matchDao.getAllMatchesSync()
             val matches = MatchMapper.toDomainList(entities)
+            Log.d(TAG, "📱 [LOCAL] ✅ Partidos actualizados obtenidos: ${matches.size}")
             Result.success(matches)
         } catch (e: Exception) {
+            Log.e(TAG, "❌ [NETWORK] Error en actualización forzada de partidos", e)
             Result.failure(e)
         }
     }
@@ -126,18 +146,20 @@ class MatchRepositoryImpl @Inject constructor(
      */
     private suspend fun refreshMatchesIfNeeded() {
         if (!networkManager.isConnected()) {
-            Log.d(TAG, "No hay conexión a internet, usando datos locales")
+            Log.d(TAG, "📱 [LOCAL] Sin conexión a internet, usando datos locales únicamente")
             return
         }
         
         try {
-            Log.d(TAG, "Sincronizando partidos desde la web oficial de EuroLeague...")
+            Log.d(TAG, "🌐 [NETWORK] Iniciando sincronización de partidos desde API EuroLeague...")
             
             val remoteResult = remoteDataSource.getAllMatches()
             
             if (remoteResult.isSuccess) {
                 val remoteMatches = remoteResult.getOrNull() ?: emptyList()
                 if (remoteMatches.isNotEmpty()) {
+                    Log.d(TAG, "🌐 [NETWORK] ✅ Partidos obtenidos desde API: ${remoteMatches.size}")
+                    
                     // Convertir DTOs web a entidades de dominio
                     val domainMatches = MatchWebMapper.toDomainList(remoteMatches)
                     
@@ -145,15 +167,15 @@ class MatchRepositoryImpl @Inject constructor(
                     val entities = MatchMapper.fromDomainList(domainMatches)
                     matchDao.insertMatches(entities)
                     
-                    Log.d(TAG, "Partidos sincronizados exitosamente: ${domainMatches.size}")
+                    Log.d(TAG, "💾 [SAVE] Partidos guardados en BD local: ${domainMatches.size}")
                 } else {
-                    Log.w(TAG, "No se obtuvieron partidos del scraping")
+                    Log.w(TAG, "🌐 [NETWORK] ⚠️ API devolvió lista vacía de partidos")
                 }
             } else {
-                Log.e(TAG, "Error en sincronización remota de partidos", remoteResult.exceptionOrNull())
+                Log.e(TAG, "❌ [NETWORK] Error en sincronización remota de partidos", remoteResult.exceptionOrNull())
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error sincronizando partidos desde la web", e)
+            Log.e(TAG, "❌ [NETWORK] Error sincronizando partidos desde la API", e)
             // Continuar con datos locales en caso de error
         }
     }
@@ -164,7 +186,7 @@ class MatchRepositoryImpl @Inject constructor(
      */
     suspend fun replaceAllWithRealData(): Result<List<Match>> {
         return try {
-            Log.d(TAG, "🔄 Reemplazando todos los partidos con datos reales...")
+            Log.d(TAG, "🔄 [NETWORK] Reemplazando todos los partidos con datos reales...")
             
             // 1. Obtener datos reales
             val remoteResult = remoteDataSource.getAllMatches()
@@ -173,11 +195,11 @@ class MatchRepositoryImpl @Inject constructor(
                 val remoteMatches = remoteResult.getOrNull() ?: emptyList()
                 
                 if (remoteMatches.isNotEmpty()) {
-                    Log.d(TAG, "📊 Obtenidos ${remoteMatches.size} partidos reales de la web")
+                    Log.d(TAG, "🌐 [NETWORK] ✅ Obtenidos ${remoteMatches.size} partidos reales desde API")
                     
                     // 2. Borrar todos los datos existentes
                     matchDao.deleteAllMatches()
-                    Log.d(TAG, "🗑️ Partidos anteriores eliminados")
+                    Log.d(TAG, "🗑️ [LOCAL] Partidos anteriores eliminados de BD local")
                     
                     // 3. Convertir y guardar datos reales
                     val domainMatches = MatchWebMapper.toDomainList(remoteMatches)

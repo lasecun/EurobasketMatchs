@@ -51,7 +51,7 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
      */
     suspend fun getTeams(): List<TeamWebDto> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "🏀 Obteniendo equipos desde API JSON...")
+            Log.d(TAG, "� [NETWORK] Obteniendo equipos desde API JSON...")
             
             val jsonResponse = fetchJsonFromUrl(GAME_CENTER_JSON_URL)
             val gameCenterData = json.decodeFromString<GameCenterResponse>(jsonResponse)
@@ -74,11 +74,11 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
                 )
             }
             
-            Log.d(TAG, "✅ Equipos obtenidos exitosamente: ${teams.size}")
+            Log.d(TAG, "🌐 [NETWORK] ✅ Equipos obtenidos exitosamente desde API: ${teams.size}")
             teams.distinctBy { it.id }
             
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error obteniendo equipos desde API JSON", e)
+            Log.e(TAG, "❌ [NETWORK] Error obteniendo equipos desde API JSON", e)
             emptyList()
         }
     }
@@ -98,7 +98,7 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
         onProgress: (current: Int, total: Int) -> Unit
     ): List<MatchWebDto> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "⚽ Obteniendo partidos desde nueva API de feeds para temporada $season...")
+            Log.d(TAG, "🌐 [NETWORK] Iniciando obtención de partidos desde API EuroLeague para temporada $season...")
             
             val allMatches = mutableListOf<MatchWebDto>()
             val totalRounds = 38
@@ -106,25 +106,25 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
             // Iterar por todas las 38 jornadas de la temporada regular
             for (round in 1..totalRounds) {
                 try {
-                    Log.d(TAG, "📅 Obteniendo jornada $round...")
+                    Log.d(TAG, "🌐 [NETWORK] Obteniendo jornada $round desde API...")
                     onProgress(round, totalRounds)
                     
                     val roundMatches = getMatchesForRound(round, season)
                     allMatches.addAll(roundMatches)
-                    Log.d(TAG, "✅ Jornada $round: ${roundMatches.size} partidos obtenidos")
+                    Log.d(TAG, "🌐 [NETWORK] ✅ Jornada $round obtenida desde API: ${roundMatches.size} partidos")
                     
                     // Pequeña pausa para no saturar la API
                     kotlinx.coroutines.delay(100)
                 } catch (e: Exception) {
-                    Log.w(TAG, "⚠️ Error obteniendo jornada $round: ${e.message}")
+                    Log.w(TAG, "🌐 [NETWORK] ⚠️ Error obteniendo jornada $round desde API: ${e.message}")
                 }
             }
             
-            Log.d(TAG, "🏆 Total partidos obtenidos: ${allMatches.size} de $totalRounds jornadas")
+            Log.d(TAG, "� [NETWORK] ✅ Total partidos obtenidos desde API: ${allMatches.size} de $totalRounds jornadas")
             allMatches
             
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error obteniendo partidos desde nueva API", e)
+            Log.e(TAG, "❌ [NETWORK] Error obteniendo partidos desde nueva API", e)
             // Fallback a la API anterior
             getMatchesLegacy(season)
         }
@@ -135,9 +135,11 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
      */
     private suspend fun getMatchesForRound(round: Int, season: String): List<MatchWebDto> {
         val url = "$GAMES_URL?teamCode=&phaseTypeCode=RS&roundNumber=$round"
+        Log.d(TAG, "🌐 [NETWORK] Petición API: $url")
         val jsonResponse = fetchJsonFromUrl(url)
         
         val feedsResponse = json.decodeFromString<EuroLeagueFeedsResponse>(jsonResponse)
+        Log.d(TAG, "🌐 [NETWORK] ✅ Respuesta API recibida para jornada $round: ${feedsResponse.data.size} partidos")
         
         return feedsResponse.data.map { game ->
             convertFeedsGameToMatchDto(game, season)
@@ -148,7 +150,7 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
      * Método legacy como fallback
      */
     private suspend fun getMatchesLegacy(season: String): List<MatchWebDto> {
-        Log.d(TAG, "🔄 Usando API legacy como fallback...")
+        Log.d(TAG, "🌐 [NETWORK] 🔄 Usando API legacy como fallback...")
         
         val matches = mutableListOf<MatchWebDto>()
         
@@ -161,18 +163,18 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
         
         for (endpoint in endpoints) {
             try {
-                Log.d(TAG, "📡 Intentando endpoint legacy: $endpoint")
+                Log.d(TAG, "🌐 [NETWORK] Intentando endpoint legacy: $endpoint")
                 val jsonResponse = fetchJsonFromUrl(endpoint)
                 val endpointMatches = parseMatchesFromEndpoint(jsonResponse, season, endpoint)
                 matches.addAll(endpointMatches)
-                Log.d(TAG, "✅ Obtenidos ${endpointMatches.size} partidos desde $endpoint")
+                Log.d(TAG, "🌐 [NETWORK] ✅ Obtenidos ${endpointMatches.size} partidos desde endpoint legacy")
             } catch (e: Exception) {
-                Log.w(TAG, "⚠️ Error en endpoint $endpoint: ${e.message}")
+                Log.w(TAG, "🌐 [NETWORK] ⚠️ Error en endpoint legacy $endpoint: ${e.message}")
             }
         }
         
         val uniqueMatches = matches.distinctBy { it.id }
-        Log.d(TAG, "✅ Total partidos únicos legacy: ${uniqueMatches.size}")
+        Log.d(TAG, "🌐 [NETWORK] ✅ Total partidos únicos desde API legacy: ${uniqueMatches.size}")
         
         return uniqueMatches
     }
@@ -182,10 +184,12 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
      */
     suspend fun getMatchesForRoundRefresh(round: Int, season: String = "2025-26"): List<MatchWebDto> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "🔄 Refrescando jornada $round...")
-            getMatchesForRound(round, season)
+            Log.d(TAG, "🌐 [NETWORK] 🔄 Refrescando jornada $round desde API...")
+            val matches = getMatchesForRound(round, season)
+            Log.d(TAG, "🌐 [NETWORK] ✅ Jornada $round refrescada: ${matches.size} partidos")
+            matches
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error refrescando jornada $round", e)
+            Log.e(TAG, "❌ [NETWORK] Error refrescando jornada $round desde API", e)
             emptyList()
         }
     }
@@ -433,7 +437,7 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
      */
     suspend fun getTeamRoster(teamTla: String, season: String = "E2025"): List<PlayerDto> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "👥 Obteniendo roster del equipo $teamTla para temporada $season...")
+            Log.d(TAG, "🌐 [NETWORK] Obteniendo roster del equipo $teamTla para temporada $season desde API...")
             
             val url = "$ROSTER_URL/$teamTla/people"
             val jsonResponse = fetchJsonFromUrl(url)
@@ -441,11 +445,11 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
             // La API devuelve directamente un array de PlayerDto
             val rosterResponse = json.decodeFromString<TeamRosterResponse>(jsonResponse)
             
-            Log.d(TAG, "✅ Roster obtenido exitosamente: ${rosterResponse.size} jugadores")
+            Log.d(TAG, "🌐 [NETWORK] ✅ Roster obtenido exitosamente desde API: ${rosterResponse.size} jugadores para $teamTla")
             rosterResponse
             
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error obteniendo roster del equipo $teamTla", e)
+            Log.e(TAG, "❌ [NETWORK] Error obteniendo roster del equipo $teamTla desde API", e)
             emptyList()
         }
     }

@@ -10,9 +10,13 @@ import android.content.Context
 import es.itram.basketmatch.data.datasource.local.dao.TeamDao
 import es.itram.basketmatch.data.datasource.local.dao.MatchDao
 import es.itram.basketmatch.data.datasource.local.dao.StandingDao
+import es.itram.basketmatch.data.datasource.local.dao.PlayerDao
+import es.itram.basketmatch.data.datasource.local.dao.TeamRosterDao
 import es.itram.basketmatch.data.datasource.local.entity.TeamEntity
 import es.itram.basketmatch.data.datasource.local.entity.MatchEntity
 import es.itram.basketmatch.data.datasource.local.entity.StandingEntity
+import es.itram.basketmatch.data.datasource.local.entity.PlayerEntity
+import es.itram.basketmatch.data.datasource.local.entity.TeamRosterEntity
 import es.itram.basketmatch.data.datasource.local.converter.LocalDateTimeConverter
 import es.itram.basketmatch.data.datasource.local.converter.MatchStatusConverter
 import es.itram.basketmatch.data.datasource.local.converter.SeasonTypeConverter
@@ -24,9 +28,11 @@ import es.itram.basketmatch.data.datasource.local.converter.SeasonTypeConverter
     entities = [
         TeamEntity::class,
         MatchEntity::class,
-        StandingEntity::class
+        StandingEntity::class,
+        PlayerEntity::class,
+        TeamRosterEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(
@@ -39,6 +45,8 @@ abstract class EuroLeagueDatabase : RoomDatabase() {
     abstract fun teamDao(): TeamDao
     abstract fun matchDao(): MatchDao
     abstract fun standingDao(): StandingDao
+    abstract fun playerDao(): PlayerDao
+    abstract fun teamRosterDao(): TeamRosterDao
 
     companion object {
         const val DATABASE_NAME = "euroleague_database"
@@ -64,6 +72,45 @@ abstract class EuroLeagueDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Crear tabla players
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `players` (
+                        `id` TEXT NOT NULL PRIMARY KEY,
+                        `teamCode` TEXT NOT NULL,
+                        `playerCode` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `surname` TEXT NOT NULL,
+                        `fullName` TEXT NOT NULL,
+                        `jersey` INTEGER,
+                        `position` TEXT,
+                        `height` TEXT,
+                        `weight` TEXT,
+                        `dateOfBirth` TEXT,
+                        `placeOfBirth` TEXT,
+                        `nationality` TEXT,
+                        `experience` INTEGER,
+                        `profileImageUrl` TEXT,
+                        `isActive` INTEGER NOT NULL DEFAULT 1,
+                        `isStarter` INTEGER NOT NULL DEFAULT 0,
+                        `isCaptain` INTEGER NOT NULL DEFAULT 0,
+                        `lastUpdated` INTEGER NOT NULL DEFAULT 0
+                    )
+                """)
+                
+                // Crear tabla team_rosters
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `team_rosters` (
+                        `teamCode` TEXT NOT NULL PRIMARY KEY,
+                        `teamName` TEXT NOT NULL,
+                        `season` TEXT NOT NULL,
+                        `lastUpdated` INTEGER NOT NULL DEFAULT 0
+                    )
+                """)
+            }
+        }
+
         fun getDatabase(context: Context): EuroLeagueDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -71,7 +118,7 @@ abstract class EuroLeagueDatabase : RoomDatabase() {
                     EuroLeagueDatabase::class.java,
                     DATABASE_NAME
                 )
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
                 INSTANCE = instance
                 instance
