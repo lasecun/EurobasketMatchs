@@ -45,6 +45,7 @@ import es.itram.basketmatch.presentation.component.ErrorMessage
 import es.itram.basketmatch.presentation.component.LoadingIndicator
 import es.itram.basketmatch.presentation.component.MatchCard
 import es.itram.basketmatch.presentation.viewmodel.MainViewModel
+import java.time.format.DateTimeFormatter
 
 /**
  * Pantalla principal con sincronización automática y refresh manual
@@ -147,7 +148,7 @@ fun MainScreen(
                         }
 
                         Text(
-                            text = viewModel.getFormattedSelectedDate(),
+                            text = selectedDate.format(DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy")),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
