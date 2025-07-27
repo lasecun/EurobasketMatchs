@@ -6,11 +6,16 @@ import es.itram.basketmatch.data.datasource.local.entity.TeamEntity
 import es.itram.basketmatch.data.datasource.remote.dto.MatchStatus as WebMatchStatus
 import es.itram.basketmatch.data.datasource.remote.dto.MatchWebDto
 import es.itram.basketmatch.data.datasource.remote.dto.TeamWebDto
+import es.itram.basketmatch.data.datasource.remote.dto.PlayerDto
+import es.itram.basketmatch.data.datasource.remote.dto.PersonDto
 import es.itram.basketmatch.domain.entity.Match
 import es.itram.basketmatch.domain.entity.MatchStatus
 import es.itram.basketmatch.domain.entity.SeasonType
 import es.itram.basketmatch.domain.entity.Standing
 import es.itram.basketmatch.domain.entity.Team
+import es.itram.basketmatch.domain.model.Player
+import es.itram.basketmatch.domain.model.PlayerPosition
+import es.itram.basketmatch.domain.model.TeamRoster
 import java.time.LocalDateTime
 
 /**
@@ -81,7 +86,11 @@ object TestDataFactory {
     fun createTestMatch(
         id: String = "1",
         homeTeamId: String = "1",
+        homeTeamName: String = "Real Madrid",
+        homeTeamLogo: String? = null,
         awayTeamId: String = "2",
+        awayTeamName: String = "FC Barcelona",
+        awayTeamLogo: String? = null,
         dateTime: LocalDateTime = LocalDateTime.now(),
         homeScore: Int? = null,
         awayScore: Int? = null,
@@ -91,7 +100,11 @@ object TestDataFactory {
     ) = Match(
         id = id,
         homeTeamId = homeTeamId,
+        homeTeamName = homeTeamName,
+        homeTeamLogo = homeTeamLogo,
         awayTeamId = awayTeamId,
+        awayTeamName = awayTeamName,
+        awayTeamLogo = awayTeamLogo,
         dateTime = dateTime,
         homeScore = homeScore,
         awayScore = awayScore,
@@ -103,7 +116,11 @@ object TestDataFactory {
     fun createTestMatchEntity(
         id: String = "1",
         homeTeamId: String = "1",
+        homeTeamName: String = "Real Madrid",
+        homeTeamLogo: String? = null,
         awayTeamId: String = "2",
+        awayTeamName: String = "FC Barcelona",
+        awayTeamLogo: String? = null,
         dateTime: LocalDateTime = LocalDateTime.now(),
         homeScore: Int? = null,
         awayScore: Int? = null,
@@ -114,7 +131,11 @@ object TestDataFactory {
     ) = MatchEntity(
         id = id,
         homeTeamId = homeTeamId,
+        homeTeamName = homeTeamName,
+        homeTeamLogo = homeTeamLogo,
         awayTeamId = awayTeamId,
+        awayTeamName = awayTeamName,
+        awayTeamLogo = awayTeamLogo,
         dateTime = dateTime,
         homeScore = homeScore,
         awayScore = awayScore,
@@ -240,8 +261,10 @@ object TestDataFactory {
         id: String = "1",
         homeTeamId: String = "1",
         homeTeamName: String = "Real Madrid",
+        homeTeamLogo: String? = null,
         awayTeamId: String = "2",
         awayTeamName: String = "FC Barcelona",
+        awayTeamLogo: String? = null,
         date: String = "2024-03-15",
         time: String? = "20:30",
         venue: String? = "WiZink Center",
@@ -254,8 +277,10 @@ object TestDataFactory {
         id = id,
         homeTeamId = homeTeamId,
         homeTeamName = homeTeamName,
+        homeTeamLogo = homeTeamLogo,
         awayTeamId = awayTeamId,
         awayTeamName = awayTeamName,
+        awayTeamLogo = awayTeamLogo,
         date = date,
         time = time,
         venue = venue,
@@ -264,5 +289,78 @@ object TestDataFactory {
         awayScore = awayScore,
         round = round,
         season = season
+    )
+    
+    fun createTestPlayer(
+        code: String = "P001",
+        name: String = "Juan",
+        surname: String = "García",
+        fullName: String = "Juan García",
+        jersey: Int? = 23,
+        position: PlayerPosition? = PlayerPosition.GUARD,
+        height: String? = "1.85m",
+        weight: String? = "80kg",
+        dateOfBirth: String? = "1995-01-01",
+        placeOfBirth: String? = "Madrid",
+        nationality: String? = "ESP",
+        experience: Int? = 5,
+        profileImageUrl: String? = null
+    ) = Player(
+        code = code,
+        name = name,
+        surname = surname,
+        fullName = fullName,
+        jersey = jersey,
+        position = position,
+        height = height,
+        weight = weight,
+        dateOfBirth = dateOfBirth,
+        placeOfBirth = placeOfBirth,
+        nationality = nationality,
+        experience = experience,
+        profileImageUrl = profileImageUrl
+    )
+    
+    fun createTestTeamRoster(
+        teamCode: String = "MAD",
+        teamName: String = "Real Madrid",
+        season: String = "E2025"
+    ) = TeamRoster(
+        teamCode = teamCode,
+        teamName = teamName,
+        season = season,
+        players = listOf(
+            createTestPlayer(code = "P001", name = "Juan", jersey = 1),
+            createTestPlayer(code = "P002", name = "Pedro", jersey = 2)
+        ),
+        coaches = emptyList()
+    )
+    
+    fun createTestPlayerDto(
+        code: String = "P001",
+        name: String = "Juan",
+        surname: String? = "García",
+        jersey: Int? = 23,
+        position: Int? = 1,
+        height: Int? = 185,
+        weight: Int? = 80
+    ) = PlayerDto(
+        person = PersonDto(
+            code = code,
+            name = name,
+            surname = surname,
+            height = height,
+            weight = weight,
+            dateOfBirth = "1995-01-01",
+            placeOfBirth = "Madrid",
+            nationality = "ESP"
+        ),
+        jersey = jersey,
+        dorsalRaw = jersey?.toString(),
+        position = position,
+        positionName = "Guard",
+        isActive = true,
+        isStarter = false,
+        isCaptain = false
     )
 }
