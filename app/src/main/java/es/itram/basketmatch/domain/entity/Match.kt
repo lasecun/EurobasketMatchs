@@ -8,7 +8,11 @@ import java.time.LocalDateTime
 data class Match(
     val id: String,
     val homeTeamId: String,
+    val homeTeamName: String,
+    val homeTeamLogo: String?,
     val awayTeamId: String,
+    val awayTeamName: String,
+    val awayTeamLogo: String?,
     val dateTime: LocalDateTime,
     val venue: String,
     val round: Int,

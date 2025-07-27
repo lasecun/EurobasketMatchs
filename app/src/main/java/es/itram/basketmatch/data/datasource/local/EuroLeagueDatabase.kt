@@ -4,6 +4,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import android.content.Context
 import es.itram.basketmatch.data.datasource.local.dao.TeamDao
 import es.itram.basketmatch.data.datasource.local.dao.MatchDao
@@ -24,7 +26,7 @@ import es.itram.basketmatch.data.datasource.local.converter.SeasonTypeConverter
         MatchEntity::class,
         StandingEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(
@@ -44,13 +46,33 @@ abstract class EuroLeagueDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: EuroLeagueDatabase? = null
 
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Agregar las nuevas columnas para nombres e imágenes de equipos en la tabla matches
+                database.execSQL("""
+                    ALTER TABLE matches ADD COLUMN homeTeamName TEXT NOT NULL DEFAULT ''
+                """)
+                database.execSQL("""
+                    ALTER TABLE matches ADD COLUMN homeTeamLogo TEXT
+                """)
+                database.execSQL("""
+                    ALTER TABLE matches ADD COLUMN awayTeamName TEXT NOT NULL DEFAULT ''
+                """)
+                database.execSQL("""
+                    ALTER TABLE matches ADD COLUMN awayTeamLogo TEXT
+                """)
+            }
+        }
+
         fun getDatabase(context: Context): EuroLeagueDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     EuroLeagueDatabase::class.java,
                     DATABASE_NAME
-                ).build()
+                )
+                .addMigrations(MIGRATION_1_2)
+                .build()
                 INSTANCE = instance
                 instance
             }

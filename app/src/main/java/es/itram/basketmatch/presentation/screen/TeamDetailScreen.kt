@@ -343,8 +343,6 @@ private fun MatchesSection(
             matches.forEach { match ->
                 MatchCard(
                     match = match,
-                    homeTeam = null, // Los equipos se obtendrían de otro viewModel
-                    awayTeam = null,
                     onTeamClick = onTeamClick
                 )
                 

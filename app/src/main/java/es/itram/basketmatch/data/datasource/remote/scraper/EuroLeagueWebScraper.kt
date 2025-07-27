@@ -319,8 +319,10 @@ class EuroLeagueWebScraper @Inject constructor() {
                                     id = matchId,
                                     homeTeamId = homeTeamCode,
                                     homeTeamName = homeTeamName,
+                                    homeTeamLogo = null, // No disponible en web scraping
                                     awayTeamId = awayTeamCode,
                                     awayTeamName = awayTeamName,
+                                    awayTeamLogo = null, // No disponible en web scraping
                                     date = gameDate,
                                     time = gameTime,
                                     venue = venue,
@@ -404,8 +406,10 @@ class EuroLeagueWebScraper @Inject constructor() {
                 id = matchId,
                 homeTeamId = teams[0].second,
                 homeTeamName = teams[0].first,
+                homeTeamLogo = null, // No disponible en web scraping
                 awayTeamId = teams[1].second,
                 awayTeamName = teams[1].first,
+                awayTeamLogo = null, // No disponible en web scraping
                 date = extractDateFromElement(element),
                 time = extractTimeFromElement(element),
                 venue = null,

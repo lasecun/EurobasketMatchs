@@ -24,7 +24,11 @@ data class MatchEntity(
     @PrimaryKey
     val id: String,
     val homeTeamId: String,
+    val homeTeamName: String,
+    val homeTeamLogo: String?,
     val awayTeamId: String,
+    val awayTeamName: String,
+    val awayTeamLogo: String?,
     val dateTime: LocalDateTime,
     val venue: String,
     val round: Int,
