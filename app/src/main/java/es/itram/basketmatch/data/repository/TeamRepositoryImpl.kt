@@ -37,7 +37,9 @@ class TeamRepositoryImpl @Inject constructor(
     private val backgroundScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override fun getAllTeams(): Flow<List<Team>> {
+        Log.d(TAG, "📱 [LOCAL] Iniciando obtención de equipos desde cache local...")
         return teamDao.getAllTeams().map { entities ->
+            Log.d(TAG, "📱 [LOCAL] ✅ Equipos obtenidos desde BD local: ${entities.size}")
             TeamMapper.toDomainList(entities)
         }.onStart {
             // Solo ejecutar refresh si hay conexión, evitando problemas en tests
@@ -55,26 +57,38 @@ class TeamRepositoryImpl @Inject constructor(
     }
 
     override fun getTeamById(teamId: String): Flow<Team?> {
+        Log.d(TAG, "📱 [LOCAL] Obteniendo equipo específico desde BD local: $teamId")
         return teamDao.getTeamById(teamId).map { entity ->
+            if (entity != null) {
+                Log.d(TAG, "📱 [LOCAL] ✅ Equipo encontrado: ${entity.name}")
+            } else {
+                Log.d(TAG, "📱 [LOCAL] ⚠️ Equipo no encontrado: $teamId")
+            }
             entity?.let { TeamMapper.toDomain(it) }
         }
     }
 
     override fun getTeamsByCountry(country: String): Flow<List<Team>> {
+        Log.d(TAG, "📱 [LOCAL] Obteniendo equipos por país desde BD local: $country")
         return teamDao.getTeamsByCountry(country).map { entities ->
+            Log.d(TAG, "📱 [LOCAL] ✅ Equipos encontrados para $country: ${entities.size}")
             TeamMapper.toDomainList(entities)
         }
     }
 
     override fun getFavoriteTeams(): Flow<List<Team>> {
+        Log.d(TAG, "📱 [LOCAL] Obteniendo equipos favoritos desde BD local...")
         return teamDao.getFavoriteTeams().map { entities ->
+            Log.d(TAG, "📱 [LOCAL] ✅ Equipos favoritos obtenidos: ${entities.size}")
             TeamMapper.toDomainList(entities)
         }
     }
 
     override suspend fun insertTeams(teams: List<Team>) {
+        Log.d(TAG, "💾 [SAVE] Guardando ${teams.size} equipos en BD local...")
         val entities = TeamMapper.fromDomainList(teams)
         teamDao.insertTeams(entities)
+        Log.d(TAG, "💾 [SAVE] ✅ Equipos guardados en BD local")
     }
 
     override suspend fun updateTeam(team: Team) {

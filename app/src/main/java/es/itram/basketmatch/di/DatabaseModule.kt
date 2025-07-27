@@ -11,6 +11,8 @@ import es.itram.basketmatch.data.datasource.local.EuroLeagueDatabase
 import es.itram.basketmatch.data.datasource.local.dao.TeamDao
 import es.itram.basketmatch.data.datasource.local.dao.MatchDao
 import es.itram.basketmatch.data.datasource.local.dao.StandingDao
+import es.itram.basketmatch.data.datasource.local.dao.PlayerDao
+import es.itram.basketmatch.data.datasource.local.dao.TeamRosterDao
 import javax.inject.Singleton
 
 /**
@@ -45,5 +47,15 @@ object DatabaseModule {
     @Provides
     fun provideStandingDao(database: EuroLeagueDatabase): StandingDao {
         return database.standingDao()
+    }
+    
+    @Provides
+    fun providePlayerDao(database: EuroLeagueDatabase): PlayerDao {
+        return database.playerDao()
+    }
+    
+    @Provides
+    fun provideTeamRosterDao(database: EuroLeagueDatabase): TeamRosterDao {
+        return database.teamRosterDao()
     }
 }
