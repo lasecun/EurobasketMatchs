@@ -2,6 +2,7 @@ package es.itram.basketmatch.integration
 
 import es.itram.basketmatch.data.datasource.remote.EuroLeagueRemoteDataSource
 import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueWebScraper
+import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueJsonApiScraper
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import java.time.LocalDate
@@ -19,7 +20,8 @@ class September30DebugTest {
         
         try {
             val webScraper = EuroLeagueWebScraper()
-            val remoteDataSource = EuroLeagueRemoteDataSource(webScraper)
+            val jsonApiScraper = EuroLeagueJsonApiScraper()
+            val remoteDataSource = EuroLeagueRemoteDataSource(jsonApiScraper, webScraper)
             
             println("1️⃣ Obteniendo partidos para temporada 2025-26...")
             val matchesResult = remoteDataSource.getAllMatches("2025-26")

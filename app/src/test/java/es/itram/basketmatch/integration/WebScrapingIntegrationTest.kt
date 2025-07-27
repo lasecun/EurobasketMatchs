@@ -2,6 +2,7 @@ package es.itram.basketmatch.integration
 
 import es.itram.basketmatch.data.datasource.remote.EuroLeagueRemoteDataSource
 import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueWebScraper
+import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueJsonApiScraper
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
@@ -18,7 +19,8 @@ class WebScrapingIntegrationTest {
     @Before
     fun setup() {
         webScraper = EuroLeagueWebScraper()
-        remoteDataSource = EuroLeagueRemoteDataSource(webScraper)
+        val jsonApiScraper = EuroLeagueJsonApiScraper()
+        remoteDataSource = EuroLeagueRemoteDataSource(jsonApiScraper, webScraper)
     }
 
     @Test

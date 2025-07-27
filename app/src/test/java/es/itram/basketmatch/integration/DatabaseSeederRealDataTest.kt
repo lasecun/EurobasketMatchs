@@ -3,6 +3,7 @@ package es.itram.basketmatch.integration
 import es.itram.basketmatch.data.datasource.local.seed.DatabaseSeeder
 import es.itram.basketmatch.data.datasource.remote.EuroLeagueRemoteDataSource
 import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueWebScraper
+import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueJsonApiScraper
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
@@ -18,7 +19,8 @@ class DatabaseSeederRealDataTest {
         
         try {
             val webScraper = EuroLeagueWebScraper()
-            val remoteDataSource = EuroLeagueRemoteDataSource(webScraper)
+            val jsonApiScraper = EuroLeagueJsonApiScraper()
+            val remoteDataSource = EuroLeagueRemoteDataSource(jsonApiScraper, webScraper)
             
             // Intentar obtener equipos
             println("1️⃣ Probando obtención de equipos...")

@@ -1,5 +1,5 @@
 
-🚀 OBTENIENDO DATOS REALES DE EUROLEAGUE - 1753536948992
+🚀 OBTENIENDO DATOS REALES DE EUROLEAGUE - 1753633277981
 ============================================================
 🏀 Scraping equipos de EuroLeague...
 ✅ EQUIPOS OBTENIDOS: 21
