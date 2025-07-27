@@ -160,25 +160,26 @@ private fun TeamInfo(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .clickable { onTeamClick(teamId) }
-            .padding(8.dp),
+        modifier = modifier.padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Logo arriba
+        // Logo arriba (sin click)
         TeamLogo(logoUrl = teamLogo)
         
         Spacer(modifier = Modifier.height(4.dp))
         
-        // Nombre abajo
+        // Nombre abajo (solo este es clickeable)
         Text(
             text = teamName,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .clip(RoundedCornerShape(4.dp))
+                .clickable { onTeamClick(teamId) }
+                .padding(4.dp)
         )
     }
 }

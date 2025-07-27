@@ -308,20 +308,19 @@ private fun PlayerCard(player: Player) {
                         )
                     }
                     
-                    player.height?.let { height ->
-                        if (player.position != null) {
-                            Text(
-                                text = " • $height",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        } else {
-                            Text(
-                                text = height,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                    // Combinar altura y peso en una sola línea
+                    val physicalInfo = buildList {
+                        player.height?.let { add(it) }
+                        player.weight?.let { add(it) }
+                    }.joinToString(" • ")
+                    
+                    if (physicalInfo.isNotEmpty()) {
+                        val separator = if (player.position != null) " • " else ""
+                        Text(
+                            text = "$separator$physicalInfo",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
                 

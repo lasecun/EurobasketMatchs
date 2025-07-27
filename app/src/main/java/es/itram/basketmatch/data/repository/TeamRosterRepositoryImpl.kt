@@ -74,18 +74,23 @@ class TeamRosterRepositoryImpl @Inject constructor(
     ): TeamRoster {
         val players = playersDto.map { playerDto ->
             Player(
-                code = playerDto.code,
-                name = playerDto.name,
-                surname = playerDto.surname,
-                fullName = playerDto.fullName ?: "${playerDto.name} ${playerDto.surname}",
-                jersey = playerDto.jersey,
-                position = PlayerPosition.fromString(playerDto.position),
-                height = playerDto.height,
-                dateOfBirth = playerDto.dateOfBirth,
-                placeOfBirth = playerDto.placeOfBirth,
-                nationality = playerDto.nationality,
-                experience = playerDto.experience,
-                profileImageUrl = playerDto.imageUrls?.profile,
+                code = playerDto.person.code,
+                name = playerDto.person.name,
+                surname = playerDto.person.surname ?: "", // Usar string vacío si surname es null
+                fullName = if (playerDto.person.surname != null) {
+                    "${playerDto.person.name} ${playerDto.person.surname}"
+                } else {
+                    playerDto.person.name // Solo usar el nombre si no hay surname
+                },
+                jersey = playerDto.jersey ?: playerDto.dorsalRaw?.toIntOrNull(), // Usar campo alternativo
+                position = PlayerPosition.fromString(playerDto.positionName), // Usar positionName en lugar de position
+                height = playerDto.person.height?.let { "${it} cm" }, // Convertir número a string con unidades
+                weight = playerDto.person.weight?.let { "${it} kg" }, // Convertir número a string con unidades
+                dateOfBirth = playerDto.person.dateOfBirth ?: playerDto.person.birthDate, // Usar campo alternativo
+                placeOfBirth = playerDto.person.placeOfBirth,
+                nationality = playerDto.person.nationality,
+                experience = null, // No disponible en esta estructura
+                profileImageUrl = playerDto.person.imageUrls?.profile,
                 isActive = playerDto.isActive,
                 isStarter = playerDto.isStarter,
                 isCaptain = playerDto.isCaptain

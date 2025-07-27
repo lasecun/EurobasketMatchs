@@ -437,10 +437,12 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
             
             val url = "$ROSTER_URL/$teamTla/people"
             val jsonResponse = fetchJsonFromUrl(url)
+            
+            // La API devuelve directamente un array de PlayerDto
             val rosterResponse = json.decodeFromString<TeamRosterResponse>(jsonResponse)
             
-            Log.d(TAG, "✅ Roster obtenido exitosamente: ${rosterResponse.data.size} jugadores")
-            rosterResponse.data
+            Log.d(TAG, "✅ Roster obtenido exitosamente: ${rosterResponse.size} jugadores")
+            rosterResponse
             
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error obteniendo roster del equipo $teamTla", e)

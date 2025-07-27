@@ -21,6 +21,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import es.itram.basketmatch.domain.entity.Match
 import es.itram.basketmatch.domain.entity.MatchStatus
+import es.itram.basketmatch.domain.entity.SeasonType
 import es.itram.basketmatch.presentation.viewmodel.MatchDetailViewModel
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -383,9 +384,9 @@ private fun AdditionalInfo(match: Match) {
             InfoRow(
                 label = "Tipo",
                 value = when (match.seasonType) {
-                    es.itram.basketmatch.domain.entity.SeasonType.REGULAR -> "Temporada Regular"
-                    es.itram.basketmatch.domain.entity.SeasonType.PLAYOFFS -> "Playoffs"
-                    es.itram.basketmatch.domain.entity.SeasonType.FINAL_FOUR -> "Final Four"
+                    SeasonType.REGULAR -> "Temporada Regular"
+                    SeasonType.PLAYOFFS -> "Playoffs"
+                    SeasonType.FINAL_FOUR -> "Final Four"
                 }
             )
             
