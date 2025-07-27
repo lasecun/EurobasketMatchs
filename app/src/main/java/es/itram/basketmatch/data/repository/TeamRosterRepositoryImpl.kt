@@ -69,8 +69,12 @@ class TeamRosterRepositoryImpl @Inject constructor(
         
         val players = playersDto.mapNotNull { playerDto ->
             try {
+                // Generar un código único si no está disponible
+                val playerCode = playerDto.person.code 
+                    ?: generatePlayerCode(playerDto.person.name, playerDto.person.surname, playerDto.jersey)
+                
                 Player(
-                    code = playerDto.person.code,
+                    code = playerCode,
                     name = playerDto.person.name,
                     surname = playerDto.person.surname ?: "",
                     fullName = "${playerDto.person.name} ${playerDto.person.surname ?: ""}".trim(),
@@ -116,6 +120,17 @@ class TeamRosterRepositoryImpl @Inject constructor(
             "forward", "f" -> PlayerPosition.FORWARD
             else -> PlayerPosition.UNKNOWN
         }
+    }
+    
+    /**
+     * Genera un código único para jugadores que no tienen código en la API
+     */
+    private fun generatePlayerCode(name: String, surname: String?, jersey: Int?): String {
+        val cleanName = name.take(3).uppercase().replace(" ", "")
+        val cleanSurname = surname?.take(3)?.uppercase()?.replace(" ", "") ?: ""
+        val jerseyPart = jersey?.toString()?.padStart(2, '0') ?: "00"
+        
+        return "${cleanName}${cleanSurname}_$jerseyPart"
     }
     
     /**

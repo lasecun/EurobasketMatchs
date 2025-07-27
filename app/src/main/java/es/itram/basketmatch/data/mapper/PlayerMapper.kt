@@ -13,11 +13,26 @@ import es.itram.basketmatch.domain.model.TeamRoster
 object PlayerMapper {
     
     /**
+     * Genera un código único para jugadores que no tienen código en la API
+     */
+    private fun generatePlayerCode(name: String, surname: String?, jersey: Int?): String {
+        val cleanName = name.take(3).uppercase().replace(" ", "")
+        val cleanSurname = surname?.take(3)?.uppercase()?.replace(" ", "") ?: ""
+        val jerseyPart = jersey?.toString()?.padStart(2, '0') ?: "00"
+        
+        return "${cleanName}${cleanSurname}_$jerseyPart"
+    }
+    
+    /**
      * Convierte PlayerDto (de la API) a Player (dominio)
      */
     fun fromDto(dto: PlayerDto): Player {
+        // Generar un código único si no está disponible
+        val playerCode = dto.person.code 
+            ?: generatePlayerCode(dto.person.name, dto.person.surname, dto.jersey)
+        
         return Player(
-            code = dto.person.code,
+            code = playerCode,
             name = dto.person.name,
             surname = dto.person.surname ?: "",
             fullName = "${dto.person.name} ${dto.person.surname ?: ""}".trim(),
