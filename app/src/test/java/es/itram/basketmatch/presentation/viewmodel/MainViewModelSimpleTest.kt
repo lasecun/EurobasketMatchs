@@ -1,10 +1,12 @@
 package es.itram.basketmatch.presentation.viewmodel
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import es.itram.basketmatch.domain.service.DataSyncService
 import es.itram.basketmatch.domain.usecase.GetAllMatchesUseCase
 import es.itram.basketmatch.domain.usecase.GetAllTeamsUseCase
 import es.itram.basketmatch.testutil.MainDispatcherRule
 import es.itram.basketmatch.testutil.TestDataFactory
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -38,15 +40,17 @@ class MainViewModelSimpleTest {
         
         val getAllTeamsUseCase: GetAllTeamsUseCase = mockk(relaxed = true)
         val getAllMatchesUseCase: GetAllMatchesUseCase = mockk(relaxed = true)
+        val dataSyncService: DataSyncService = mockk(relaxed = true)
         
         val testTeams = TestDataFactory.createTestTeamList()
         val testMatches = TestDataFactory.createTestMatchList()
         
         every { getAllTeamsUseCase() } returns flowOf(testTeams)
         every { getAllMatchesUseCase() } returns flowOf(testMatches)
+        coEvery { dataSyncService.isSyncNeeded() } returns false
         
         // When - This should not throw an exception
-        val viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase)
+        val viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase, dataSyncService)
         
         // Then - Basic assertion
         assert(viewModel != null)
