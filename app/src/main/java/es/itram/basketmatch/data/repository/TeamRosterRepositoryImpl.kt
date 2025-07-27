@@ -1,8 +1,14 @@
 package es.itram.basketmatch.data.repository
 
 import android.util.Log
+import es.itram.basketmatch.data.datasource.local.dao.PlayerDao
+import es.itram.basketmatch.data.datasource.local.dao.TeamRosterDao
 import es.itram.basketmatch.data.datasource.remote.dto.PlayerDto
+import es.itram.basketmatch.data.datasource.remote.dto.PersonDto
+import es.itram.basketmatch.data.datasource.remote.dto.PlayerImageUrls
 import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueJsonApiScraper
+import es.itram.basketmatch.data.mapper.PlayerMapper
+import es.itram.basketmatch.data.mapper.TeamRosterMapper
 import es.itram.basketmatch.domain.model.Player
 import es.itram.basketmatch.domain.model.PlayerPosition
 import es.itram.basketmatch.domain.model.TeamRoster
@@ -12,11 +18,13 @@ import javax.inject.Singleton
 
 /**
  * Implementación del repositorio para roster de equipos
- * Con logs mejorados para distinguir entre datos de red y cache
+ * Con cache inteligente y logs mejorados para distinguir entre datos de red y cache
  */
 @Singleton
 class TeamRosterRepositoryImpl @Inject constructor(
-    private val apiScraper: EuroLeagueJsonApiScraper
+    private val apiScraper: EuroLeagueJsonApiScraper,
+    private val teamRosterDao: TeamRosterDao,
+    private val playerDao: PlayerDao
 ) : TeamRosterRepository {
     
     companion object {
@@ -26,12 +34,25 @@ class TeamRosterRepositoryImpl @Inject constructor(
     override suspend fun getTeamRoster(teamTla: String, season: String): Result<TeamRoster> {
         return try {
             Log.d(TAG, "🔍 Iniciando obtención de roster para equipo $teamTla, temporada $season")
+            
+            // Primero intentar obtener desde cache local
+            val cachedRoster = getCachedTeamRoster(teamTla)
+            if (cachedRoster != null) {
+                Log.d(TAG, "📱 [LOCAL] ✅ Roster encontrado en cache para $teamTla (${cachedRoster.players.size} jugadores)")
+                return Result.success(cachedRoster)
+            }
+            
+            // Si no hay cache, obtener desde API y guardar
+            Log.d(TAG, "📱 [LOCAL] ⚠️ Cache vacío para $teamTla, descargando desde API...")
             Log.d(TAG, "🌐 [NETWORK] Obteniendo roster desde API para $teamTla")
             
             val playersDto = apiScraper.getTeamRoster(teamTla, "E2025")
             val roster = convertToTeamRoster(teamTla, playersDto, season)
             
-            Log.d(TAG, "🌐 [NETWORK] ✅ Roster obtenido exitosamente desde API para $teamTla (${roster.players.size} jugadores)")
+            // Guardar en cache local
+            saveRosterToCache(roster)
+            
+            Log.d(TAG, "🌐 [NETWORK] ✅ Roster obtenido y guardado en cache para $teamTla (${roster.players.size} jugadores)")
             Result.success(roster)
             
         } catch (e: Exception) {
@@ -41,8 +62,31 @@ class TeamRosterRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getCachedTeamRoster(teamTla: String): TeamRoster? {
-        Log.d(TAG, "📱 [LOCAL] ⚠️ Cache no implementado actualmente, devolviendo null para $teamTla")
-        return null
+        return try {
+            Log.d(TAG, "📱 [LOCAL] Verificando cache para roster de $teamTla")
+            
+            val rosterEntity = teamRosterDao.getTeamRoster(teamTla)
+            if (rosterEntity == null) {
+                Log.d(TAG, "📱 [LOCAL] ⚠️ No hay roster en cache para $teamTla")
+                return null
+            }
+            
+            val playerEntities = playerDao.getPlayersByTeamSync(teamTla)
+            if (playerEntities.isEmpty()) {
+                Log.d(TAG, "📱 [LOCAL] ⚠️ No hay jugadores en cache para $teamTla")
+                return null
+            }
+            
+            val players = PlayerMapper.fromEntityListToDomainList(playerEntities)
+            val roster = TeamRosterMapper.fromEntity(rosterEntity, players)
+            
+            Log.d(TAG, "📱 [LOCAL] ✅ Roster encontrado en cache para $teamTla (${players.size} jugadores)")
+            roster
+            
+        } catch (e: Exception) {
+            Log.w(TAG, "📱 [LOCAL] Error accediendo al cache para $teamTla: ${e.message}")
+            null
+        }
     }
     
     override suspend fun refreshTeamRoster(teamTla: String, season: String): Result<TeamRoster> {
@@ -52,12 +96,63 @@ class TeamRosterRepositoryImpl @Inject constructor(
             val playersDto = apiScraper.getTeamRoster(teamTla, "E2025")
             val roster = convertToTeamRoster(teamTla, playersDto, season)
             
-            Log.d(TAG, "🌐 [NETWORK] ✅ Roster refrescado exitosamente desde API para $teamTla")
+            // Guardar en cache local (reemplaza datos existentes)
+            saveRosterToCache(roster)
+            
+            Log.d(TAG, "🌐 [NETWORK] ✅ Roster refrescado y guardado en cache para $teamTla (${roster.players.size} jugadores)")
             Result.success(roster)
             
         } catch (e: Exception) {
             Log.e(TAG, "❌ [NETWORK] Error refrescando roster desde API para $teamTla", e)
             Result.failure(e)
+        }
+    }
+    
+    /**
+     * Guarda un roster en el cache local
+     */
+    private suspend fun saveRosterToCache(roster: TeamRoster) {
+        try {
+            Log.d(TAG, "💾 [SAVE] Guardando roster de ${roster.teamCode} en cache local...")
+            
+            // Guardar información del roster
+            val rosterEntity = TeamRosterMapper.toEntity(roster)
+            teamRosterDao.insertTeamRoster(rosterEntity)
+            
+            // Guardar jugadores
+            val playerEntities = PlayerMapper.fromDtoListToEntityList(
+                roster.players.map { player ->
+                    // Convertir Player de vuelta a PlayerDto para usar el mapper existente
+                    // Esto es un workaround temporal hasta refactorizar los mappers
+                    PlayerDto(
+                        person = PersonDto(
+                            code = player.code,
+                            name = player.name,
+                            surname = player.surname.takeIf { it.isNotBlank() },
+                            height = player.height?.replace("cm", "")?.toIntOrNull(),
+                            weight = player.weight?.replace("kg", "")?.toIntOrNull(),
+                            dateOfBirth = player.dateOfBirth,
+                            placeOfBirth = player.placeOfBirth,
+                            nationality = player.nationality,
+                            imageUrls = player.profileImageUrl?.let { PlayerImageUrls(profile = it) }
+                        ),
+                        jersey = player.jersey,
+                        position = player.position?.ordinal,
+                        positionName = player.position?.name,
+                        isActive = player.isActive,
+                        isStarter = player.isStarter,
+                        isCaptain = player.isCaptain
+                    )
+                },
+                roster.teamCode
+            )
+            
+            playerDao.insertPlayers(playerEntities)
+            
+            Log.d(TAG, "💾 [SAVE] ✅ Roster guardado: ${roster.players.size} jugadores para ${roster.teamCode}")
+            
+        } catch (e: Exception) {
+            Log.w(TAG, "💾 [SAVE] Error guardando roster en cache: ${e.message}")
         }
     }
     

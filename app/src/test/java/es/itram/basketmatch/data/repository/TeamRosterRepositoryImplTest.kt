@@ -1,5 +1,7 @@
 package es.itram.basketmatch.data.repository
 
+import es.itram.basketmatch.data.datasource.local.dao.PlayerDao
+import es.itram.basketmatch.data.datasource.local.dao.TeamRosterDao
 import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueJsonApiScraper
 import es.itram.basketmatch.testutil.TestDataFactory
 import io.mockk.coEvery
@@ -13,12 +15,16 @@ import org.junit.Test
 class TeamRosterRepositoryImplTest {
 
     private lateinit var apiScraper: EuroLeagueJsonApiScraper
+    private lateinit var teamRosterDao: TeamRosterDao
+    private lateinit var playerDao: PlayerDao
     private lateinit var repository: TeamRosterRepositoryImpl
 
     @Before
     fun setup() {
         apiScraper = mockk()
-        repository = TeamRosterRepositoryImpl(apiScraper)
+        teamRosterDao = mockk()
+        playerDao = mockk()
+        repository = TeamRosterRepositoryImpl(apiScraper, teamRosterDao, playerDao)
     }
 
     @Test
@@ -39,7 +45,16 @@ class TeamRosterRepositoryImplTest {
             )
         )
 
+        // Mock que no hay cache
+        coEvery { teamRosterDao.getTeamRoster("MAD") } returns null
+        coEvery { playerDao.getPlayersByTeamSync("MAD") } returns emptyList()
+        
+        // Mock API response
         coEvery { apiScraper.getTeamRoster("MAD", "E2025") } returns playersDto
+        
+        // Mock guardado en cache
+        coEvery { teamRosterDao.insertTeamRoster(any()) } returns Unit
+        coEvery { playerDao.insertPlayers(any()) } returns Unit
 
         // When
         val result = repository.getTeamRoster("MAD", "E2025")
@@ -55,6 +70,11 @@ class TeamRosterRepositoryImplTest {
     @Test
     fun `getTeamRoster should return failure when api throws exception`() = runTest {
         // Given
+        // Mock que no hay cache
+        coEvery { teamRosterDao.getTeamRoster("MAD") } returns null
+        coEvery { playerDao.getPlayersByTeamSync("MAD") } returns emptyList()
+        
+        // Mock API error
         coEvery { apiScraper.getTeamRoster("MAD", "E2025") } throws RuntimeException("Network error")
 
         // When
