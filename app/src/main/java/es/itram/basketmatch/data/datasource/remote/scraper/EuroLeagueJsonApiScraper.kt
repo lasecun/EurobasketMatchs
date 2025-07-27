@@ -84,15 +84,28 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
      * Obtiene todos los partidos de la temporada desde la nueva API de feeds
      */
     suspend fun getMatches(season: String = "2025-26"): List<MatchWebDto> = withContext(Dispatchers.IO) {
+        getMatchesWithProgress(season) { _, _ -> }
+    }
+    
+    /**
+     * Obtiene todos los partidos de la temporada con callback de progreso
+     */
+    suspend fun getMatchesWithProgress(
+        season: String = "2025-26",
+        onProgress: (current: Int, total: Int) -> Unit
+    ): List<MatchWebDto> = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "⚽ Obteniendo partidos desde nueva API de feeds para temporada $season...")
             
             val allMatches = mutableListOf<MatchWebDto>()
+            val totalRounds = 38
             
             // Iterar por todas las 38 jornadas de la temporada regular
-            for (round in 1..38) {
+            for (round in 1..totalRounds) {
                 try {
                     Log.d(TAG, "📅 Obteniendo jornada $round...")
+                    onProgress(round, totalRounds)
+                    
                     val roundMatches = getMatchesForRound(round, season)
                     allMatches.addAll(roundMatches)
                     Log.d(TAG, "✅ Jornada $round: ${roundMatches.size} partidos obtenidos")
@@ -104,7 +117,7 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
                 }
             }
             
-            Log.d(TAG, "🏆 Total partidos obtenidos: ${allMatches.size} de 38 jornadas")
+            Log.d(TAG, "🏆 Total partidos obtenidos: ${allMatches.size} de $totalRounds jornadas")
             allMatches
             
         } catch (e: Exception) {
@@ -159,6 +172,19 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
         Log.d(TAG, "✅ Total partidos únicos legacy: ${uniqueMatches.size}")
         
         return uniqueMatches
+    }
+    
+    /**
+     * Obtiene partidos de una jornada específica (para refresh)
+     */
+    suspend fun getMatchesForRoundRefresh(round: Int, season: String = "2025-26"): List<MatchWebDto> = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "🔄 Refrescando jornada $round...")
+            getMatchesForRound(round, season)
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error refrescando jornada $round", e)
+            emptyList()
+        }
     }
     
     /**

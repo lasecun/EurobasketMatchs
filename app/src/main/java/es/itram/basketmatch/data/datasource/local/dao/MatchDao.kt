@@ -22,6 +22,9 @@ interface MatchDao {
     @Query("SELECT * FROM matches ORDER BY dateTime ASC")
     suspend fun getAllMatchesSync(): List<MatchEntity>
 
+    @Query("SELECT COUNT(*) FROM matches")
+    suspend fun getMatchCount(): Int
+
     @Query("SELECT * FROM matches WHERE DATE(dateTime) = DATE(:date) ORDER BY dateTime ASC")
     fun getMatchesByDate(date: LocalDateTime): Flow<List<MatchEntity>>
 

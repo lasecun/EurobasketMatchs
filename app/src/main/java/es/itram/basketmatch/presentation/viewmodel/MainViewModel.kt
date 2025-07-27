@@ -48,6 +48,9 @@ class MainViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
     
+    // Estado del progreso de sincronización
+    val syncProgress: StateFlow<DataSyncService.SyncProgress> = dataSyncService.syncProgress
+    
     private val _syncMessage = MutableStateFlow<String?>(null)
     val syncMessage: StateFlow<String?> = _syncMessage.asStateFlow()
 
