@@ -4,14 +4,17 @@ import android.util.Log
 import es.itram.basketmatch.data.datasource.remote.dto.MatchWebDto
 import es.itram.basketmatch.data.datasource.remote.dto.TeamWebDto
 import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueWebScraper
+import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueJsonApiScraper
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Data source remoto para obtener datos de EuroLeague desde la web oficial
+ * Usa la API JSON cuando es posible, fallback a HTML scraping
  */
 @Singleton
 class EuroLeagueRemoteDataSource @Inject constructor(
+    private val jsonApiScraper: EuroLeagueJsonApiScraper,
     private val webScraper: EuroLeagueWebScraper
 ) {
     
@@ -21,38 +24,88 @@ class EuroLeagueRemoteDataSource @Inject constructor(
     
     /**
      * Obtiene todos los equipos de EuroLeague
+     * Prioriza la API JSON, fallback a HTML scraping
      */
     suspend fun getAllTeams(): Result<List<TeamWebDto>> {
         return try {
-            Log.d(TAG, "Obteniendo equipos desde web scraping...")
-            val teams = webScraper.getTeams()
+            Log.d(TAG, "🏀 Intentando obtener equipos desde API JSON...")
             
-            if (teams.isNotEmpty()) {
-                Log.d(TAG, "Equipos obtenidos exitosamente: ${teams.size}")
-                Result.success(teams)
+            // Primero intentar con la API JSON (más confiable)
+            val teamsFromJson = jsonApiScraper.getTeams()
+            
+            if (teamsFromJson.isNotEmpty()) {
+                Log.d(TAG, "✅ Equipos obtenidos desde API JSON: ${teamsFromJson.size}")
+                Result.success(teamsFromJson)
             } else {
-                Log.w(TAG, "No se obtuvieron equipos del scraping")
-                Result.success(getFallbackTeams())
+                Log.w(TAG, "⚠️ API JSON no devolvió equipos, usando HTML scraping como fallback...")
+                val teamsFromHtml = webScraper.getTeams()
+                
+                if (teamsFromHtml.isNotEmpty()) {
+                    Log.d(TAG, "✅ Equipos obtenidos desde HTML scraping: ${teamsFromHtml.size}")
+                    Result.success(teamsFromHtml)
+                } else {
+                    Log.w(TAG, "⚠️ Ningún método funcionó, usando equipos de fallback...")
+                    Result.success(getFallbackTeams())
+                }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error obteniendo equipos", e)
-            Result.failure(e)
+            Log.e(TAG, "❌ Error obteniendo equipos", e)
+            
+            // Como último recurso, intentar HTML scraping
+            try {
+                val teamsFromHtml = webScraper.getTeams()
+                if (teamsFromHtml.isNotEmpty()) {
+                    Log.d(TAG, "✅ Equipos obtenidos desde HTML scraping (recuperación): ${teamsFromHtml.size}")
+                    Result.success(teamsFromHtml)
+                } else {
+                    Result.success(getFallbackTeams())
+                }
+            } catch (fallbackException: Exception) {
+                Log.e(TAG, "❌ Error también en HTML scraping", fallbackException)
+                Result.failure(e)
+            }
         }
     }
     
     /**
      * Obtiene todos los partidos
+     * Prioriza la API JSON, fallback a HTML scraping
      */
     suspend fun getAllMatches(season: String = "2025-26"): Result<List<MatchWebDto>> {
         return try {
-            Log.d(TAG, "Obteniendo partidos desde web scraping...")
-            val matches = webScraper.getMatches(season)
+            Log.d(TAG, "⚽ Intentando obtener partidos desde API JSON para temporada $season...")
             
-            Log.d(TAG, "Partidos obtenidos: ${matches.size}")
-            Result.success(matches)
+            // Primero intentar con la API JSON (más confiable)
+            val matchesFromJson = jsonApiScraper.getMatches(season)
+            
+            if (matchesFromJson.isNotEmpty()) {
+                Log.d(TAG, "✅ Partidos obtenidos desde API JSON: ${matchesFromJson.size}")
+                
+                // Verificar si hay partidos del 30 de septiembre específicamente
+                val september30Matches = matchesFromJson.filter { it.date == "2025-09-30" }
+                Log.d(TAG, "🎯 Partidos del 30/09/2025 encontrados: ${september30Matches.size}")
+                
+                Result.success(matchesFromJson)
+            } else {
+                Log.w(TAG, "⚠️ API JSON no devolvió partidos, usando HTML scraping como fallback...")
+                val matchesFromHtml = webScraper.getMatches(season)
+                
+                Log.d(TAG, "📊 Partidos obtenidos desde HTML scraping: ${matchesFromHtml.size}")
+                Result.success(matchesFromHtml)
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "Error obteniendo partidos", e)
-            Result.failure(e)
+            Log.e(TAG, "❌ Error obteniendo partidos desde API JSON", e)
+            
+            // Como fallback, intentar HTML scraping
+            try {
+                Log.d(TAG, "🔄 Intentando HTML scraping como recuperación...")
+                val matchesFromHtml = webScraper.getMatches(season)
+                Log.d(TAG, "✅ Partidos obtenidos desde HTML scraping (recuperación): ${matchesFromHtml.size}")
+                Result.success(matchesFromHtml)
+            } catch (fallbackException: Exception) {
+                Log.e(TAG, "❌ Error también en HTML scraping", fallbackException)
+                Result.failure(e)
+            }
         }
     }
     
