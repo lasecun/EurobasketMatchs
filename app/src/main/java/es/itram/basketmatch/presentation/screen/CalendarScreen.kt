@@ -1,5 +1,6 @@
 package es.itram.basketmatch.presentation.screen
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -39,6 +40,7 @@ import java.util.*
 @Composable
 fun CalendarScreen(
     onNavigateBack: () -> Unit,
+    onDateSelected: (LocalDate) -> Unit,
     onNavigateToTeamDetail: (String) -> Unit,
     onNavigateToMatchDetail: (String) -> Unit,
     viewModel: CalendarViewModel = hiltViewModel()
@@ -113,7 +115,15 @@ fun CalendarScreen(
                     CalendarGrid(
                         yearMonth = currentMonth,
                         selectedDate = selectedDate,
-                        onDateSelected = { viewModel.selectDate(it) },
+                        onDateSelected = { date ->
+                            Log.d("CalendarScreen", "📅 Fecha seleccionada en calendario: $date")
+                            viewModel.selectDate(date)
+                            // Cuando se selecciona una fecha, solo llamar al callback
+                            // (el callback ya maneja la navegación de vuelta)
+                            Log.d("CalendarScreen", "📅 Llamando onDateSelected callback con: $date")
+                            onDateSelected(date)
+                            Log.d("CalendarScreen", "📅 ✅ Callback ejecutado - navegación manejada por NavigationRoutes")
+                        },
                         hasMatchesOnDate = { viewModel.hasMatchesOnDate(it) }
                     )
 

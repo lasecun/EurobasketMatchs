@@ -1,6 +1,7 @@
 package es.itram.basketmatch.presentation.viewmodel
 
 import android.util.Log
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,7 +28,8 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val getAllMatchesUseCase: GetAllMatchesUseCase,
     private val getAllTeamsUseCase: GetAllTeamsUseCase,
-    private val dataSyncService: DataSyncService
+    private val dataSyncService: DataSyncService,
+    val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
@@ -35,6 +37,9 @@ class MainViewModel @Inject constructor(
 
     private val _matches = MutableStateFlow<List<Match>>(emptyList())
     val matches: StateFlow<List<Match>> = _matches.asStateFlow()
+    
+    // Cache de todos los partidos para filtrado eficiente
+    private val _allMatches = MutableStateFlow<List<Match>>(emptyList())
 
     private val _teams = MutableStateFlow<Map<String, Team>>(emptyMap())
     val teams: StateFlow<Map<String, Team>> = _teams.asStateFlow()
@@ -117,6 +122,11 @@ class MainViewModel @Inject constructor(
             // Cargar partidos
             val matches = getAllMatchesUseCase().first()
             Log.d("MainViewModel", "✅ Partidos cargados: ${matches.size}")
+            
+            // Guardar todos los partidos en cache
+            _allMatches.value = matches
+            
+            // Filtrar partidos por la fecha seleccionada (inicialmente es hoy)
             filterMatchesByDate(matches)
             
             _isLoading.value = false
@@ -199,15 +209,44 @@ class MainViewModel @Inject constructor(
     }
 
     /**
-     * Filtra partidos por la fecha seleccionada
+     * Establece una fecha específica
+     */
+    fun setSelectedDate(date: LocalDate) {
+        Log.d("MainViewModel", "📅 Estableciendo fecha seleccionada: $date")
+        _selectedDate.value = date
+        // Filtrar directamente con los datos que ya tenemos
+        filterMatchesByDateSync()
+    }
+
+    /**
+     * Filtra partidos por la fecha seleccionada (versión síncrona)
+     */
+    private fun filterMatchesByDateSync() {
+        try {
+            val allMatches = _allMatches.value
+            filterMatchesByDate(allMatches)
+        } catch (e: Exception) {
+            Log.e("MainViewModel", "Error filtrando partidos: ${e.message}", e)
+            _error.value = "Error cargando partidos para la fecha seleccionada"
+        }
+    }
+
+    /**
+     * Filtra partidos por la fecha seleccionada (versión async para cargas iniciales)
      */
     private fun filterMatchesBySelectedDate() {
         viewModelScope.launch {
             try {
                 val allMatches = getAllMatchesUseCase().first()
+                // Guardar todos los partidos para futuros filtros
+                _allMatches.value = allMatches
                 filterMatchesByDate(allMatches)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // Las CancellationException deben re-lanzarse para mantener el comportamiento de cancelación
+                throw e
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error filtrando partidos: ${e.message}", e)
+                _error.value = "Error cargando partidos para la fecha seleccionada"
             }
         }
     }
@@ -217,9 +256,30 @@ class MainViewModel @Inject constructor(
      */
     private fun filterMatchesByDate(allMatches: List<Match>) {
         val selectedDate = _selectedDate.value
+        Log.d("MainViewModel", "🔍 Filtrando partidos - Fecha seleccionada: $selectedDate")
+        Log.d("MainViewModel", "🔍 Total partidos disponibles: ${allMatches.size}")
+        
+        // Mostrar información de rango de fechas para debug
+        if (allMatches.isNotEmpty()) {
+            val allDates = allMatches.map { it.dateTime.toLocalDate() }.sorted()
+            val firstDate = allDates.first()
+            val lastDate = allDates.last()
+            Log.d("MainViewModel", "🔍 Rango de fechas: desde $firstDate hasta $lastDate")
+            
+            val sampleDates = allMatches.take(5).map { it.dateTime.toLocalDate() }
+            Log.d("MainViewModel", "🔍 Fechas de ejemplo en datos: $sampleDates")
+        }
+        
         val filteredMatches = allMatches.filter { match ->
-            match.dateTime.toLocalDate() == selectedDate
+            val matchDate = match.dateTime.toLocalDate()
+            val matches = matchDate == selectedDate
+            if (matches) {
+                Log.d("MainViewModel", "✅ Partido encontrado para $selectedDate: ${match.homeTeamName} vs ${match.awayTeamName}")
+            }
+            matches
         }.sortedBy { it.dateTime }
+        
+        Log.d("MainViewModel", "🔍 Partidos filtrados para $selectedDate: ${filteredMatches.size}")
         _matches.value = filteredMatches
     }
 
