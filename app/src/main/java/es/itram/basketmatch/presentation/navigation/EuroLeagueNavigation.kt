@@ -10,6 +10,7 @@ import es.itram.basketmatch.presentation.screen.MainScreen
 import es.itram.basketmatch.presentation.screen.CalendarScreen
 import es.itram.basketmatch.presentation.screen.TeamDetailScreen
 import es.itram.basketmatch.presentation.screen.MatchDetailScreen
+import es.itram.basketmatch.presentation.screen.TeamRosterScreen
 
 /**
  * Configuración de navegación de la aplicación
@@ -75,8 +76,26 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                 onNavigateBack = {
                     navController.popBackStack()
                 },
-                onTeamClick = { teamId ->
-                    navController.navigate(NavigationRoutes.teamDetail(teamId))
+                onTeamClick = { teamTla, teamName ->
+                    navController.navigate(NavigationRoutes.teamRoster(teamTla, teamName))
+                }
+            )
+        }
+        
+        composable(
+            route = NavigationRoutes.TEAM_ROSTER,
+            arguments = listOf(
+                navArgument("teamTla") { type = NavType.StringType },
+                navArgument("teamName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val teamTla = backStackEntry.arguments?.getString("teamTla") ?: ""
+            val teamName = backStackEntry.arguments?.getString("teamName") ?: ""
+            TeamRosterScreen(
+                teamTla = teamTla,
+                teamName = teamName,
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }
