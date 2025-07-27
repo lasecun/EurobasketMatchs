@@ -268,6 +268,9 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
      * Convierte un partido de la nueva API de feeds a MatchWebDto
      */
     private fun convertFeedsGameToMatchDto(feedsGame: FeedsGame, season: String): MatchWebDto {
+        // Parsear el timestamp ISO para extraer fecha y hora por separado
+        val dateTime = parseIsoDateTime(feedsGame.date)
+        
         return MatchWebDto(
             id = feedsGame.id,
             homeTeamId = feedsGame.home.code,
@@ -276,8 +279,8 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
             awayTeamId = feedsGame.away.code,
             awayTeamName = feedsGame.away.name,
             awayTeamLogo = feedsGame.away.imageUrls?.crest,
-            date = feedsGame.date.substringBefore("T"), // Extraer solo la fecha (YYYY-MM-DD)
-            time = feedsGame.date,
+            date = dateTime.first, // Solo la fecha (YYYY-MM-DD)
+            time = dateTime.second, // Solo la hora (HH:mm)
             venue = feedsGame.venue?.name,
             status = convertFeedsStatus(feedsGame.status),
             homeScore = if (feedsGame.home.score > 0) feedsGame.home.score else null,
@@ -420,6 +423,27 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
         }
         
         return connection.inputStream.bufferedReader().use { it.readText() }
+    }
+    
+    /**
+     * Parsea un timestamp ISO (ej: "2025-09-30T18:00:00.000Z") y retorna fecha y hora por separado
+     */
+    private fun parseIsoDateTime(isoDateTime: String): Pair<String, String> {
+        return try {
+            if (isoDateTime.contains("T")) {
+                val parts = isoDateTime.split("T")
+                val date = parts[0] // YYYY-MM-DD
+                val timePart = parts[1].substringBefore(".").substringBefore("Z") // HH:mm:ss
+                val time = timePart.substring(0, minOf(5, timePart.length)) // Solo HH:mm
+                Pair(date, time)
+            } else {
+                // Si no es formato ISO, usar como está
+                Pair(isoDateTime, "")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error parseando fecha ISO: $isoDateTime", e)
+            Pair(isoDateTime.substringBefore("T"), "")
+        }
     }
 }
 

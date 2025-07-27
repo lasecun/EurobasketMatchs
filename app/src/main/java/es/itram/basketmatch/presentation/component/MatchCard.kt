@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -156,31 +157,27 @@ private fun TeamInfo(
     onTeamClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    Column(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
             .clickable { onTeamClick(teamId) }
             .padding(8.dp),
-        horizontalArrangement = if (isHome) Arrangement.Start else Arrangement.End,
-        verticalAlignment = Alignment.CenterVertically
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        if (isHome) {
-            // Para equipo local: logo - nombre
-            TeamLogo(logoUrl = teamLogo)
-            Spacer(modifier = Modifier.width(8.dp))
-            TeamNameColumn(
-                teamName = teamName,
-                alignment = Alignment.Start
-            )
-        } else {
-            // Para equipo visitante: nombre - logo
-            TeamNameColumn(
-                teamName = teamName,
-                alignment = Alignment.End
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            TeamLogo(logoUrl = teamLogo)
-        }
+        // Logo arriba
+        TeamLogo(logoUrl = teamLogo)
+        
+        Spacer(modifier = Modifier.height(4.dp))
+        
+        // Nombre abajo
+        Text(
+            text = teamName,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -197,7 +194,7 @@ private fun TeamLogo(
                 .build(),
             contentDescription = "Logo del equipo",
             modifier = modifier
-                .size(32.dp)
+                .size(40.dp)
                 .clip(CircleShape),
             contentScale = ContentScale.Fit
         )
@@ -206,28 +203,8 @@ private fun TeamLogo(
         Icon(
             Icons.Default.Person,
             contentDescription = "Logo del equipo",
-            modifier = modifier.size(32.dp),
+            modifier = modifier.size(40.dp),
             tint = MaterialTheme.colorScheme.primary
-        )
-    }
-}
-
-@Composable
-private fun TeamNameColumn(
-    teamName: String,
-    alignment: Alignment.Horizontal,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = alignment
-    ) {
-        Text(
-            text = teamName,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
         )
     }
 }
