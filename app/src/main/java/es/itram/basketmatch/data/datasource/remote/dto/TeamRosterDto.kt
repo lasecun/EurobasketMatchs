@@ -5,33 +5,34 @@ import kotlinx.serialization.Serializable
 /**
  * Data classes para la respuesta de roster de equipos de la API de EuroLeague Feeds
  * API endpoint: /competitions/E/seasons/E2025/clubs/{tla}/people
+ * 
+ * La API devuelve directamente un array de jugadores, no un objeto wrapper
  */
 
 @Serializable
-data class TeamRosterResponse(
-    val status: String,
-    val data: List<PlayerDto>,
-    val metadata: RosterMetadata? = null
-)
-
-@Serializable
 data class PlayerDto(
-    val code: String,
-    val name: String,
-    val surname: String,
-    val fullName: String? = null,
+    val person: PersonDto,
     val jersey: Int? = null,
-    val position: String? = null,
-    val positionFull: String? = null,
-    val height: String? = null,
-    val dateOfBirth: String? = null,
-    val placeOfBirth: String? = null,
-    val nationality: String? = null,
-    val experience: Int? = null,
-    val imageUrls: PlayerImageUrls? = null,
+    val dorsalRaw: String? = null, // Campo alternativo para jersey
+    val position: Int? = null, // Viene como número, no string
+    val positionName: String? = null, // Campo alternativo como string
     val isActive: Boolean = true,
     val isStarter: Boolean = false,
     val isCaptain: Boolean = false
+)
+
+@Serializable
+data class PersonDto(
+    val code: String,
+    val name: String,
+    val surname: String? = null, // Campo opcional, algunos jugadores no tienen surname
+    val height: Int? = null, // Viene como número, no string
+    val weight: Int? = null,
+    val dateOfBirth: String? = null,
+    val birthDate: String? = null, // Campo alternativo
+    val placeOfBirth: String? = null,
+    val nationality: String? = null,
+    val imageUrls: PlayerImageUrls? = null
 )
 
 @Serializable
@@ -40,10 +41,5 @@ data class PlayerImageUrls(
     val headshot: String? = null
 )
 
-@Serializable
-data class RosterMetadata(
-    val createdAt: String? = null,
-    val totalItems: Int = 0,
-    val season: String? = null,
-    val team: String? = null
-)
+// Type alias para facilitar el uso - la API devuelve directamente un array
+typealias TeamRosterResponse = List<PlayerDto>

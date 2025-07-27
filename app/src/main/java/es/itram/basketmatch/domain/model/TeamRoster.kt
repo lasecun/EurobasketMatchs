@@ -22,6 +22,7 @@ data class Player(
     val jersey: Int?,
     val position: PlayerPosition?,
     val height: String?,
+    val weight: String?,
     val dateOfBirth: String?,
     val placeOfBirth: String?,
     val nationality: String?,
