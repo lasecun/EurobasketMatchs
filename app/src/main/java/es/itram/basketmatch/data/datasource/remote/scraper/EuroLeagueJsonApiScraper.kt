@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.decodeFromString
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.LocalDateTime
@@ -59,7 +60,7 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
                         id = generateTeamId(club.name),
                         name = club.name,
                         fullName = club.name,
-                        shortCode = extractShortCode(club.url),
+                        shortCode = extractShortCode(club.url) ?: club.name.take(3).uppercase(),
                         logoUrl = club.logo.image,
                         country = extractCountryFromName(club.name),
                         venue = null, // No disponible en esta API

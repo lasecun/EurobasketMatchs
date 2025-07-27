@@ -1,0 +1,31 @@
+=== DATOS REALES DE EUROLEAGUE ===
+Fecha: 1753633279083
+
+✅ EQUIPOS REALES OBTENIDOS: 21
+
+1. Teams - Teams (null)
+2. Anadolu Efes IstanbulEFS - Anadolu Efes IstanbulEFS (Turkey)
+3. AS MonacoASM - AS MonacoASM (Monaco)
+4. Baskonia Vitoria-GasteizBKN - Baskonia Vitoria-GasteizBKN (Spain)
+5. Crvena Zvezda Meridianbet BelgradeCZV - Crvena Zvezda Meridianbet BelgradeCZV (null)
+6. Dubai BasketballDUB - Dubai BasketballDUB (null)
+7. EA7 Emporio Armani MilanEA7 - EA7 Emporio Armani MilanEA7 (Italy)
+8. FC BarcelonaBAR - FC BarcelonaBAR (Spain)
+9. FC Bayern MunichBAY - FC Bayern MunichBAY (Germany)
+10. Fenerbahce Beko IstanbulFBB - Fenerbahce Beko IstanbulFBB (Turkey)
+11. Hapoel IBI Tel AvivHTA - Hapoel IBI Tel AvivHTA (null)
+12. LDLC ASVEL VilleurbanneASV - LDLC ASVEL VilleurbanneASV (null)
+13. Maccabi Rapyd Tel AvivMTA - Maccabi Rapyd Tel AvivMTA (Israel)
+14. Olympiacos PiraeusOLY - Olympiacos PiraeusOLY (Greece)
+15. Panathinaikos AKTOR AthensPAO - Panathinaikos AKTOR AthensPAO (Greece)
+16. Paris BasketballPBB - Paris BasketballPBB (null)
+17. Partizan Mozzart Bet BelgradePAR - Partizan Mozzart Bet BelgradePAR (null)
+18. Real MadridRMB - Real MadridRMB (Spain)
+19. Valencia BasketVBC - Valencia BasketVBC (Spain)
+20. Virtus BolognaVIR - Virtus BolognaVIR (Italy)
+21. Zalgiris KaunasZAL - Zalgiris KaunasZAL (Lithuania)
+
+=== DETALLES TÉCNICOS ===
+URL base: https://www.euroleaguebasketball.net
+Método: Web scraping con JSoup
+Estado: ✅ DATOS REALES OBTENIDOS
