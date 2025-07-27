@@ -1,6 +1,7 @@
 package es.itram.basketmatch.presentation.screen
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,7 +28,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -42,8 +46,7 @@ import es.itram.basketmatch.presentation.component.MatchCard
 import es.itram.basketmatch.presentation.viewmodel.MainViewModel
 
 /**
- * Pantalla principal que muestra los partidos del día seleccionado
- * Incluye refresh manual para obtener datos reales actualizados
+ * Pantalla principal con sincronización automática y refresh manual
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,209 +59,207 @@ fun MainScreen(
     val matches by viewModel.matches.collectAsStateWithLifecycle()
     val teams by viewModel.teams.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val isSyncing by viewModel.isSyncing.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val syncMessage by viewModel.syncMessage.collectAsStateWithLifecycle()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // Header con navegación de fechas
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { viewModel.goToPreviousDay() }) {
-                        Icon(
-                            Icons.Default.KeyboardArrowLeft,
-                            contentDescription = "Día anterior"
-                        )
-                    }
-
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { 
                     Text(
-                        text = viewModel.getFormattedSelectedDate(),
+                        text = "EuroLeague",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
-
-                    IconButton(onClick = { viewModel.goToNextDay() }) {
-                        Icon(
-                            Icons.Default.KeyboardArrowRight,
-                            contentDescription = "Día siguiente"
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    OutlinedButton(
-                        onClick = { viewModel.goToToday() }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { viewModel.refreshData() },
+                        enabled = !isSyncing
                     ) {
-                        Text("Hoy")
-                    }
-
-                    Button(
-                        onClick = onNavigateToCalendar
-                    ) {
-                        Icon(
-                            Icons.Default.DateRange,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Calendario")
-                    }
-                    
-                    OutlinedButton(
-                        onClick = { viewModel.refreshRealData() },
-                        enabled = !isLoading
-                    ) {
-                        if (isLoading) {
+                        if (isSyncing) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(20.dp),
                                 strokeWidth = 2.dp
                             )
                         } else {
                             Icon(
-                                Icons.Default.Refresh,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Actualizar datos"
                             )
                         }
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("🌐")
                     }
-                }
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // Botón especial para reemplazar datos mockeados con datos reales
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    OutlinedButton(
-                        onClick = { viewModel.replaceWithRealData() },
-                        enabled = !isLoading,
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text("🔄 Reemplazar con datos reales")
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        // Banner informativo sobre datos reales
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("🏀", style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    "Datos reales de EuroLeague",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("🌐", style = MaterialTheme.typography.titleMedium)
-            }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Contenido principal
-        when {
-            isLoading -> {
-                LoadingIndicator(
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            
-            error != null -> {
-                val currentError = error
-                ErrorMessage(
-                    message = currentError!!,
-                    onRetry = { viewModel.clearError() },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            
-            matches.isEmpty() -> {
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+        ) {
+            // Mensaje de sincronización
+            syncMessage?.let { message ->
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
                 ) {
-                    Column(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.DateRange,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        if (isSyncing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
                         Text(
-                            text = "No hay partidos programados para este día",
-                            style = MaterialTheme.typography.bodyLarge,
+                            text = message,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             }
-            
-            else -> {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+
+            // Header con navegación de fechas
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
                 ) {
-                    items(matches) { match ->
-                        val homeTeam = teams[match.homeTeamId]
-                        val awayTeam = teams[match.awayTeamId]
-                        
-                        MatchCard(
-                            match = match,
-                            homeTeam = homeTeam,
-                            awayTeam = awayTeam,
-                            onTeamClick = onNavigateToTeamDetail
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { viewModel.goToPreviousDay() }) {
+                            Icon(
+                                Icons.Default.KeyboardArrowLeft,
+                                contentDescription = "Día anterior"
+                            )
+                        }
+
+                        Text(
+                            text = viewModel.getFormattedSelectedDate(),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
                         )
+
+                        IconButton(onClick = { viewModel.goToNextDay() }) {
+                            Icon(
+                                Icons.Default.KeyboardArrowRight,
+                                contentDescription = "Día siguiente"
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Button(
+                            onClick = { viewModel.goToToday() }
+                        ) {
+                            Text("Hoy")
+                        }
+
+                        Button(
+                            onClick = onNavigateToCalendar
+                        ) {
+                            Icon(
+                                Icons.Default.DateRange,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Calendario")
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Contenido principal
+            when {
+                isLoading -> {
+                    LoadingIndicator(
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                error != null -> {
+                    val currentError = error
+                    ErrorMessage(
+                        message = currentError!!,
+                        onRetry = { viewModel.clearError() },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                matches.isEmpty() -> {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                Icons.Default.DateRange,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "No hay partidos programados para este día",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                else -> {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(matches) { match ->
+                            val homeTeam = teams[match.homeTeamId]
+                            val awayTeam = teams[match.awayTeamId]
+
+                            MatchCard(
+                                match = match,
+                                homeTeam = homeTeam,
+                                awayTeam = awayTeam,
+                                onTeamClick = onNavigateToTeamDetail
+                            )
+                        }
                     }
                 }
             }

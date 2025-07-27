@@ -1,7 +1,0 @@
-ERROR al obtener datos reales:
-Method e in android.util.Log not mocked. See https://developer.android.com/r/studio-ui/build/not-mocked for details.
-
-android.util.Log.e(Log.java)
-es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueWebScraper$getTeams$2.invokeSuspend(EuroLeagueWebScraper.kt:50)
-_COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
-es.itram.basketmatch.integration.UltraSimpleRealTest$obtener_datos_reales_euroleague$1.invokeSuspend(UltraSimpleRealTest.kt:22)

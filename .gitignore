@@ -17,3 +17,12 @@ local.properties
 *.apk
 *.aab
 *.dex
+
+# Debug and test output files
+*.txt
+*_test.kt
+*_debug.kt
+manual_*.kt
+integration_*.kt
+TestJsonApi.*
+*.class
