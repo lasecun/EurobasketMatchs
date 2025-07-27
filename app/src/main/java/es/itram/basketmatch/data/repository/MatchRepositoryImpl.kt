@@ -48,11 +48,19 @@ class MatchRepositoryImpl @Inject constructor(
             Log.d(TAG, "📱 [LOCAL] ✅ Partidos obtenidos desde BD local: ${entities.size}")
             MatchMapper.toDomainList(entities)
         }.onStart {
-            // Solo ejecutar refresh si hay conexión, evitando problemas en tests
+            // Solo ejecutar refresh si la BD local está vacía y hay conexión
             if (networkManager.isConnected()) {
                 backgroundScope.launch {
                     try {
-                        refreshMatchesIfNeeded()
+                        val localMatchCount = matchDao.getMatchCount()
+                        Log.d(TAG, "📱 [LOCAL] Verificando cache: $localMatchCount partidos en BD local")
+                        
+                        if (localMatchCount == 0) {
+                            Log.d(TAG, "📱 [LOCAL] ⚠️ Cache vacío, iniciando descarga desde API...")
+                            refreshMatchesIfNeeded()
+                        } else {
+                            Log.d(TAG, "📱 [LOCAL] ✅ Cache disponible, usando datos locales")
+                        }
                     } catch (e: Exception) {
                         // En producción se loggearía, en tests se ignora silenciosamente
                         // Log.w(TAG, "Error en refresh en background", e)
