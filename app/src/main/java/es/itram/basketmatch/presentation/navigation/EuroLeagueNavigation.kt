@@ -1,6 +1,7 @@
 package es.itram.basketmatch.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -11,18 +12,23 @@ import es.itram.basketmatch.presentation.screen.CalendarScreen
 import es.itram.basketmatch.presentation.screen.TeamDetailScreen
 import es.itram.basketmatch.presentation.screen.MatchDetailScreen
 import es.itram.basketmatch.presentation.screen.TeamRosterScreen
+import es.itram.basketmatch.presentation.viewmodel.MainViewModel
 
 /**
  * Configuración de navegación de la aplicación
  */
 @Composable
 fun EuroLeagueNavigation(navController: NavHostController) {
+    // ViewModel compartido a nivel de navegación para evitar recreaciones
+    val mainViewModel: MainViewModel = hiltViewModel()
+    
     NavHost(
         navController = navController,
         startDestination = NavigationRoutes.MAIN
     ) {
         composable(NavigationRoutes.MAIN) {
             MainScreen(
+                viewModel = mainViewModel,
                 onNavigateToCalendar = {
                     navController.navigate(NavigationRoutes.CALENDAR)
                 },
@@ -38,6 +44,11 @@ fun EuroLeagueNavigation(navController: NavHostController) {
         composable(NavigationRoutes.CALENDAR) {
             CalendarScreen(
                 onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onDateSelected = { selectedDate ->
+                    // Usar el ViewModel compartido directamente
+                    mainViewModel.setSelectedDate(selectedDate)
                     navController.popBackStack()
                 },
                 onNavigateToTeamDetail = { teamId ->
