@@ -33,7 +33,7 @@ import java.util.Locale
 fun MatchDetailScreen(
     matchId: String,
     onNavigateBack: () -> Unit,
-    onTeamClick: (String) -> Unit,
+    onTeamClick: (teamTla: String, teamName: String) -> Unit,
     viewModel: MatchDetailViewModel = hiltViewModel()
 ) {
     val match by viewModel.match.collectAsStateWithLifecycle()
@@ -114,7 +114,7 @@ fun MatchDetailScreen(
 @Composable
 private fun MatchDetailContent(
     match: Match,
-    onTeamClick: (String) -> Unit,
+    onTeamClick: (teamTla: String, teamName: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -143,7 +143,7 @@ private fun MatchDetailContent(
 @Composable
 private fun MatchHeader(
     match: Match,
-    onTeamClick: (String) -> Unit
+    onTeamClick: (teamTla: String, teamName: String) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -167,7 +167,7 @@ private fun MatchHeader(
                     teamLogo = match.homeTeamLogo,
                     score = match.homeScore,
                     isHome = true,
-                    onClick = { onTeamClick(match.homeTeamId) }
+                    onClick = { onTeamClick(match.homeTeamId, match.homeTeamName) }
                 )
                 
                 // VS y resultado
@@ -198,7 +198,7 @@ private fun MatchHeader(
                     teamLogo = match.awayTeamLogo,
                     score = match.awayScore,
                     isHome = false,
-                    onClick = { onTeamClick(match.awayTeamId) }
+                    onClick = { onTeamClick(match.awayTeamId, match.awayTeamName) }
                 )
             }
         }

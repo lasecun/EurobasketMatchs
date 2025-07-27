@@ -4,6 +4,8 @@ import android.util.Log
 import es.itram.basketmatch.data.datasource.remote.dto.MatchWebDto
 import es.itram.basketmatch.data.datasource.remote.dto.MatchStatus
 import es.itram.basketmatch.data.datasource.remote.dto.TeamWebDto
+import es.itram.basketmatch.data.datasource.remote.dto.TeamRosterResponse
+import es.itram.basketmatch.data.datasource.remote.dto.PlayerDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -29,6 +31,7 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
         // Nueva API de EuroLeague feeds
         private const val FEEDS_BASE_URL = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2"
         private const val GAMES_URL = "$FEEDS_BASE_URL/competitions/E/seasons/E2025/games"
+        private const val ROSTER_URL = "$FEEDS_BASE_URL/competitions/E/seasons/E2025/clubs"
         
         // URLs legacy para retrocompatibilidad
         private const val BASE_JSON_URL = "https://www.euroleaguebasketball.net/_next/data"
@@ -425,6 +428,26 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
         return connection.inputStream.bufferedReader().use { it.readText() }
     }
     
+    /**
+     * Obtiene el roster de un equipo por su código TLA
+     */
+    suspend fun getTeamRoster(teamTla: String, season: String = "E2025"): List<PlayerDto> = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "👥 Obteniendo roster del equipo $teamTla para temporada $season...")
+            
+            val url = "$ROSTER_URL/$teamTla/people"
+            val jsonResponse = fetchJsonFromUrl(url)
+            val rosterResponse = json.decodeFromString<TeamRosterResponse>(jsonResponse)
+            
+            Log.d(TAG, "✅ Roster obtenido exitosamente: ${rosterResponse.data.size} jugadores")
+            rosterResponse.data
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error obteniendo roster del equipo $teamTla", e)
+            emptyList()
+        }
+    }
+
     /**
      * Parsea un timestamp ISO (ej: "2025-09-30T18:00:00.000Z") y retorna fecha y hora por separado
      */

@@ -7,9 +7,11 @@ import dagger.hilt.components.SingletonComponent
 import es.itram.basketmatch.data.repository.TeamRepositoryImpl
 import es.itram.basketmatch.data.repository.MatchRepositoryImpl
 import es.itram.basketmatch.data.repository.StandingRepositoryImpl
+import es.itram.basketmatch.data.repository.TeamRosterRepositoryImpl
 import es.itram.basketmatch.domain.repository.TeamRepository
 import es.itram.basketmatch.domain.repository.MatchRepository
 import es.itram.basketmatch.domain.repository.StandingRepository
+import es.itram.basketmatch.domain.repository.TeamRosterRepository
 import javax.inject.Singleton
 
 /**
@@ -36,4 +38,10 @@ abstract class RepositoryModule {
     abstract fun bindStandingRepository(
         standingRepositoryImpl: StandingRepositoryImpl
     ): StandingRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTeamRosterRepository(
+        teamRosterRepositoryImpl: TeamRosterRepositoryImpl
+    ): TeamRosterRepository
 }
