@@ -9,6 +9,7 @@ import androidx.navigation.NavType
 import es.itram.basketmatch.presentation.screen.MainScreen
 import es.itram.basketmatch.presentation.screen.CalendarScreen
 import es.itram.basketmatch.presentation.screen.TeamDetailScreen
+import es.itram.basketmatch.presentation.screen.MatchDetailScreen
 
 /**
  * Configuración de navegación de la aplicación
@@ -26,6 +27,9 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                 },
                 onNavigateToTeamDetail = { teamId ->
                     navController.navigate(NavigationRoutes.teamDetail(teamId))
+                },
+                onNavigateToMatchDetail = { matchId ->
+                    navController.navigate(NavigationRoutes.matchDetail(matchId))
                 }
             )
         }
@@ -37,6 +41,9 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                 },
                 onNavigateToTeamDetail = { teamId ->
                     navController.navigate(NavigationRoutes.teamDetail(teamId))
+                },
+                onNavigateToMatchDetail = { matchId ->
+                    navController.navigate(NavigationRoutes.matchDetail(matchId))
                 }
             )
         }
@@ -52,6 +59,24 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                 teamId = teamId,
                 onNavigateBack = {
                     navController.popBackStack()
+                }
+            )
+        }
+        
+        composable(
+            route = NavigationRoutes.MATCH_DETAIL,
+            arguments = listOf(
+                navArgument("matchId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val matchId = backStackEntry.arguments?.getString("matchId") ?: ""
+            MatchDetailScreen(
+                matchId = matchId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onTeamClick = { teamId ->
+                    navController.navigate(NavigationRoutes.teamDetail(teamId))
                 }
             )
         }
