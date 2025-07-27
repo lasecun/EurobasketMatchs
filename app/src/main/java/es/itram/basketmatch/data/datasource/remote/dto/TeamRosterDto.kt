@@ -23,7 +23,7 @@ data class PlayerDto(
 
 @Serializable
 data class PersonDto(
-    val code: String,
+    val code: String? = null, // Hacer nullable porque a veces la API devuelve null
     val name: String,
     val surname: String? = null, // Campo opcional, algunos jugadores no tienen surname
     val height: Int? = null, // Viene como número, no string
