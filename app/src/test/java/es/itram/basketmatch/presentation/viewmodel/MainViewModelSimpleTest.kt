@@ -28,15 +28,13 @@ class MainViewModelSimpleTest {
     @Test
     fun `test basic ViewModel creation`() = runTest {
         // Given
-        // Mock Android Log with literal strings
+        // Mock Android Log with updated messages
         mockkStatic(android.util.Log::class)
-        every { android.util.Log.d("MainViewModel", "Inicializando MainViewModel...") } returns 0
-        every { android.util.Log.d("MainViewModel", "Iniciando carga de datos...") } returns 0
-        every { android.util.Log.d("MainViewModel", "Cargando equipos...") } returns 0
-        every { android.util.Log.d("MainViewModel", match { it.contains("Equipos cargados:") }) } returns 0
-        every { android.util.Log.d("MainViewModel", "Cargando partidos...") } returns 0
-        every { android.util.Log.d("MainViewModel", match { it.contains("Partidos cargados:") }) } returns 0
-        every { android.util.Log.d("MainViewModel", "Carga de datos completada") } returns 0
+        every { android.util.Log.d("MainViewModel", "🚀 Inicializando MainViewModel con sincronización automática...") } returns 0
+        every { android.util.Log.d("MainViewModel", "✅ Datos actuales - cargando desde base de datos local") } returns 0
+        every { android.util.Log.d("MainViewModel", "📱 Cargando datos desde base de datos local...") } returns 0
+        every { android.util.Log.d("MainViewModel", match { it.contains("✅ Equipos cargados:") }) } returns 0
+        every { android.util.Log.d("MainViewModel", match { it.contains("✅ Partidos cargados:") }) } returns 0
         
         val getAllTeamsUseCase: GetAllTeamsUseCase = mockk(relaxed = true)
         val getAllMatchesUseCase: GetAllMatchesUseCase = mockk(relaxed = true)
