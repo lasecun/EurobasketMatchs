@@ -39,7 +39,7 @@ class GetTeamRosterUseCaseTest {
         val roster = result.getOrNull()!!
         assertEquals("MAD", roster.teamCode)
         assertEquals("Real Madrid", roster.teamName)
-        assertEquals(2, roster.players.size)
+        assertEquals(3, roster.players.size)
     }
 
     @Test

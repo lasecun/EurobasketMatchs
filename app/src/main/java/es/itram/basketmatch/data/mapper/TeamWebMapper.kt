@@ -4,37 +4,23 @@ import es.itram.basketmatch.data.datasource.remote.dto.TeamWebDto
 import es.itram.basketmatch.domain.entity.Team
 
 /**
- * Mapper para convertir DTOs web de equipos a entidades de dominio
+ * Mapper para convertir TeamWebDto a Team de dominio
  */
 object TeamWebMapper {
     
     fun toDomain(dto: TeamWebDto): Team {
         return Team(
-            id = dto.id,
-            name = dto.name,
-            shortName = dto.shortCode,
-            code = dto.shortCode,
-            city = extractCityFromVenue(dto.venue),
-            country = dto.country ?: "Unknown",
-            logoUrl = dto.logoUrl ?: "",
-            isFavorite = false // Por defecto no es favorito
+            id = dto.id ?: "",
+            name = dto.name ?: "",
+            shortName = dto.name?.take(3)?.uppercase() ?: "", // Generar nombre corto desde el nombre
+            code = dto.id ?: "", // Usar ID como código por ahora
+            city = "", // No disponible en el DTO
+            country = dto.country ?: "",
+            logoUrl = dto.logoUrl ?: ""
         )
     }
     
     fun toDomainList(dtos: List<TeamWebDto>): List<Team> {
         return dtos.map { toDomain(it) }
-    }
-    
-    private fun extractCityFromVenue(venue: String?): String {
-        if (venue.isNullOrBlank()) return "Unknown"
-        
-        // Intentar extraer la ciudad del formato "Arena, Ciudad"
-        val parts = venue.split(",")
-        return if (parts.size >= 2) {
-            parts[1].trim()
-        } else {
-            // Si no hay coma, usar el venue completo
-            venue.trim()
-        }
     }
 }

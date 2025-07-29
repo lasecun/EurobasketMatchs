@@ -1,13 +1,16 @@
 package es.itram.basketmatch.testutil
 
 import es.itram.basketmatch.data.datasource.local.entity.MatchEntity
+import es.itram.basketmatch.data.datasource.local.entity.PlayerEntity
 import es.itram.basketmatch.data.datasource.local.entity.StandingEntity
 import es.itram.basketmatch.data.datasource.local.entity.TeamEntity
-import es.itram.basketmatch.data.datasource.remote.dto.MatchStatus as WebMatchStatus
-import es.itram.basketmatch.data.datasource.remote.dto.MatchWebDto
+import es.itram.basketmatch.data.datasource.local.entity.TeamRosterEntity
 import es.itram.basketmatch.data.datasource.remote.dto.TeamWebDto
+import es.itram.basketmatch.data.datasource.remote.dto.MatchWebDto
+import es.itram.basketmatch.data.datasource.remote.dto.MatchStatus as WebMatchStatus
 import es.itram.basketmatch.data.datasource.remote.dto.PlayerDto
 import es.itram.basketmatch.data.datasource.remote.dto.PersonDto
+import es.itram.basketmatch.data.datasource.remote.dto.PlayerImageUrls
 import es.itram.basketmatch.domain.entity.Match
 import es.itram.basketmatch.domain.entity.MatchStatus
 import es.itram.basketmatch.domain.entity.SeasonType
@@ -19,10 +22,12 @@ import es.itram.basketmatch.domain.model.TeamRoster
 import java.time.LocalDateTime
 
 /**
- * Utilidades para crear datos de prueba
+ * Factory para crear datos de prueba
  */
 object TestDataFactory {
 
+    // DOMAIN ENTITIES
+    
     fun createTestTeam(
         id: String = "1",
         name: String = "Real Madrid",
@@ -35,24 +40,163 @@ object TestDataFactory {
         coach: String = "Chus Mateo",
         website: String = "https://realmadrid.com",
         primaryColor: String = "#FFFFFF",
-        secondaryColor: String = "#002FA7",
+        secondaryColor: String = "#000000",
         isFavorite: Boolean = false
-    ) = Team(
-        id = id,
-        name = name,
-        shortName = shortName,
-        code = code,
-        city = city,
-        country = country,
-        logoUrl = logoUrl,
-        founded = founded,
-        coach = coach,
-        website = website,
-        primaryColor = primaryColor,
-        secondaryColor = secondaryColor,
-        isFavorite = isFavorite
-    )
+    ): Team {
+        return Team(
+            id = id,
+            name = name,
+            shortName = shortName,
+            code = code,
+            city = city,
+            country = country,
+            logoUrl = logoUrl,
+            founded = founded,
+            coach = coach,
+            website = website,
+            primaryColor = primaryColor,
+            secondaryColor = secondaryColor,
+            isFavorite = isFavorite
+        )
+    }
 
+    fun createTestTeamList(): List<Team> {
+        return listOf(
+            createTestTeam(id = "1", name = "Real Madrid", code = "MAD"),
+            createTestTeam(id = "2", name = "FC Barcelona", code = "FCB"),
+            createTestTeam(id = "3", name = "Fenerbahçe", code = "FEN")
+        )
+    }
+
+    fun createTestMatch(
+        id: String = "1",
+        homeTeamId: String = "1",
+        homeTeamName: String = "Real Madrid",
+        homeTeamLogo: String? = "https://example.com/madrid.png",
+        awayTeamId: String = "2",
+        awayTeamName: String = "FC Barcelona",
+        awayTeamLogo: String? = "https://example.com/barca.png",
+        dateTime: LocalDateTime = LocalDateTime.now().plusDays(1),
+        venue: String = "WiZink Center",
+        round: Int = 1,
+        status: MatchStatus = MatchStatus.SCHEDULED,
+        homeScore: Int? = null,
+        awayScore: Int? = null,
+        seasonType: SeasonType = SeasonType.REGULAR
+    ): Match {
+        return Match(
+            id = id,
+            homeTeamId = homeTeamId,
+            homeTeamName = homeTeamName,
+            homeTeamLogo = homeTeamLogo,
+            awayTeamId = awayTeamId,
+            awayTeamName = awayTeamName,
+            awayTeamLogo = awayTeamLogo,
+            dateTime = dateTime,
+            venue = venue,
+            round = round,
+            status = status,
+            homeScore = homeScore,
+            awayScore = awayScore,
+            seasonType = seasonType
+        )
+    }
+
+    fun createTestMatchList(): List<Match> {
+        return listOf(
+            createTestMatch(id = "1", homeTeamName = "Real Madrid", awayTeamName = "FC Barcelona"),
+            createTestMatch(id = "2", homeTeamName = "Fenerbahçe", awayTeamName = "Olympiacos"),
+            createTestMatch(id = "3", homeTeamName = "CSKA Moscow", awayTeamName = "Anadolu Efes")
+        )
+    }
+
+    fun createTestPlayer(
+        code: String = "P001",
+        name: String = "Sergio",
+        surname: String = "Llull",
+        fullName: String = "Sergio Llull",
+        jersey: Int? = 23,
+        position: PlayerPosition? = PlayerPosition.GUARD,
+        height: String? = "190 cm",
+        weight: String? = "85 kg",
+        dateOfBirth: String? = "1987-11-15",
+        placeOfBirth: String? = "Menorca, España",
+        nationality: String? = "España",
+        experience: Int? = 15,
+        profileImageUrl: String? = "https://example.com/llull.jpg",
+        isActive: Boolean = true,
+        isStarter: Boolean = true,
+        isCaptain: Boolean = true
+    ): Player {
+        return Player(
+            code = code,
+            name = name,
+            surname = surname,
+            fullName = fullName,
+            jersey = jersey,
+            position = position,
+            height = height,
+            weight = weight,
+            dateOfBirth = dateOfBirth,
+            placeOfBirth = placeOfBirth,
+            nationality = nationality,
+            experience = experience,
+            profileImageUrl = profileImageUrl,
+            isActive = isActive,
+            isStarter = isStarter,
+            isCaptain = isCaptain
+        )
+    }
+
+    fun createTestPlayerList(): List<Player> {
+        return listOf(
+            createTestPlayer(code = "P001", name = "Sergio", surname = "Llull", jersey = 23),
+            createTestPlayer(code = "P002", name = "Facundo", surname = "Campazzo", jersey = 7),
+            createTestPlayer(code = "P003", name = "Edy", surname = "Tavares", jersey = 22)
+        )
+    }
+
+    fun createTestTeamRoster(
+        teamCode: String = "MAD",
+        teamName: String = "Real Madrid",
+        season: String = "2024-25",
+        players: List<Player> = createTestPlayerList()
+    ): TeamRoster {
+        return TeamRoster(
+            teamCode = teamCode,
+            teamName = teamName,
+            season = season,
+            players = players,
+            coaches = emptyList()
+        )
+    }
+
+    fun createTestStanding(
+        teamId: String = "1",
+        position: Int = 1,
+        played: Int = 10,
+        won: Int = 8,
+        lost: Int = 2,
+        pointsFor: Int = 850,
+        pointsAgainst: Int = 780,
+        pointsDifference: Int = 70,
+        seasonType: SeasonType = SeasonType.REGULAR
+    ): Standing {
+        return Standing(
+            teamId = teamId,
+            position = position,
+            played = played,
+            won = won,
+            lost = lost,
+            pointsFor = pointsFor,
+            pointsAgainst = pointsAgainst,
+            pointsDifference = pointsDifference,
+            seasonType = seasonType
+        )
+    }
+
+    // DATABASE ENTITIES
+    
     fun createTestTeamEntity(
         id: String = "1",
         name: String = "Real Madrid",
@@ -65,107 +209,117 @@ object TestDataFactory {
         coach: String = "Chus Mateo",
         website: String = "https://realmadrid.com",
         primaryColor: String = "#FFFFFF",
-        secondaryColor: String = "#002FA7",
+        secondaryColor: String = "#000000",
         isFavorite: Boolean = false
-    ) = TeamEntity(
-        id = id,
-        name = name,
-        shortName = shortName,
-        code = code,
-        city = city,
-        country = country,
-        logoUrl = logoUrl,
-        founded = founded,
-        coach = coach,
-        website = website,
-        primaryColor = primaryColor,
-        secondaryColor = secondaryColor,
-        isFavorite = isFavorite
-    )
-
-    fun createTestMatch(
-        id: String = "1",
-        homeTeamId: String = "1",
-        homeTeamName: String = "Real Madrid",
-        homeTeamLogo: String? = null,
-        awayTeamId: String = "2",
-        awayTeamName: String = "FC Barcelona",
-        awayTeamLogo: String? = null,
-        dateTime: LocalDateTime = LocalDateTime.now(),
-        homeScore: Int? = null,
-        awayScore: Int? = null,
-        status: MatchStatus = MatchStatus.SCHEDULED,
-        round: Int = 1,
-        venue: String = "WiZink Center"
-    ) = Match(
-        id = id,
-        homeTeamId = homeTeamId,
-        homeTeamName = homeTeamName,
-        homeTeamLogo = homeTeamLogo,
-        awayTeamId = awayTeamId,
-        awayTeamName = awayTeamName,
-        awayTeamLogo = awayTeamLogo,
-        dateTime = dateTime,
-        homeScore = homeScore,
-        awayScore = awayScore,
-        status = status,
-        round = round,
-        venue = venue
-    )
+    ): TeamEntity {
+        return TeamEntity(
+            id = id,
+            name = name,
+            shortName = shortName,
+            code = code,
+            city = city,
+            country = country,
+            logoUrl = logoUrl,
+            founded = founded,
+            coach = coach,
+            website = website,
+            primaryColor = primaryColor,
+            secondaryColor = secondaryColor,
+            isFavorite = isFavorite
+        )
+    }
 
     fun createTestMatchEntity(
         id: String = "1",
         homeTeamId: String = "1",
         homeTeamName: String = "Real Madrid",
-        homeTeamLogo: String? = null,
+        homeTeamLogo: String? = "https://example.com/madrid.png",
         awayTeamId: String = "2",
         awayTeamName: String = "FC Barcelona",
-        awayTeamLogo: String? = null,
-        dateTime: LocalDateTime = LocalDateTime.now(),
+        awayTeamLogo: String? = "https://example.com/barca.png",
+        dateTime: LocalDateTime = LocalDateTime.now().plusDays(1),
+        venue: String = "WiZink Center",
+        round: Int = 1,
+        status: MatchStatus = MatchStatus.SCHEDULED,
         homeScore: Int? = null,
         awayScore: Int? = null,
-        status: MatchStatus = MatchStatus.SCHEDULED,
-        round: Int = 1,
-        venue: String = "WiZink Center",
         seasonType: SeasonType = SeasonType.REGULAR
-    ) = MatchEntity(
-        id = id,
-        homeTeamId = homeTeamId,
-        homeTeamName = homeTeamName,
-        homeTeamLogo = homeTeamLogo,
-        awayTeamId = awayTeamId,
-        awayTeamName = awayTeamName,
-        awayTeamLogo = awayTeamLogo,
-        dateTime = dateTime,
-        homeScore = homeScore,
-        awayScore = awayScore,
-        status = status,
-        round = round,
-        venue = venue,
-        seasonType = seasonType
-    )
+    ): MatchEntity {
+        return MatchEntity(
+            id = id,
+            homeTeamId = homeTeamId,
+            homeTeamName = homeTeamName,
+            homeTeamLogo = homeTeamLogo,
+            awayTeamId = awayTeamId,
+            awayTeamName = awayTeamName,
+            awayTeamLogo = awayTeamLogo,
+            dateTime = dateTime,
+            venue = venue,
+            round = round,
+            status = status,
+            homeScore = homeScore,
+            awayScore = awayScore,
+            seasonType = seasonType
+        )
+    }
 
-    fun createTestStanding(
-        teamId: String = "1",
-        position: Int = 1,
-        played: Int = 10,
-        won: Int = 8,
-        lost: Int = 2,
-        pointsFor: Int = 850,
-        pointsAgainst: Int = 780,
-        pointsDifference: Int = 70,
-        seasonType: SeasonType = SeasonType.REGULAR
-    ) = Standing(
-        teamId = teamId,
-        position = position,
-        played = played,
-        won = won,
-        lost = lost,
-        pointsFor = pointsFor,
-        pointsAgainst = pointsAgainst,
-        pointsDifference = pointsDifference,
-        seasonType = seasonType
-    )
+    fun createTestPlayerEntity(
+        id: String = "pe_1",
+        teamCode: String = "MAD",
+        playerCode: String = "P001",
+        name: String = "Sergio",
+        surname: String = "Llull",
+        fullName: String = "Sergio Llull",
+        jersey: Int? = 23,
+        position: String? = "GUARD",
+        height: String? = "190 cm",
+        weight: String? = "85 kg",
+        dateOfBirth: String? = "1987-11-15",
+        placeOfBirth: String? = "Menorca, España",
+        nationality: String? = "España",
+        experience: Int? = 15,
+        profileImageUrl: String? = "https://example.com/llull.jpg",
+        isActive: Boolean = true,
+        isStarter: Boolean = true,
+        isCaptain: Boolean = true,
+        lastUpdated: Long = System.currentTimeMillis()
+    ): PlayerEntity {
+        return PlayerEntity(
+            id = id,
+            teamCode = teamCode,
+            playerCode = playerCode,
+            name = name,
+            surname = surname,
+            fullName = fullName,
+            jersey = jersey,
+            position = position,
+            height = height,
+            weight = weight,
+            dateOfBirth = dateOfBirth,
+            placeOfBirth = placeOfBirth,
+            nationality = nationality,
+            experience = experience,
+            profileImageUrl = profileImageUrl,
+            isActive = isActive,
+            isStarter = isStarter,
+            isCaptain = isCaptain,
+            lastUpdated = lastUpdated
+        )
+    }
+
+    fun createTestTeamRosterEntity(
+        teamCode: String = "MAD",
+        teamName: String = "Real Madrid",
+        season: String = "2024-25",
+        lastUpdated: Long = System.currentTimeMillis()
+    ): TeamRosterEntity {
+        return TeamRosterEntity(
+            teamCode = teamCode,
+            teamName = teamName,
+            season = season,
+            lastUpdated = lastUpdated
+        )
+    }
 
     fun createTestStandingEntity(
         teamId: String = "1",
@@ -177,190 +331,108 @@ object TestDataFactory {
         pointsAgainst: Int = 780,
         pointsDifference: Int = 70,
         seasonType: SeasonType = SeasonType.REGULAR
-    ) = StandingEntity(
-        teamId = teamId,
-        position = position,
-        played = played,
-        won = won,
-        lost = lost,
-        pointsFor = pointsFor,
-        pointsAgainst = pointsAgainst,
-        pointsDifference = pointsDifference,
-        seasonType = seasonType
-    )
-
-    fun createTeamsList(count: Int = 3): List<Team> {
-        return (1..count).map { index ->
-            createTestTeam(
-                id = index.toString(),
-                name = "Team $index",
-                shortName = "T$index",
-                code = "T$index",
-                city = "City $index",
-                isFavorite = index % 2 == 0
-            )
-        }
+    ): StandingEntity {
+        return StandingEntity(
+            teamId = teamId,
+            position = position,
+            played = played,
+            won = won,
+            lost = lost,
+            pointsFor = pointsFor,
+            pointsAgainst = pointsAgainst,
+            pointsDifference = pointsDifference,
+            seasonType = seasonType
+        )
     }
 
-    fun createMatchesList(count: Int = 5): List<Match> {
-        return (1..count).map { index ->
-            createTestMatch(
-                id = index.toString(),
-                homeTeamId = (index % 2 + 1).toString(),
-                awayTeamId = ((index + 1) % 2 + 1).toString(),
-                dateTime = LocalDateTime.now().plusDays(index.toLong()),
-                round = index
-            )
-        }
-    }
-
-    /**
-     * Creates a default list of test teams
-     */
-    fun createTestTeamList(): List<Team> = listOf(
-        createTestTeam("1", "Real Madrid"),
-        createTestTeam("2", "FC Barcelona")
-    )
-
-    /**
-     * Creates a default list of test matches
-     */
-    fun createTestMatchList(): List<Match> = listOf(
-        createTestMatch("1"),
-        createTestMatch("2"),
-        createTestMatch("3")
-    )
-
-    /**
-     * Creates a test TeamWebDto for web scraping tests
-     */
+    // WEB DTOs
+    
     fun createTestTeamWebDto(
         id: String = "1",
         name: String = "Real Madrid",
-        fullName: String = "Real Madrid Baloncesto",
-        shortCode: String = "RMA",
-        logoUrl: String? = "https://example.com/logo.png",
-        country: String? = "España",
-        venue: String? = "WiZink Center, Madrid",
-        profileUrl: String = "https://euroleaguebasketball.net/teams/real-madrid"
-    ) = TeamWebDto(
-        id = id,
-        name = name,
-        fullName = fullName,
-        shortCode = shortCode,
-        logoUrl = logoUrl,
-        country = country,
-        venue = venue,
-        profileUrl = profileUrl
-    )
+        fullName: String = "Real Madrid Club de Fútbol",
+        shortCode: String = "RMA", 
+        country: String = "España",
+        logoUrl: String = "https://example.com/logo.png",
+        venue: String = "Santiago Bernabéu",
+        profileUrl: String = "https://realmadrid.com"
+    ): TeamWebDto {
+        return TeamWebDto(
+            id = id,
+            name = name,
+            fullName = fullName,
+            shortCode = shortCode,
+            country = country,
+            logoUrl = logoUrl,
+            venue = venue,
+            profileUrl = profileUrl
+        )
+    }
 
-    /**
-     * Creates a test MatchWebDto for web scraping tests
-     */
     fun createTestMatchWebDto(
         id: String = "1",
         homeTeamId: String = "1",
         homeTeamName: String = "Real Madrid",
-        homeTeamLogo: String? = null,
         awayTeamId: String = "2",
         awayTeamName: String = "FC Barcelona",
-        awayTeamLogo: String? = null,
-        date: String = "2024-03-15",
-        time: String? = "20:30",
-        venue: String? = "WiZink Center",
+        date: String = "2024-12-01",
+        time: String = "20:00",
+        venue: String = "WiZink Center",
+        round: String = "1",
         status: WebMatchStatus = WebMatchStatus.SCHEDULED,
         homeScore: Int? = null,
-        awayScore: Int? = null,
-        round: String? = "Round 1",
-        season: String = "2024-25"
-    ) = MatchWebDto(
-        id = id,
-        homeTeamId = homeTeamId,
-        homeTeamName = homeTeamName,
-        homeTeamLogo = homeTeamLogo,
-        awayTeamId = awayTeamId,
-        awayTeamName = awayTeamName,
-        awayTeamLogo = awayTeamLogo,
-        date = date,
-        time = time,
-        venue = venue,
-        status = status,
-        homeScore = homeScore,
-        awayScore = awayScore,
-        round = round,
-        season = season
-    )
-    
-    fun createTestPlayer(
-        code: String = "P001",
-        name: String = "Juan",
-        surname: String = "García",
-        fullName: String = "Juan García",
-        jersey: Int? = 23,
-        position: PlayerPosition? = PlayerPosition.GUARD,
-        height: String? = "1.85m",
-        weight: String? = "80kg",
-        dateOfBirth: String? = "1995-01-01",
-        placeOfBirth: String? = "Madrid",
-        nationality: String? = "ESP",
-        experience: Int? = 5,
-        profileImageUrl: String? = null
-    ) = Player(
-        code = code,
-        name = name,
-        surname = surname,
-        fullName = fullName,
-        jersey = jersey,
-        position = position,
-        height = height,
-        weight = weight,
-        dateOfBirth = dateOfBirth,
-        placeOfBirth = placeOfBirth,
-        nationality = nationality,
-        experience = experience,
-        profileImageUrl = profileImageUrl
-    )
-    
-    fun createTestTeamRoster(
-        teamCode: String = "MAD",
-        teamName: String = "Real Madrid",
-        season: String = "E2025"
-    ) = TeamRoster(
-        teamCode = teamCode,
-        teamName = teamName,
-        season = season,
-        players = listOf(
-            createTestPlayer(code = "P001", name = "Juan", jersey = 1),
-            createTestPlayer(code = "P002", name = "Pedro", jersey = 2)
-        ),
-        coaches = emptyList()
-    )
-    
+        awayScore: Int? = null
+    ): MatchWebDto {
+        return MatchWebDto(
+            id = id,
+            homeTeamId = homeTeamId,
+            homeTeamName = homeTeamName,
+            awayTeamId = awayTeamId,
+            awayTeamName = awayTeamName,
+            date = date,
+            time = time,
+            venue = venue,
+            round = round,
+            status = status,
+            homeScore = homeScore,
+            awayScore = awayScore
+        )
+    }
+
     fun createTestPlayerDto(
-        code: String = "P001",
-        name: String = "Juan",
-        surname: String? = "García",
-        jersey: Int? = 23,
-        position: Int? = 1,
-        height: Int? = 185,
-        weight: Int? = 80
-    ) = PlayerDto(
-        person = PersonDto(
-            code = code,
-            name = name,
-            surname = surname,
-            height = height,
-            weight = weight,
-            dateOfBirth = "1995-01-01",
-            placeOfBirth = "Madrid",
-            nationality = "ESP"
-        ),
-        jersey = jersey,
-        dorsalRaw = jersey?.toString(),
-        position = position,
-        positionName = "Guard",
-        isActive = true,
-        isStarter = false,
-        isCaptain = false
-    )
+        code: String = "LUK77",
+        name: String = "Luka",
+        surname: String = "Dončić",
+        jersey: Int = 77,
+        position: Int = 1,
+        positionName: String = "Point Guard",
+        height: Int = 201,
+        weight: Int = 104,
+        dateOfBirth: String = "1999-02-28",
+        nationality: String = "Slovenia",
+        isActive: Boolean = true,
+        isStarter: Boolean = true,
+        isCaptain: Boolean = false
+    ): es.itram.basketmatch.data.datasource.remote.dto.PlayerDto {
+        return es.itram.basketmatch.data.datasource.remote.dto.PlayerDto(
+            person = es.itram.basketmatch.data.datasource.remote.dto.PersonDto(
+                code = code,
+                name = name,
+                surname = surname,
+                height = height,
+                weight = weight,
+                dateOfBirth = dateOfBirth,
+                nationality = nationality,
+                imageUrls = es.itram.basketmatch.data.datasource.remote.dto.PlayerImageUrls(
+                    profile = "https://example.com/player/$code.jpg"
+                )
+            ),
+            jersey = jersey,
+            position = position,
+            positionName = positionName,
+            isActive = isActive,
+            isStarter = isStarter,
+            isCaptain = isCaptain
+        )
+    }
 }

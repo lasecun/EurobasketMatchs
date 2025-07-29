@@ -61,7 +61,7 @@ class TeamRosterViewModelTest {
         assertFalse(viewModel.uiState.value.isLoading)
         assertNotNull(viewModel.uiState.value.teamRoster)
         assertEquals("MAD", viewModel.uiState.value.teamRoster?.teamCode)
-        assertEquals(2, viewModel.uiState.value.teamRoster?.players?.size)
+        assertEquals(3, viewModel.uiState.value.teamRoster?.players?.size)
         assertNull(viewModel.uiState.value.error)
     }
 
