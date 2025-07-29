@@ -227,3 +227,123 @@ data class MainUiState(
 3. Configurar estructura básica de network
 
 **¿Cuál fase te interesa más comenzar?**
+
+---
+
+## 📝 **PRÓXIMAS TAREAS PENDIENTES**
+
+### **🎨 Mejoras de Diseño UI/UX**
+
+#### **Diseño Visual**
+- [ ] **Mejorar HeaderDateSelector design**
+  - Revisar espaciado y padding
+  - Optimizar iconografía y tipografía
+  - Ajustar colores y contraste
+  - Añadir animaciones suaves en transiciones
+
+- [ ] **Refinamiento MatchCard**
+  - Optimizar layout de equipos e información
+  - Mejorar carga y presentación de imágenes
+  - Añadir estados visuales (finalizado, en vivo, próximo)
+  - Implementar skeleton loading para mejor UX
+
+- [ ] **Consistencia visual general**
+  - Definir sistema de design tokens
+  - Estandarizar espaciados y márgenes
+  - Unificar paleta de colores
+  - Implementar tema oscuro completo
+
+#### **Experiencia de Usuario**
+- [ ] **Animaciones y transiciones**
+  - Transiciones entre fechas suaves
+  - Animación al cargar partidos
+  - Feedback visual en interacciones
+  - Pull-to-refresh con animación
+
+- [ ] **Navegación mejorada**
+  - Breadcrumbs o indicador de ubicación
+  - Gestos swipe para cambiar fechas
+  - Shortcuts de teclado para navegación
+  - Mejoras en accesibilidad
+
+### **📊 Analytics e Insights**
+
+#### **Implementación de Analytics**
+- [ ] **Setup Firebase Analytics**
+  - Configurar Firebase project
+  - Añadir dependencias y configuración
+  - Implementar eventos básicos de navegación
+  - Dashboard de métricas inicial
+
+- [ ] **Eventos de usuario tracking**
+  - Navegación entre fechas (anterior/siguiente)
+  - Selección de fechas en calendario
+  - Clicks en partidos específicos
+  - Interacciones con equipos
+  - Tiempo de permanencia en pantallas
+
+- [ ] **Métricas de rendimiento**
+  - Tiempo de carga de datos
+  - Frecuencia de sync con API
+  - Errores de red y recovery
+  - Cache hit/miss ratios
+
+#### **Analytics Avanzados**
+- [ ] **Análisis de comportamiento**
+  - Fechas más consultadas
+  - Equipos más populares
+  - Patrones de uso temporal
+  - Flujos de navegación frecuentes
+
+- [ ] **Optimización basada en datos**
+  - Pre-carga inteligente basada en patrones
+  - Personalización de contenido
+  - Optimización de cache por uso
+  - A/B testing para mejoras UX
+
+### **🛠️ Mejoras Técnicas Adicionales**
+
+#### **Performance y Optimización**
+- [ ] **Optimización de imágenes**
+  - Implementar cache de imágenes avanzado
+  - Lazy loading inteligente
+  - Compresión automática
+  - Soporte para múltiples resoluciones
+
+- [ ] **Base de datos**
+  - Índices optimizados para queries frecuentes
+  - Cleanup automático de datos antiguos
+  - Backup y restore de datos
+  - Migración de esquemas automática
+
+#### **Testing y Calidad**
+- [ ] **Testing de UI automatizado**
+  - Tests de integración Compose
+  - Screenshot testing
+  - Performance testing
+  - Accessibility testing
+
+- [ ] **Monitoring y logging**
+  - Crash reporting (Crashlytics)
+  - Performance monitoring
+  - Network monitoring
+  - User session recording
+
+---
+
+## 🎯 **Priorización Sugerida**
+
+### **Alta Prioridad (Próxima semana)**
+1. 🎨 Refinamiento visual de HeaderDateSelector
+2. 🎨 Mejoras en MatchCard design
+3. 📊 Setup básico de Firebase Analytics
+
+### **Media Prioridad (Próximas 2-3 semanas)**
+4. 🎨 Sistema de design tokens
+5. 📊 Implementación de eventos de tracking
+6. 🛠️ Optimización de performance
+
+### **Baja Prioridad (Futuro)**
+7. 🎨 Animaciones avanzadas
+8. 📊 Analytics avanzados y personalización
+9. 🛠️ Testing automatizado extensivo

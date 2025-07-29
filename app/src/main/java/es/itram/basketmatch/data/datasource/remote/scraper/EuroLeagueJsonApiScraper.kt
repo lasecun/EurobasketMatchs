@@ -47,38 +47,64 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
     }
     
     /**
-     * Obtiene equipos directamente de la API JSON
+     * Obtiene equipos directamente de la API JSON extrayéndolos de los partidos
      */
     suspend fun getTeams(): List<TeamWebDto> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "� [NETWORK] Obteniendo equipos desde API JSON...")
+            Log.d(TAG, "🏀 [NETWORK] Obteniendo equipos desde API de feeds...")
             
-            val jsonResponse = fetchJsonFromUrl(GAME_CENTER_JSON_URL)
-            val gameCenterData = json.decodeFromString<GameCenterResponse>(jsonResponse)
+            // Obtenemos algunos partidos para extraer todos los equipos únicos
+            val teams = mutableSetOf<TeamWebDto>()
             
-            val teams = mutableListOf<TeamWebDto>()
-            
-            // Extraer equipos de headerData.euroleague.clubs
-            gameCenterData.headerData?.euroleague?.clubs?.clubs?.forEach { club ->
-                teams.add(
-                    TeamWebDto(
-                        id = generateTeamId(club.name),
-                        name = club.name,
-                        fullName = club.name,
-                        shortCode = extractShortCode(club.url) ?: club.name.take(3).uppercase(),
-                        logoUrl = club.logo.image,
-                        country = extractCountryFromName(club.name),
-                        venue = null, // No disponible en esta API
-                        profileUrl = "https://www.euroleaguebasketball.net${club.url}"
-                    )
-                )
+            // Obtenemos partidos de las primeras jornadas para conseguir todos los equipos
+            for (round in 1..3) {
+                try {
+                    val apiUrl = "${FEEDS_BASE_URL}/competitions/E/seasons/E2025/games?teamCode=&phaseTypeCode=RS&roundNumber=$round"
+                    Log.d(TAG, "🌐 [NETWORK] Extrayendo equipos desde jornada $round...")
+                    
+                    val jsonResponse = fetchJsonFromUrl(apiUrl)
+                    val response = json.decodeFromString<EuroLeagueFeedsResponse>(jsonResponse)
+                    
+                    response.data.forEach { match ->
+                        // Agregar equipo local
+                        teams.add(
+                            TeamWebDto(
+                                id = generateTeamId(match.home.name),
+                                name = match.home.name,
+                                fullName = match.home.name,
+                                shortCode = match.home.code,
+                                logoUrl = match.home.imageUrls?.crest,
+                                country = extractCountryFromName(match.home.name),
+                                venue = null,
+                                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/"
+                            )
+                        )
+                        
+                        // Agregar equipo visitante
+                        teams.add(
+                            TeamWebDto(
+                                id = generateTeamId(match.away.name),
+                                name = match.away.name,
+                                fullName = match.away.name,
+                                shortCode = match.away.code,
+                                logoUrl = match.away.imageUrls?.crest,
+                                country = extractCountryFromName(match.away.name),
+                                venue = null,
+                                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/"
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "⚠️ [NETWORK] Error obteniendo jornada $round para equipos: ${e.message}")
+                }
             }
             
-            Log.d(TAG, "🌐 [NETWORK] ✅ Equipos obtenidos exitosamente desde API: ${teams.size}")
-            teams.distinctBy { it.id }
+            val teamsList = teams.toList()
+            Log.d(TAG, "� [NETWORK] ✅ Equipos extraídos exitosamente desde API de feeds: ${teamsList.size}")
+            teamsList
             
         } catch (e: Exception) {
-            Log.e(TAG, "❌ [NETWORK] Error obteniendo equipos desde API JSON", e)
+            Log.e(TAG, "❌ [NETWORK] Error obteniendo equipos desde API de feeds", e)
             emptyList()
         }
     }
