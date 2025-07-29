@@ -1,6 +1,7 @@
 package es.itram.basketmatch.presentation.viewmodel
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import androidx.lifecycle.SavedStateHandle
 import es.itram.basketmatch.domain.service.DataSyncService
 import es.itram.basketmatch.domain.usecase.GetAllMatchesUseCase
 import es.itram.basketmatch.domain.usecase.GetAllTeamsUseCase
@@ -39,6 +40,7 @@ class MainViewModelSimpleTest {
         val getAllTeamsUseCase: GetAllTeamsUseCase = mockk(relaxed = true)
         val getAllMatchesUseCase: GetAllMatchesUseCase = mockk(relaxed = true)
         val dataSyncService: DataSyncService = mockk(relaxed = true)
+        val savedStateHandle: SavedStateHandle = mockk(relaxed = true)
         
         val testTeams = TestDataFactory.createTestTeamList()
         val testMatches = TestDataFactory.createTestMatchList()
@@ -48,7 +50,7 @@ class MainViewModelSimpleTest {
         coEvery { dataSyncService.isSyncNeeded() } returns false
         
         // When - This should not throw an exception
-        val viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase, dataSyncService)
+        val viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase, dataSyncService, savedStateHandle)
         
         // Then - Basic assertion
         assert(viewModel != null)
