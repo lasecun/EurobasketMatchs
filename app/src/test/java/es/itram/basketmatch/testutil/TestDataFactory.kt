@@ -8,6 +8,7 @@ import es.itram.basketmatch.data.datasource.local.entity.TeamRosterEntity
 import es.itram.basketmatch.data.datasource.remote.dto.TeamWebDto
 import es.itram.basketmatch.data.datasource.remote.dto.MatchWebDto
 import es.itram.basketmatch.data.datasource.remote.dto.MatchStatus as WebMatchStatus
+import es.itram.basketmatch.data.datasource.remote.dto.CountryDto
 import es.itram.basketmatch.data.datasource.remote.dto.PlayerDto
 import es.itram.basketmatch.data.datasource.remote.dto.PersonDto
 import es.itram.basketmatch.data.datasource.remote.dto.PlayerImageUrls
@@ -408,7 +409,7 @@ object TestDataFactory {
         positionName: String = "Point Guard",
         height: Int = 201,
         weight: Int = 104,
-        dateOfBirth: String = "1999-02-28",
+        dateOfBirth: String = "1999-02-28T00:00:00",
         nationality: String = "Slovenia",
         isActive: Boolean = true,
         isStarter: Boolean = true,
@@ -418,21 +419,25 @@ object TestDataFactory {
             person = es.itram.basketmatch.data.datasource.remote.dto.PersonDto(
                 code = code,
                 name = name,
-                surname = surname,
+                passportSurname = surname,
+                jerseyName = surname,
                 height = height,
                 weight = weight,
-                dateOfBirth = dateOfBirth,
-                nationality = nationality,
-                imageUrls = es.itram.basketmatch.data.datasource.remote.dto.PlayerImageUrls(
+                birthDate = dateOfBirth,
+                country = es.itram.basketmatch.data.datasource.remote.dto.CountryDto(
+                    code = nationality.take(3).uppercase(),
+                    name = nationality
+                ),
+                images = es.itram.basketmatch.data.datasource.remote.dto.PlayerImageUrls(
                     profile = "https://example.com/player/$code.jpg"
                 )
             ),
-            jersey = jersey,
+            type = "J",
+            typeName = "Player",
+            active = isActive,
+            dorsal = jersey.toString(),
             position = position,
-            positionName = positionName,
-            isActive = isActive,
-            isStarter = isStarter,
-            isCaptain = isCaptain
+            positionName = positionName
         )
     }
 }

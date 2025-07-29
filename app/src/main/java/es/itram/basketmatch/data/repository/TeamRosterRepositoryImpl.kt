@@ -3,6 +3,7 @@ package es.itram.basketmatch.data.repository
 import android.util.Log
 import es.itram.basketmatch.data.datasource.local.dao.PlayerDao
 import es.itram.basketmatch.data.datasource.local.dao.TeamRosterDao
+import es.itram.basketmatch.data.datasource.remote.dto.CountryDto
 import es.itram.basketmatch.data.datasource.remote.dto.PlayerDto
 import es.itram.basketmatch.data.datasource.remote.dto.PersonDto
 import es.itram.basketmatch.data.datasource.remote.dto.PlayerImageUrls
@@ -128,20 +129,21 @@ class TeamRosterRepositoryImpl @Inject constructor(
                         person = PersonDto(
                             code = player.code,
                             name = player.name,
-                            surname = player.surname.takeIf { it.isNotBlank() },
+                            passportSurname = player.surname.takeIf { it.isNotBlank() },
+                            jerseyName = player.surname.takeIf { it.isNotBlank() },
                             height = player.height?.replace("cm", "")?.toIntOrNull(),
                             weight = player.weight?.replace("kg", "")?.toIntOrNull(),
-                            dateOfBirth = player.dateOfBirth,
-                            placeOfBirth = player.placeOfBirth,
-                            nationality = player.nationality,
-                            imageUrls = player.profileImageUrl?.let { PlayerImageUrls(profile = it) }
+                            birthDate = player.dateOfBirth,
+                            birthCountry = player.placeOfBirth?.let { CountryDto("", it) },
+                            country = player.nationality?.let { CountryDto("", it) },
+                            images = player.profileImageUrl?.let { PlayerImageUrls(profile = it) }
                         ),
-                        jersey = player.jersey,
+                        type = "J", // Jugador
+                        typeName = "Player",
+                        active = player.isActive,
+                        dorsal = player.jersey?.toString(),
                         position = player.position?.ordinal,
-                        positionName = player.position?.name,
-                        isActive = player.isActive,
-                        isStarter = player.isStarter,
-                        isCaptain = player.isCaptain
+                        positionName = player.position?.name
                     )
                 },
                 roster.teamCode
@@ -162,32 +164,34 @@ class TeamRosterRepositoryImpl @Inject constructor(
     private fun convertToTeamRoster(teamTla: String, playersDto: List<PlayerDto>, season: String): TeamRoster {
         Log.d(TAG, "🔄 Convirtiendo ${playersDto.size} jugadores de DTO a domain model para $teamTla")
         
-        val players = playersDto.mapNotNull { playerDto ->
-            try {
-                // Generar un código único si no está disponible
-                val playerCode = playerDto.person.code 
-                    ?: generatePlayerCode(playerDto.person.name, playerDto.person.surname, playerDto.jersey)
-                
-                Player(
-                    code = playerCode,
-                    name = playerDto.person.name,
-                    surname = playerDto.person.surname ?: "",
-                    fullName = "${playerDto.person.name} ${playerDto.person.surname ?: ""}".trim(),
-                    jersey = playerDto.jersey ?: playerDto.dorsalRaw?.toIntOrNull(),
-                    position = convertPosition(playerDto.positionName),
-                    height = playerDto.person.height?.toString(),
-                    weight = playerDto.person.weight?.toString(),
-                    dateOfBirth = playerDto.person.dateOfBirth ?: playerDto.person.birthDate,
-                    placeOfBirth = playerDto.person.placeOfBirth,
-                    nationality = playerDto.person.nationality,
-                    experience = null,
-                    profileImageUrl = playerDto.person.imageUrls?.profile ?: playerDto.person.imageUrls?.headshot,
-                    isActive = playerDto.isActive,
-                    isStarter = playerDto.isStarter,
-                    isCaptain = playerDto.isCaptain
-                )
-            } catch (e: Exception) {
-                Log.w(TAG, "Error convirtiendo jugador ${playerDto.person.name}: ${e.message}")
+        val players = playersDto
+            .filter { it.type == "J" } // Solo jugadores, no entrenadores
+            .mapNotNull { playerDto ->
+                try {
+                    // Generar un código único si no está disponible
+                    val playerCode = playerDto.person.code 
+                        ?: generatePlayerCode(playerDto.person.name, playerDto.person.passportSurname, playerDto.dorsal)
+                    
+                    Player(
+                        code = playerCode,
+                        name = playerDto.person.name,
+                        surname = playerDto.person.passportSurname ?: playerDto.person.jerseyName ?: "",
+                        fullName = "${playerDto.person.name} ${playerDto.person.passportSurname ?: ""}".trim(),
+                        jersey = playerDto.dorsal?.toIntOrNull() ?: playerDto.dorsalRaw?.toIntOrNull(),
+                        position = convertPosition(playerDto.positionName),
+                        height = playerDto.person.height?.let { "${it}cm" },
+                        weight = playerDto.person.weight?.let { "${it}kg" },
+                        dateOfBirth = playerDto.person.birthDate,
+                        placeOfBirth = playerDto.person.birthCountry?.name,
+                        nationality = playerDto.person.country?.name,
+                        experience = null,
+                        profileImageUrl = playerDto.person.images?.profile ?: playerDto.person.images?.headshot,
+                        isActive = playerDto.active,
+                        isStarter = false, // No disponible en la nueva API
+                        isCaptain = false  // No disponible en la nueva API
+                    )
+                } catch (e: Exception) {
+                    Log.w(TAG, "Error convirtiendo jugador ${playerDto.person.name}: ${e.message}")
                 null
             }
         }
@@ -220,10 +224,10 @@ class TeamRosterRepositoryImpl @Inject constructor(
     /**
      * Genera un código único para jugadores que no tienen código en la API
      */
-    private fun generatePlayerCode(name: String, surname: String?, jersey: Int?): String {
+    private fun generatePlayerCode(name: String, surname: String?, jersey: String?): String {
         val cleanName = name.take(3).uppercase().replace(" ", "")
         val cleanSurname = surname?.take(3)?.uppercase()?.replace(" ", "") ?: ""
-        val jerseyPart = jersey?.toString()?.padStart(2, '0') ?: "00"
+        val jerseyPart = jersey?.take(2)?.padStart(2, '0') ?: "00"
         
         return "${cleanName}${cleanSurname}_$jerseyPart"
     }
