@@ -21,6 +21,7 @@ import es.itram.basketmatch.presentation.component.ErrorMessage
 import es.itram.basketmatch.presentation.component.LoadingIndicator
 import es.itram.basketmatch.presentation.component.MatchCard
 import es.itram.basketmatch.presentation.component.HeaderDateSelector
+import es.itram.basketmatch.presentation.component.SyncProgressIndicator
 import es.itram.basketmatch.presentation.viewmodel.MainViewModel
 
 /**
@@ -37,6 +38,7 @@ fun MainScreen(
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val syncProgress by viewModel.syncProgress.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -54,6 +56,14 @@ fun MainScreen(
 
         // Contenido principal
         when {
+            syncProgress.isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    SyncProgressIndicator(syncProgress = syncProgress)
+                }
+            }
             isLoading -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),

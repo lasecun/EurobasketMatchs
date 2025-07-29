@@ -86,8 +86,8 @@ class MainViewModel @Inject constructor(
                         Log.d("MainViewModel", "✅ Sincronización exitosa: ${result.teamsCount} equipos, ${result.matchesCount} partidos")
                         _syncMessage.value = "Datos actualizados: ${result.teamsCount} equipos, ${result.matchesCount} partidos"
                     } else {
-                        Log.e("MainViewModel", "❌ Error en sincronización: ${syncResult.exceptionOrNull()?.message}")
-                        _error.value = "Error al sincronizar datos: ${syncResult.exceptionOrNull()?.message}"
+                        Log.w("MainViewModel", "⚠️ Error en sincronización, usando datos locales: ${syncResult.exceptionOrNull()?.message}")
+                        // No establecer error aquí, cargar datos locales en su lugar
                     }
                     
                     _isSyncing.value = false
@@ -100,10 +100,34 @@ class MainViewModel @Inject constructor(
                 
             } catch (e: Exception) {
                 Log.e("MainViewModel", "❌ Error general al cargar datos", e)
-                _error.value = "Error al cargar datos: ${e.message}"
+                // Solo mostrar error si no hay datos locales disponibles
+                tryLoadLocalDataOrShowError(e)
+            }
+        }
+    }
+    
+    /**
+     * Intenta cargar datos locales, si no hay muestra error
+     */
+    private suspend fun tryLoadLocalDataOrShowError(originalException: Exception) {
+        try {
+            val teams = getAllTeamsUseCase().first()
+            val matches = getAllMatchesUseCase().first()
+            
+            if (teams.isNotEmpty() || matches.isNotEmpty()) {
+                Log.d("MainViewModel", "✅ Usando datos locales disponibles como fallback")
+                loadLocalData()
+            } else {
+                Log.e("MainViewModel", "❌ No hay datos locales disponibles")
+                _error.value = "No hay datos disponibles. Verifica tu conexión a internet."
                 _isLoading.value = false
                 _isSyncing.value = false
             }
+        } catch (e: Exception) {
+            Log.e("MainViewModel", "❌ Error accediendo a datos locales", e)
+            _error.value = "Error al acceder a los datos: ${originalException.message}"
+            _isLoading.value = false
+            _isSyncing.value = false
         }
     }
     
