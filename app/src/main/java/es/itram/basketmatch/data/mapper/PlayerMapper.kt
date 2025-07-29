@@ -15,39 +15,43 @@ object PlayerMapper {
     /**
      * Genera un código único para jugadores que no tienen código en la API
      */
-    private fun generatePlayerCode(name: String, surname: String?, jersey: Int?): String {
-        val cleanName = name.take(3).uppercase().replace(" ", "")
-        val cleanSurname = surname?.take(3)?.uppercase()?.replace(" ", "") ?: ""
-        val jerseyPart = jersey?.toString()?.padStart(2, '0') ?: "00"
-        
-        return "${cleanName}${cleanSurname}_$jerseyPart"
+    private fun generatePlayerCode(name: String, surname: String?, jersey: String?): String {
+        val namePart = name.take(3).uppercase()
+        val surnamePart = surname?.take(3)?.uppercase() ?: "XXX"
+        val jerseyPart = jersey?.take(2) ?: "00"
+        return "${namePart}${surnamePart}${jerseyPart}"
     }
     
     /**
      * Convierte PlayerDto (de la API) a Player (dominio)
      */
     fun fromDto(dto: PlayerDto): Player {
+        // Solo procesar jugadores (type="J"), no entrenadores (type="E")
+        if (dto.type != "J") {
+            throw IllegalArgumentException("Solo se pueden procesar jugadores (type='J')")
+        }
+        
         // Generar un código único si no está disponible
         val playerCode = dto.person.code 
-            ?: generatePlayerCode(dto.person.name, dto.person.surname, dto.jersey)
+            ?: generatePlayerCode(dto.person.name, dto.person.passportSurname, dto.dorsal)
         
         return Player(
             code = playerCode,
             name = dto.person.name,
-            surname = dto.person.surname ?: "",
-            fullName = "${dto.person.name} ${dto.person.surname ?: ""}".trim(),
-            jersey = dto.jersey ?: dto.dorsalRaw?.toIntOrNull(),
+            surname = dto.person.passportSurname ?: dto.person.jerseyName ?: "",
+            fullName = "${dto.person.name} ${dto.person.passportSurname ?: ""}".trim(),
+            jersey = dto.dorsal?.toIntOrNull() ?: dto.dorsalRaw?.toIntOrNull(),
             position = PlayerPosition.fromString(dto.positionName),
             height = dto.person.height?.let { "${it}cm" },
             weight = dto.person.weight?.let { "${it}kg" },
-            dateOfBirth = dto.person.dateOfBirth ?: dto.person.birthDate,
-            placeOfBirth = dto.person.placeOfBirth,
-            nationality = dto.person.nationality,
+            dateOfBirth = dto.person.birthDate,
+            placeOfBirth = dto.person.birthCountry?.name,
+            nationality = dto.person.country?.name,
             experience = null, // No disponible en la API
-            profileImageUrl = dto.person.imageUrls?.profile ?: dto.person.imageUrls?.headshot,
-            isActive = dto.isActive,
-            isStarter = dto.isStarter,
-            isCaptain = dto.isCaptain
+            profileImageUrl = dto.person.images?.profile ?: dto.person.images?.headshot,
+            isActive = dto.active,
+            isStarter = false, // No disponible en la nueva API
+            isCaptain = false  // No disponible en la nueva API
         )
     }
     
@@ -104,12 +108,15 @@ object PlayerMapper {
     
     /**
      * Convierte lista de PlayerDto a lista de PlayerEntity
+     * Filtra solo los jugadores (type="J"), excluyendo entrenadores
      */
     fun fromDtoListToEntityList(dtoList: List<PlayerDto>, teamCode: String): List<PlayerEntity> {
-        return dtoList.map { dto ->
-            val player = fromDto(dto)
-            toEntity(player, teamCode)
-        }
+        return dtoList
+            .filter { it.type == "J" } // Solo jugadores, no entrenadores
+            .map { dto ->
+                val player = fromDto(dto)
+                toEntity(player, teamCode)
+            }
     }
     
     /**
