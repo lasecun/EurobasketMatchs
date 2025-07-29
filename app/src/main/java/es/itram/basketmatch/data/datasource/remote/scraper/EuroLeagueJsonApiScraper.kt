@@ -13,8 +13,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.decodeFromString
 import java.net.HttpURLConnection
 import java.net.URL
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,17 +26,10 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
     companion object {
         private const val TAG = "EuroLeagueJsonApiScraper"
         
-        // Nueva API de EuroLeague feeds
+        // API de EuroLeague feeds
         private const val FEEDS_BASE_URL = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2"
         private const val GAMES_URL = "$FEEDS_BASE_URL/competitions/E/seasons/E2025/games"
         private const val ROSTER_URL = "$FEEDS_BASE_URL/competitions/E/seasons/E2025/clubs"
-        
-        // URLs legacy para retrocompatibilidad
-        private const val BASE_JSON_URL = "https://www.euroleaguebasketball.net/_next/data"
-        private const val BUILD_ID = "a52CgOKFrJehM6XbgT-b_"
-        private const val GAME_CENTER_JSON_URL = "$BASE_JSON_URL/$BUILD_ID/es/euroleague/game-center.json"
-        private const val SCHEDULE_JSON_URL = "$BASE_JSON_URL/$BUILD_ID/es/euroleague/calendar.json"
-        private const val ALL_GAMES_URL = "$BASE_JSON_URL/$BUILD_ID/es/euroleague/results.json"
         
         private val json = Json { 
             ignoreUnknownKeys = true
@@ -150,9 +141,8 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
             allMatches
             
         } catch (e: Exception) {
-            Log.e(TAG, "❌ [NETWORK] Error obteniendo partidos desde nueva API", e)
-            // Fallback a la API anterior
-            getMatchesLegacy(season)
+            Log.e(TAG, "❌ [NETWORK] Error obteniendo partidos desde API de feeds", e)
+            emptyList()
         }
     }
     
@@ -173,39 +163,6 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
     }
     
     /**
-     * Método legacy como fallback
-     */
-    private suspend fun getMatchesLegacy(season: String): List<MatchWebDto> {
-        Log.d(TAG, "🌐 [NETWORK] 🔄 Usando API legacy como fallback...")
-        
-        val matches = mutableListOf<MatchWebDto>()
-        
-        // Intentar múltiples endpoints legacy
-        val endpoints = listOf(
-            GAME_CENTER_JSON_URL,
-            SCHEDULE_JSON_URL,
-            ALL_GAMES_URL
-        )
-        
-        for (endpoint in endpoints) {
-            try {
-                Log.d(TAG, "🌐 [NETWORK] Intentando endpoint legacy: $endpoint")
-                val jsonResponse = fetchJsonFromUrl(endpoint)
-                val endpointMatches = parseMatchesFromEndpoint(jsonResponse, season, endpoint)
-                matches.addAll(endpointMatches)
-                Log.d(TAG, "🌐 [NETWORK] ✅ Obtenidos ${endpointMatches.size} partidos desde endpoint legacy")
-            } catch (e: Exception) {
-                Log.w(TAG, "🌐 [NETWORK] ⚠️ Error en endpoint legacy $endpoint: ${e.message}")
-            }
-        }
-        
-        val uniqueMatches = matches.distinctBy { it.id }
-        Log.d(TAG, "🌐 [NETWORK] ✅ Total partidos únicos desde API legacy: ${uniqueMatches.size}")
-        
-        return uniqueMatches
-    }
-    
-    /**
      * Obtiene partidos de una jornada específica (para refresh)
      */
     suspend fun getMatchesForRoundRefresh(round: Int, season: String = "2025-26"): List<MatchWebDto> = withContext(Dispatchers.IO) {
@@ -216,83 +173,6 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
             matches
         } catch (e: Exception) {
             Log.e(TAG, "❌ [NETWORK] Error refrescando jornada $round desde API", e)
-            emptyList()
-        }
-    }
-    
-    /**
-     * Parsea partidos desde diferentes endpoints
-     */
-    private fun parseMatchesFromEndpoint(jsonResponse: String, season: String, endpoint: String): List<MatchWebDto> {
-        return try {
-            when {
-                endpoint.contains("game-center") -> {
-                    val gameCenterData = json.decodeFromString<GameCenterResponse>(jsonResponse)
-                    parseGameCenterMatches(gameCenterData, season)
-                }
-                endpoint.contains("calendar") -> {
-                    // Intentar parsear como calendario (estructura puede ser diferente)
-                    parseCalendarMatches(jsonResponse, season)
-                }
-                endpoint.contains("results") -> {
-                    // Intentar parsear como resultados (estructura puede ser diferente)
-                    parseResultsMatches(jsonResponse, season)
-                }
-                else -> emptyList()
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Error parseando endpoint $endpoint: ${e.message}")
-            emptyList()
-        }
-    }
-    
-    /**
-     * Parsea partidos desde game-center (método original)
-     */
-    private fun parseGameCenterMatches(gameCenterData: GameCenterResponse, season: String): List<MatchWebDto> {
-        val matches = mutableListOf<MatchWebDto>()
-        
-        // Extraer partidos de pageProps.currentRoundGameGroups
-        gameCenterData.pageProps?.currentRoundGameGroups?.forEach { gameGroup ->
-            gameGroup.games?.forEach { game ->
-                try {
-                    val matchDto = convertGameToMatchDto(game, season)
-                    matches.add(matchDto)
-                } catch (e: Exception) {
-                    Log.w(TAG, "Error procesando partido ${game.id}: ${e.message}")
-                }
-            }
-        }
-        
-        return matches
-    }
-    
-    /**
-     * Intenta parsear partidos desde endpoint de calendario
-     */
-    private fun parseCalendarMatches(jsonResponse: String, season: String): List<MatchWebDto> {
-        // Por ahora, intentamos la misma estructura que game-center
-        // Si falla, devolvemos lista vacía
-        return try {
-            val gameCenterData = json.decodeFromString<GameCenterResponse>(jsonResponse)
-            parseGameCenterMatches(gameCenterData, season)
-        } catch (e: Exception) {
-            Log.w(TAG, "Calendar endpoint no compatible con estructura game-center")
-            emptyList()
-        }
-    }
-    
-    /**
-     * Intenta parsear partidos desde endpoint de resultados
-     */
-    private fun parseResultsMatches(jsonResponse: String, season: String): List<MatchWebDto> {
-        // Por ahora, intentamos la misma estructura que game-center
-        // Si falla, devolvemos lista vacía
-        return try {
-            val gameCenterData = json.decodeFromString<GameCenterResponse>(jsonResponse)
-            parseGameCenterMatches(gameCenterData, season)
-        } catch (e: Exception) {
-            Log.w(TAG, "Results endpoint no compatible con estructura game-center")
             emptyList()
         }
     }
@@ -337,69 +217,6 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
         }
     }
 
-    /**
-     * Convierte un objeto Game de la API a MatchWebDto
-     */
-    private fun convertGameToMatchDto(game: Game, season: String): MatchWebDto {
-        val matchId = game.id ?: generateMatchId(game)
-        
-        return MatchWebDto(
-            id = matchId,
-            homeTeamId = game.home.code,
-            homeTeamName = game.home.name,
-            homeTeamLogo = game.home.imageUrls, // En la API legacy es String?, no objeto
-            awayTeamId = game.away.code,
-            awayTeamName = game.away.name,
-            awayTeamLogo = game.away.imageUrls, // En la API legacy es String?, no objeto
-            date = game.date.substringBefore("T"), // Extraer solo la fecha (YYYY-MM-DD)
-            time = game.date,
-            venue = game.venue?.name,
-            status = convertStatus(game.status),
-            homeScore = if (game.home.score > 0) game.home.score else null,
-            awayScore = if (game.away.score > 0) game.away.score else null,
-            round = game.round?.round?.toString() ?: "1",
-            season = season
-        )
-    }
-    
-    /**
-     * Genera un ID único para un partido cuando no está disponible
-     */
-    private fun generateMatchId(game: Game): String {
-        val homeTeam = game.home.code.take(3)
-        val awayTeam = game.away.code.take(3)
-        val round = game.round?.round ?: 1
-        val date = game.date.substringBefore("T")
-        return "${homeTeam}_${awayTeam}_R${round}_${date}".replace(" ", "_")
-    }
-    
-    /**
-     * Convierte el estado del partido
-     */
-    private fun convertStatus(status: String): MatchStatus {
-        return when (status.lowercase()) {
-            "confirmed" -> MatchStatus.SCHEDULED
-            "live" -> MatchStatus.LIVE
-            "finished" -> MatchStatus.FINISHED
-            "postponed" -> MatchStatus.POSTPONED
-            "cancelled" -> MatchStatus.CANCELLED
-            else -> MatchStatus.SCHEDULED
-        }
-    }
-    
-    /**
-     * Extrae el código corto del equipo desde la URL
-     */
-    private fun extractShortCode(url: String): String? {
-        return try {
-            // URL ejemplo: "/euroleague/teams/anadolu-efes-istanbul/roster/ist/"
-            val parts = url.split("/")
-            parts.getOrNull(parts.size - 2)?.uppercase()
-        } catch (e: Exception) {
-            null
-        }
-    }
-    
     /**
      * Genera un ID único para el equipo
      */
@@ -502,86 +319,7 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
     }
 }
 
-// Data classes para deserializar el JSON de la API
-@Serializable
-data class GameCenterResponse(
-    val headerData: HeaderData? = null,
-    val pageProps: PageProps? = null
-)
-
-@Serializable
-data class HeaderData(
-    val euroleague: EuroLeagueData? = null
-)
-
-@Serializable
-data class EuroLeagueData(
-    val clubs: ClubsData? = null
-)
-
-@Serializable
-data class ClubsData(
-    val clubs: List<Club>? = null
-)
-
-@Serializable
-data class Club(
-    val name: String,
-    val url: String,
-    val logo: Logo,
-    val order: Int
-)
-
-@Serializable
-data class Logo(
-    val image: String,
-    val title: String? = null
-)
-
-@Serializable
-data class PageProps(
-    val currentRoundGameGroups: List<GameGroup>? = null
-)
-
-@Serializable
-data class GameGroup(
-    val gameGroupFormattedDay: String,
-    val games: List<Game>? = null
-)
-
-@Serializable
-data class Game(
-    val id: String,
-    val date: String, // ISO format: "2025-09-30T16:00:00.000Z"
-    val status: String,
-    val home: TeamInGame,
-    val away: TeamInGame,
-    val venue: Venue? = null,
-    val round: Round? = null
-)
-
-@Serializable
-data class TeamInGame(
-    val name: String,
-    val code: String,
-    val score: Int = 0,
-    val imageUrls: String? = null
-)
-
-@Serializable
-data class Venue(
-    val name: String,
-    val capacity: Int = 0,
-    val address: String? = null
-)
-
-@Serializable
-data class Round(
-    val round: Int,
-    val name: String? = null
-)
-
-// ==================== CLASES DTO PARA LA NUEVA API DE FEEDS ====================
+// ==================== CLASES DTO PARA LA API DE FEEDS ====================
 
 @Serializable
 data class EuroLeagueFeedsResponse(
