@@ -339,7 +339,8 @@ private fun PlayerCard(
                         modifier = Modifier
                             .size(60.dp)
                             .clip(CircleShape),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
+                        alignment = Alignment.TopCenter // Centrar en la parte superior para enfocar la cara
                     )
                 } else {
                     Icon(
