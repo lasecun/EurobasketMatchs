@@ -323,6 +323,38 @@ class MainViewModel @Inject constructor(
     }
 
     /**
+     * Encuentra la próxima fecha que tenga partidos disponibles después de la fecha seleccionada
+     */
+    fun findNextMatchDay(): LocalDate? {
+        val currentDate = _selectedDate.value
+        val allMatches = _allMatches.value
+        
+        return allMatches
+            .map { it.dateTime.toLocalDate() }
+            .filter { it.isAfter(currentDate) }
+            .sorted()
+            .firstOrNull()
+    }
+    
+    /**
+     * Navega al próximo día que tenga partidos disponibles
+     */
+    fun goToNextAvailableMatchDay() {
+        val nextMatchDay = findNextMatchDay()
+        if (nextMatchDay != null) {
+            _selectedDate.value = nextMatchDay
+            filterMatchesBySelectedDate()
+        }
+    }
+    
+    /**
+     * Verifica si la fecha seleccionada es hoy
+     */
+    fun isSelectedDateToday(): Boolean {
+        return _selectedDate.value == LocalDate.now()
+    }
+
+    /**
      * Limpia el mensaje de error
      */
     fun clearError() {
