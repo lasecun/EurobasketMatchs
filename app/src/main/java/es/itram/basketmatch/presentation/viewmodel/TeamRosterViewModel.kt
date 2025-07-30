@@ -98,6 +98,13 @@ class TeamRosterViewModel @Inject constructor(
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
+    
+    /**
+     * Obtiene un jugador por su código
+     */
+    fun getPlayerById(playerId: String): es.itram.basketmatch.domain.model.Player? {
+        return _uiState.value.teamRoster?.players?.find { it.code == playerId }
+    }
 }
 
 /**

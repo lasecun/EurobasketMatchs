@@ -1,6 +1,7 @@
 package es.itram.basketmatch.presentation.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -40,6 +41,7 @@ fun TeamRosterScreen(
     teamTla: String,
     teamName: String = "",
     onNavigateBack: () -> Unit,
+    onPlayerClick: (Player) -> Unit = {},
     viewModel: TeamRosterViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -97,7 +99,8 @@ fun TeamRosterScreen(
             uiState = uiState,
             modifier = Modifier.padding(paddingValues),
             onRetry = { viewModel.loadTeamRoster(teamTla) },
-            onClearError = { viewModel.clearError() }
+            onClearError = { viewModel.clearError() },
+            onPlayerClick = onPlayerClick
         )
     }
 }
@@ -107,7 +110,8 @@ private fun TeamRosterContent(
     uiState: TeamRosterUiState,
     modifier: Modifier = Modifier,
     onRetry: () -> Unit,
-    onClearError: () -> Unit
+    onClearError: () -> Unit,
+    onPlayerClick: (Player) -> Unit = {}
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
@@ -140,7 +144,8 @@ private fun TeamRosterContent(
             uiState.teamRoster != null -> {
                 RosterList(
                     teamRoster = uiState.teamRoster,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    onPlayerClick = onPlayerClick
                 )
             }
             
@@ -158,7 +163,8 @@ private fun TeamRosterContent(
 @Composable
 private fun RosterList(
     teamRoster: TeamRoster,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onPlayerClick: (Player) -> Unit = {}
 ) {
     LazyColumn(
         modifier = modifier,
@@ -172,7 +178,10 @@ private fun RosterList(
         
         // Lista de jugadores
         items(teamRoster.players) { player ->
-            PlayerCard(player = player)
+            PlayerCard(
+                player = player,
+                onClick = { onPlayerClick(player) }
+            )
         }
         
         // Spacer al final
@@ -252,9 +261,14 @@ private fun TeamInfoHeader(teamRoster: TeamRoster) {
 }
 
 @Composable
-private fun PlayerCard(player: Player) {
+private fun PlayerCard(
+    player: Player,
+    onClick: () -> Unit = {}
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (player.isCaptain) {
