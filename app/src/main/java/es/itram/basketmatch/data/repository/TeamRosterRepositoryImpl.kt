@@ -17,6 +17,11 @@ import es.itram.basketmatch.domain.repository.TeamRosterRepository
 import es.itram.basketmatch.utils.PlayerImageUtil
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import java.util.concurrent.TimeUnit
 
 /**
  * Implementación del repositorio para roster de equipos
@@ -32,33 +37,48 @@ class TeamRosterRepositoryImpl @Inject constructor(
     
     companion object {
         private const val TAG = "TeamRosterRepository"
+        private const val CACHE_VALIDITY_HOURS = 2 // Cache válido por 2 horas
     }
     
     override suspend fun getTeamRoster(teamTla: String, season: String): Result<TeamRoster> {
         return try {
             Log.d(TAG, "🔍 Iniciando obtención de roster para equipo $teamTla, temporada $season")
             
-            // Primero intentar obtener desde cache local
-            val cachedRoster = getCachedTeamRoster(teamTla)
+            // Verificar si el cache es válido (no muy antiguo)
+            val isCacheValid = isRosterCacheValid(teamTla)
+            
+            // Primero intentar obtener desde cache local si es válido
+            val cachedRoster = if (isCacheValid) getCachedTeamRoster(teamTla) else null
             if (cachedRoster != null) {
-                Log.d(TAG, "📱 [LOCAL] ✅ Roster encontrado en cache para $teamTla (${cachedRoster.players.size} jugadores)")
+                Log.d(TAG, "📱 [LOCAL] ✅ Cache válido - Roster encontrado para $teamTla (${cachedRoster.players.size} jugadores)")
                 return Result.success(cachedRoster)
             }
             
-            // Si no hay cache, obtener desde API y guardar
-            Log.d(TAG, "📱 [LOCAL] ⚠️ Cache vacío para $teamTla, descargando desde API...")
+            // Si cache no válido o vacío, obtener desde API y guardar
+            if (!isCacheValid) {
+                Log.d(TAG, "📱 [LOCAL] ⏰ Cache expirado para $teamTla, actualizando desde API...")
+            } else {
+                Log.d(TAG, "📱 [LOCAL] ⚠️ Cache vacío para $teamTla, descargando desde API...")
+            }
+            
             Log.d(TAG, "🌐 [NETWORK] Obteniendo roster desde API para $teamTla")
             
-            val playersDto = apiScraper.getTeamRoster(teamTla, "E2025")
-            // Obtener el logo del equipo desde la API de feeds (partidos recientes)
-            val teamLogoUrl = getTeamLogoFromFeeds(teamTla)
-            val roster = convertToTeamRoster(teamTla, playersDto, season, teamLogoUrl)
-            
-            // Guardar en cache local
-            saveRosterToCache(roster)
-            
-            Log.d(TAG, "🌐 [NETWORK] ✅ Roster obtenido y guardado en cache para $teamTla (${roster.players.size} jugadores)")
-            Result.success(roster)
+            // Ejecutar roster y logo en paralelo para optimizar velocidad
+            coroutineScope {
+                val playersDeferred = async { apiScraper.getTeamRoster(teamTla, "E2025") }
+                val logoDeferred = async { getTeamLogoFromFeeds(teamTla) }
+                
+                val playersDto = playersDeferred.await()
+                val teamLogoUrl = logoDeferred.await()
+                
+                val roster = convertToTeamRoster(teamTla, playersDto, season, teamLogoUrl)
+                
+                // Guardar en cache local
+                saveRosterToCache(roster)
+                
+                Log.d(TAG, "🌐 [NETWORK] ✅ Roster obtenido y guardado en cache para $teamTla (${roster.players.size} jugadores)")
+                Result.success(roster)
+            }
             
         } catch (e: Exception) {
             Log.e(TAG, "❌ [NETWORK] Error obteniendo roster para $teamTla", e)
@@ -95,20 +115,35 @@ class TeamRosterRepositoryImpl @Inject constructor(
         }
     }
     
+    private suspend fun isRosterCacheValid(teamTla: String): Boolean {
+        val latestPlayer = playerDao.getLatestPlayerByTeam(teamTla)
+        return latestPlayer?.let { 
+            val cacheTime = it.lastUpdated
+            val hoursAgo = TimeUnit.MILLISECONDS.toHours(System.currentTimeMillis() - cacheTime)
+            hoursAgo < CACHE_VALIDITY_HOURS
+        } ?: false
+    }
+
     override suspend fun refreshTeamRoster(teamTla: String, season: String): Result<TeamRoster> {
         return try {
             Log.d(TAG, "🌐 [NETWORK] 🔄 Refrescando roster forzadamente desde API para equipo $teamTla")
             
-            val playersDto = apiScraper.getTeamRoster(teamTla, "E2025")
-            // Obtener el logo del equipo desde la API de feeds
-            val teamLogoUrl = getTeamLogoFromFeeds(teamTla)
-            val roster = convertToTeamRoster(teamTla, playersDto, season, teamLogoUrl)
-            
-            // Guardar en cache local (reemplaza datos existentes)
-            saveRosterToCache(roster)
-            
-            Log.d(TAG, "🌐 [NETWORK] ✅ Roster refrescado y guardado en cache para $teamTla (${roster.players.size} jugadores)")
-            Result.success(roster)
+            // Ejecutar roster y logo en paralelo para optimizar velocidad
+            coroutineScope {
+                val playersDeferred = async { apiScraper.getTeamRoster(teamTla, "E2025") }
+                val logoDeferred = async { getTeamLogoFromFeeds(teamTla) }
+                
+                val playersDto = playersDeferred.await()
+                val teamLogoUrl = logoDeferred.await()
+                
+                val roster = convertToTeamRoster(teamTla, playersDto, season, teamLogoUrl)
+                
+                // Guardar en cache local (reemplaza datos existentes)
+                saveRosterToCache(roster)
+                
+                Log.d(TAG, "🌐 [NETWORK] ✅ Roster refrescado y guardado en cache para $teamTla (${roster.players.size} jugadores)")
+                Result.success(roster)
+            }
             
         } catch (e: Exception) {
             Log.e(TAG, "❌ [NETWORK] Error refrescando roster desde API para $teamTla", e)
@@ -152,16 +187,20 @@ class TeamRosterRepositoryImpl @Inject constructor(
     ): TeamRoster {
         Log.d(TAG, "🔄 Convirtiendo ${playersDto.size} jugadores de DTO a domain model para $teamTla")
         
-        val players = playersDto
-            .filter { it.type == "J" } // Solo jugadores, no entrenadores
-            .mapNotNull { playerDto ->
-                try {
-                    PlayerMapper.fromDto(playerDto, teamTla, playerImageUtil)
-                } catch (e: Exception) {
-                    Log.w(TAG, "Error convirtiendo jugador ${playerDto.person.name}: ${e.message}")
-                    null
-                }
+        // Filtrar primero y luego mapear para reducir trabajo
+        val validPlayerDtos = playersDto.filter { it.type == "J" }
+        Log.d(TAG, "🏀 ${validPlayerDtos.size} jugadores válidos después del filtro")
+        
+        val players = validPlayerDtos.mapNotNull { playerDto ->
+            try {
+                PlayerMapper.fromDto(playerDto, teamTla, playerImageUtil)
+            } catch (e: Exception) {
+                Log.w(TAG, "⚠️ Error convirtiendo jugador ${playerDto.person.name}: ${e.message}")
+                null
             }
+        }
+        
+        Log.d(TAG, "✅ ${players.size} jugadores convertidos exitosamente")
         
         return TeamRoster(
             teamCode = teamTla,
@@ -209,29 +248,23 @@ class TeamRosterRepositoryImpl @Inject constructor(
         return try {
             Log.d(TAG, "🔍 Buscando logo para $teamTla desde API de feeds...")
             
-            // Buscar en las últimas jornadas para encontrar el equipo
-            for (round in 1..5) {
-                try {
-                    val matches = apiScraper.getMatches()
-                    val matchWithTeam = matches.find { match ->
-                        match.homeTeamId.equals(teamTla, ignoreCase = true) || 
-                        match.awayTeamId.equals(teamTla, ignoreCase = true)
-                    }
-                    
-                    if (matchWithTeam != null) {
-                        val logoUrl = if (matchWithTeam.homeTeamId.equals(teamTla, ignoreCase = true)) {
-                            matchWithTeam.homeTeamLogo
-                        } else {
-                            matchWithTeam.awayTeamLogo
-                        }
-                        
-                        if (!logoUrl.isNullOrEmpty()) {
-                            Log.d(TAG, "🖼️ Logo encontrado para $teamTla: $logoUrl")
-                            return logoUrl
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.w(TAG, "Error buscando logo para $teamTla en jornada $round: ${e.message}")
+            // Obtener todos los partidos una sola vez en lugar de en cada iteración
+            val matches = apiScraper.getMatches()
+            val matchWithTeam = matches.find { match ->
+                match.homeTeamId.equals(teamTla, ignoreCase = true) || 
+                match.awayTeamId.equals(teamTla, ignoreCase = true)
+            }
+            
+            if (matchWithTeam != null) {
+                val logoUrl = if (matchWithTeam.homeTeamId.equals(teamTla, ignoreCase = true)) {
+                    matchWithTeam.homeTeamLogo
+                } else {
+                    matchWithTeam.awayTeamLogo
+                }
+                
+                if (!logoUrl.isNullOrEmpty()) {
+                    Log.d(TAG, "🖼️ Logo encontrado para $teamTla: $logoUrl")
+                    return logoUrl
                 }
             }
             
