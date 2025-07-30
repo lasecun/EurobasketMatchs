@@ -121,7 +121,8 @@ private fun PlayerHeaderCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(1f)
+                    .height(280.dp) // Altura un poco menor para mejor proporción
+                    .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
@@ -133,9 +134,10 @@ private fun PlayerHeaderCard(
                             .build(),
                         contentDescription = "Foto de ${player.fullName}",
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f),
-                        contentScale = ContentScale.Crop
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop,
+                        alignment = Alignment.TopCenter // Enfocar en la parte superior para mostrar la cara
                     )
                 } else {
                     Icon(
