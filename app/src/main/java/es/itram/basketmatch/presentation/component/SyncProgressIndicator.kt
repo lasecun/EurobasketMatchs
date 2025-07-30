@@ -53,7 +53,13 @@ fun SyncProgressIndicator(
         if (syncProgress.totalRounds > 0) {
             // Barra de progreso
             LinearProgressIndicator(
-                progress = { syncProgress.currentRound.toFloat() / syncProgress.totalRounds.toFloat() },
+                progress = { 
+                    if (syncProgress.totalRounds > 0) {
+                        syncProgress.currentRound.toFloat() / syncProgress.totalRounds.toFloat()
+                    } else {
+                        0f
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.primary,
             )

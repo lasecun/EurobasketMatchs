@@ -36,31 +36,100 @@ class TeamRosterViewModel @Inject constructor(
     fun loadTeamRoster(teamTla: String) {
         Log.d(TAG, "🔍 Cargando roster para equipo: $teamTla")
         
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isLoading = true,
-                error = null
-            )
-            
-            getTeamRosterUseCase(teamTla).fold(
-                onSuccess = { teamRoster ->
-                    Log.d(TAG, "✅ Roster cargado exitosamente: ${teamRoster.players.size} jugadores")
-                    Log.d(TAG, "🖼️ DEBUG_LOGO_URL: '${teamRoster.logoUrl}' para equipo: '${teamRoster.teamName}'")
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        teamRoster = teamRoster,
-                        error = null
-                    )
-                },
-                onFailure = { error ->
-                    Log.e(TAG, "❌ Error cargando roster", error)
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = error.message ?: "Error desconocido cargando roster"
-                    )
-                }
-            )
+        // Verificar si ya tenemos el roster de este equipo cargado
+        val currentRoster = _uiState.value.teamRoster
+        if (currentRoster?.teamCode == teamTla && !_uiState.value.isLoading) {
+            Log.d(TAG, "✅ Roster ya cargado para equipo: $teamTla, evitando recarga")
+            return
         }
+        
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = true,
+                    error = null,
+                    successMessage = null,
+                    loadingProgress = LoadingProgress(
+                        current = 1,
+                        total = 4,
+                        message = "Conectando con la API"
+                    )
+                )
+                
+                // Simular progreso paso a paso durante la carga real
+                kotlinx.coroutines.delay(500)
+                
+                _uiState.value = _uiState.value.copy(
+                    loadingProgress = LoadingProgress(
+                        current = 2,
+                        total = 4,
+                        message = "Obteniendo datos del equipo"
+                    )
+                )
+                
+                getTeamRosterUseCase(teamTla).fold(
+                    onSuccess = { teamRoster ->
+                        Log.d(TAG, "✅ Roster cargado exitosamente: ${teamRoster.players.size} jugadores")
+                        Log.d(TAG, "🖼️ DEBUG_LOGO_URL: '${teamRoster.logoUrl}' para equipo: '${teamRoster.teamName}'")
+                        
+                        // Paso 3: Procesando datos
+                        _uiState.value = _uiState.value.copy(
+                            loadingProgress = LoadingProgress(
+                                current = 3,
+                                total = 4,
+                                message = "Procesando ${teamRoster.players.size} jugadores"
+                            )
+                        )
+                        kotlinx.coroutines.delay(300)
+                        
+                        // Paso 4: Finalizando
+                        _uiState.value = _uiState.value.copy(
+                            loadingProgress = LoadingProgress(
+                                current = 4,
+                                total = 4,
+                                message = "Finalizando carga"
+                            )
+                        )
+                        kotlinx.coroutines.delay(200)
+                        
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            teamRoster = teamRoster,
+                            error = null,
+                            successMessage = null,
+                            loadingProgress = null
+                        )
+                    },
+                    onFailure = { error ->
+                        Log.e(TAG, "❌ Error cargando roster", error)
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = error.message ?: "Error desconocido cargando roster",
+                            successMessage = null,
+                            loadingProgress = null
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error inesperado cargando roster para $teamTla", e)
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = "Error inesperado: ${e.message}",
+                    successMessage = null,
+                    loadingProgress = null
+                )
+            }
+        }
+    }
+    
+    /**
+     * Resetea el estado de error y mensaje de éxito
+     */
+    fun resetMessages() {
+        _uiState.value = _uiState.value.copy(
+            error = null,
+            successMessage = null
+        )
     }
     
     /**
@@ -70,28 +139,79 @@ class TeamRosterViewModel @Inject constructor(
         Log.d(TAG, "🔄 Refrescando roster para equipo: $teamTla")
         
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isRefreshing = true,
-                error = null
-            )
-            
-            getTeamRosterUseCase.refresh(teamTla).fold(
-                onSuccess = { teamRoster ->
-                    Log.d(TAG, "✅ Roster refrescado exitosamente")
-                    _uiState.value = _uiState.value.copy(
-                        isRefreshing = false,
-                        teamRoster = teamRoster,
-                        error = null
+            try {
+                _uiState.value = _uiState.value.copy(
+                    isRefreshing = true,
+                    error = null,
+                    successMessage = null,
+                    loadingProgress = LoadingProgress(
+                        current = 1,
+                        total = 4,
+                        message = "Conectando con la API"
                     )
-                },
-                onFailure = { error ->
-                    Log.e(TAG, "❌ Error refrescando roster", error)
-                    _uiState.value = _uiState.value.copy(
-                        isRefreshing = false,
-                        error = error.message ?: "Error refrescando roster"
+                )
+                
+                kotlinx.coroutines.delay(500)
+                
+                _uiState.value = _uiState.value.copy(
+                    loadingProgress = LoadingProgress(
+                        current = 2,
+                        total = 4,
+                        message = "Actualizando datos del equipo"
                     )
-                }
-            )
+                )
+                
+                getTeamRosterUseCase.refresh(teamTla).fold(
+                    onSuccess = { teamRoster ->
+                        Log.d(TAG, "✅ Roster refrescado exitosamente: ${teamRoster.players.size} jugadores")
+                        
+                        // Paso 3: Procesando datos
+                        _uiState.value = _uiState.value.copy(
+                            loadingProgress = LoadingProgress(
+                                current = 3,
+                                total = 4,
+                                message = "Procesando ${teamRoster.players.size} jugadores"
+                            )
+                        )
+                        kotlinx.coroutines.delay(300)
+                        
+                        // Paso 4: Finalizando
+                        _uiState.value = _uiState.value.copy(
+                            loadingProgress = LoadingProgress(
+                                current = 4,
+                                total = 4,
+                                message = "Finalizando actualización"
+                            )
+                        )
+                        kotlinx.coroutines.delay(200)
+                        
+                        _uiState.value = _uiState.value.copy(
+                            isRefreshing = false,
+                            teamRoster = teamRoster,
+                            error = null,
+                            successMessage = null,
+                            loadingProgress = null
+                        )
+                    },
+                    onFailure = { error ->
+                        Log.e(TAG, "❌ Error refrescando roster", error)
+                        _uiState.value = _uiState.value.copy(
+                            isRefreshing = false,
+                            error = error.message ?: "Error refrescando roster",
+                            successMessage = null,
+                            loadingProgress = null
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error inesperado refrescando roster para $teamTla", e)
+                _uiState.value = _uiState.value.copy(
+                    isRefreshing = false,
+                    error = "Error inesperado: ${e.message}",
+                    successMessage = null,
+                    loadingProgress = null
+                )
+            }
         }
     }
     
@@ -100,6 +220,13 @@ class TeamRosterViewModel @Inject constructor(
      */
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+    
+    /**
+     * Limpia el mensaje de éxito del estado
+     */
+    fun clearSuccessMessage() {
+        _uiState.value = _uiState.value.copy(successMessage = null)
     }
     
     /**
@@ -133,5 +260,19 @@ data class TeamRosterUiState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val teamRoster: TeamRoster? = null,
-    val error: String? = null
+    val error: String? = null,
+    val successMessage: String? = null,
+    val loadingProgress: LoadingProgress? = null
 )
+
+/**
+ * Progreso de carga con contador
+ */
+data class LoadingProgress(
+    val current: Int,
+    val total: Int,
+    val message: String = "Cargando roster"
+) {
+    val progressText: String
+        get() = "$message $current/$total"
+}

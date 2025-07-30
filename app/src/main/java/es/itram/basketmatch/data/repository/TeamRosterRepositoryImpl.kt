@@ -82,7 +82,7 @@ class TeamRosterRepositoryImpl @Inject constructor(
             
         } catch (e: Exception) {
             Log.e(TAG, "❌ [NETWORK] Error obteniendo roster para $teamTla", e)
-            Result.failure(e)
+            Result.failure(Exception("Error cargando roster de $teamTla: ${e.message}", e))
         }
     }
     
@@ -110,18 +110,29 @@ class TeamRosterRepositoryImpl @Inject constructor(
             roster
             
         } catch (e: Exception) {
-            Log.w(TAG, "📱 [LOCAL] Error accediendo al cache para $teamTla: ${e.message}")
+            Log.e(TAG, "📱 [LOCAL] ❌ Error accediendo al cache para $teamTla", e)
             null
         }
     }
     
     private suspend fun isRosterCacheValid(teamTla: String): Boolean {
-        val latestPlayer = playerDao.getLatestPlayerByTeam(teamTla)
-        return latestPlayer?.let { 
-            val cacheTime = it.lastUpdated
+        return try {
+            val latestPlayer = playerDao.getLatestPlayerByTeam(teamTla)
+            if (latestPlayer == null) {
+                Log.d(TAG, "📱 [CACHE] No hay cache para $teamTla")
+                return false
+            }
+            
+            val cacheTime = latestPlayer.lastUpdated
             val hoursAgo = TimeUnit.MILLISECONDS.toHours(System.currentTimeMillis() - cacheTime)
-            hoursAgo < CACHE_VALIDITY_HOURS
-        } ?: false
+            val isValid = hoursAgo < CACHE_VALIDITY_HOURS
+            
+            Log.d(TAG, "📱 [CACHE] Cache para $teamTla: ${if (isValid) "VÁLIDO" else "EXPIRADO"} (${hoursAgo}h)")
+            isValid
+        } catch (e: Exception) {
+            Log.w(TAG, "📱 [CACHE] Error verificando cache para $teamTla: ${e.message}")
+            false
+        }
     }
 
     override suspend fun refreshTeamRoster(teamTla: String, season: String): Result<TeamRoster> {

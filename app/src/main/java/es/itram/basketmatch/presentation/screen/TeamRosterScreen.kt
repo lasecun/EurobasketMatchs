@@ -46,9 +46,14 @@ fun TeamRosterScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     
-    // Cargar roster cuando se monta la pantalla
-    LaunchedEffect(teamTla) {
-        viewModel.loadTeamRoster(teamTla)
+    // Cargar roster cuando se monta la pantalla, pero solo si no está ya cargado para este equipo
+    LaunchedEffect(teamTla, uiState.teamRoster?.teamCode) {
+        val isCurrentTeamLoaded = uiState.teamRoster?.teamCode == teamTla
+        val shouldLoad = !isCurrentTeamLoaded && !uiState.isLoading && !uiState.isRefreshing
+        
+        if (shouldLoad) {
+            viewModel.loadTeamRoster(teamTla)
+        }
     }
     
     Scaffold(
@@ -113,48 +118,80 @@ private fun TeamRosterContent(
     onClearError: () -> Unit,
     onPlayerClick: (Player) -> Unit = {}
 ) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        when {
-            uiState.isLoading -> {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    CircularProgressIndicator()
-                    Spacer(modifier = Modifier.height(16.dp))
+    Column(modifier = modifier.fillMaxSize()) {
+        // Contenido principal
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            when {
+                uiState.isLoading -> {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator()
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        // Mostrar progreso si está disponible
+                        val progressText = uiState.loadingProgress?.progressText ?: "Cargando roster..."
+                        Text(
+                            text = progressText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                        
+                        // Mostrar barra de progreso si hay información específica
+                        uiState.loadingProgress?.let { progress ->
+                            Spacer(modifier = Modifier.height(8.dp))
+                            LinearProgressIndicator(
+                                progress = { 
+                                    if (progress.total > 0) {
+                                        progress.current.toFloat() / progress.total.toFloat()
+                                    } else {
+                                        0f // Progreso indeterminado cuando total es 0
+                                    }
+                                },
+                                modifier = Modifier.width(200.dp),
+                            )
+                        }
+                    }
+                }
+                
+                uiState.error != null -> {
+                    ErrorContent(
+                        error = uiState.error,
+                        onRetry = onRetry,
+                        onDismiss = onClearError
+                    )
+                }
+                
+                uiState.teamRoster != null -> {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        RosterList(
+                            teamRoster = uiState.teamRoster,
+                            modifier = Modifier.fillMaxSize(),
+                            onPlayerClick = onPlayerClick
+                        )
+                        
+                        // Overlay de progreso durante refresh
+                        if (uiState.isRefreshing) {
+                            RefreshProgressOverlay(
+                                loadingProgress = uiState.loadingProgress,
+                                modifier = Modifier.align(Alignment.TopCenter)
+                            )
+                        }
+                    }
+                }
+                
+                else -> {
                     Text(
-                        text = "Cargando roster...",
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = "No hay datos disponibles",
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            }
-            
-            uiState.error != null -> {
-                ErrorContent(
-                    error = uiState.error,
-                    onRetry = onRetry,
-                    onDismiss = onClearError
-                )
-            }
-            
-            uiState.teamRoster != null -> {
-                RosterList(
-                    teamRoster = uiState.teamRoster,
-                    modifier = Modifier.fillMaxSize(),
-                    onPlayerClick = onPlayerClick
-                )
-            }
-            
-            else -> {
-                Text(
-                    text = "No hay datos disponibles",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
     }
@@ -444,6 +481,55 @@ private fun ErrorContent(
             
             Button(onClick = onRetry) {
                 Text("Reintentar")
+            }
+        }
+    }
+}
+
+/**
+ * Overlay que muestra el progreso durante la actualización
+ */
+@Composable
+private fun RefreshProgressOverlay(
+    loadingProgress: es.itram.basketmatch.presentation.viewmodel.LoadingProgress?,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .padding(16.dp)
+            .fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            val progressText = loadingProgress?.progressText ?: "Actualizando roster..."
+            Text(
+                text = progressText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                textAlign = TextAlign.Center
+            )
+            
+            loadingProgress?.let { progress ->
+                Spacer(modifier = Modifier.height(8.dp))
+                LinearProgressIndicator(
+                    progress = { 
+                        if (progress.total > 0) {
+                            progress.current.toFloat() / progress.total.toFloat()
+                        } else {
+                            0f // Progreso indeterminado cuando total es 0
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }
