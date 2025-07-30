@@ -208,9 +208,9 @@ class TeamRosterRepositoryImpl @Inject constructor(
             season = season,
             players = players.sortedBy { it.jersey ?: 999 },
             coaches = emptyList(),
-            logoUrl = logoUrl ?: getTeamLogoUrl(teamTla) // Usar logoUrl del parámetro o fallback
+            logoUrl = logoUrl // Solo usar logoUrl obtenido desde getTeamLogoFromFeeds, sin fallback obsoleto
         ).also { roster ->
-            Log.d(TAG, "🔗 TeamRoster creado con logoUrl: ${roster.logoUrl} para equipo: ${roster.teamName}")
+            Log.d(TAG, "🔗 TeamRoster creado con logoUrl: ${roster.logoUrl ?: "null (no disponible)"} para equipo: ${roster.teamName}")
         }
     }
     
@@ -301,33 +301,6 @@ class TeamRosterRepositoryImpl @Inject constructor(
             "zal", "zal" -> "Zalgiris Kaunas"
             "val", "pam" -> "Valencia Basket"
             else -> tla.uppercase()
-        }
-    }
-    
-    /**
-     * Mapea códigos TLA a URLs de logos de equipos
-     */
-    private fun getTeamLogoUrl(tla: String): String? {
-        return when (tla.lowercase()) {
-            "ber", "alb" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/alba-berlin.png"
-            "asm", "mon" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/as-monaco.png"
-            "bas", "bkn" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/baskonia-vitoria-gasteiz.png"
-            "csk", "csk" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/cska-moscow.png"
-            "efs", "ist" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/anadolu-efes-istanbul.png"
-            "fcb", "bar" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/fc-barcelona.png"
-            "bay", "mun" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/fc-bayern-munich.png"
-            "mta", "tel" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/maccabi-playtika-tel-aviv.png"
-            "oly", "oly" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/olympiacos-piraeus.png"
-            "pan", "pan" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/panathinaikos-aktor-athens.png"
-            "par", "prs" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/paris-basketball.png"
-            "rea", "mad" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/real-madrid.png"
-            "red", "mil" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/ea7-emporio-armani-milan.png"
-            "ulk", "fen" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/fenerbahce-beko-istanbul.png"
-            "vir", "vir" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/virtus-segafredo-bologna.png"
-            "vil", "asv" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/ldlc-asvel-villeurbanne.png"
-            "zal", "zal" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/zalgiris-kaunas.png"
-            "val", "pam" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/valencia-basket.png"
-            else -> null
         }
     }
 }
