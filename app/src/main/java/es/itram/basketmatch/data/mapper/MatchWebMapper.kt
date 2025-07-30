@@ -19,10 +19,10 @@ object MatchWebMapper {
         return Match(
             id = dto.id ?: "",
             homeTeamId = dto.homeTeamId ?: "",
-            homeTeamName = dto.homeTeamName ?: "",
+            homeTeamName = getTeamFullName(dto.homeTeamId ?: "") ?: dto.homeTeamName ?: "",
             homeTeamLogo = dto.homeTeamLogo ?: getTeamLogoUrl(dto.homeTeamId ?: ""),
             awayTeamId = dto.awayTeamId ?: "",
-            awayTeamName = dto.awayTeamName ?: "",
+            awayTeamName = getTeamFullName(dto.awayTeamId ?: "") ?: dto.awayTeamName ?: "",
             awayTeamLogo = dto.awayTeamLogo ?: getTeamLogoUrl(dto.awayTeamId ?: ""),
             dateTime = dateTime,
             venue = dto.venue ?: "",
@@ -89,6 +89,35 @@ object MatchWebMapper {
             "vil", "asv" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/ldlc-asvel-villeurbanne.png"
             "zal", "zal" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/zalgiris-kaunas.png"
             "val", "pam" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/valencia-basket.png"
+            else -> null
+        }
+    }
+    
+    /**
+     * Mapea códigos de equipo (TLA) a nombres completos de equipos
+     */
+    private fun getTeamFullName(teamId: String): String? {
+        val tla = extractTlaFromTeamId(teamId)
+        
+        return when (tla.lowercase()) {
+            "ber", "alb" -> "ALBA Berlin"
+            "asm", "mon" -> "AS Monaco"
+            "bas", "bkn" -> "Baskonia Vitoria-Gasteiz"
+            "csk", "csk" -> "CSKA Moscow"
+            "efs", "ist" -> "Anadolu Efes Istanbul"
+            "fcb", "bar" -> "FC Barcelona"
+            "bay", "mun" -> "FC Bayern Munich"
+            "mta", "tel" -> "Maccabi Playtika Tel Aviv"
+            "oly", "oly" -> "Olympiacos Piraeus"
+            "pan", "pan" -> "Panathinaikos AKTOR Athens"
+            "par", "prs" -> "Paris Basketball"
+            "rea", "mad" -> "Real Madrid"
+            "red", "mil" -> "EA7 Emporio Armani Milan"
+            "ulk", "fen" -> "Fenerbahce Beko Istanbul"
+            "vir", "vir" -> "Virtus Segafredo Bologna"
+            "vil", "asv" -> "LDLC ASVEL Villeurbanne"
+            "zal", "zal" -> "Zalgiris Kaunas"
+            "val", "pam" -> "Valencia Basket"
             else -> null
         }
     }

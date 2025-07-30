@@ -50,7 +50,9 @@ class TeamRosterRepositoryImpl @Inject constructor(
             Log.d(TAG, "🌐 [NETWORK] Obteniendo roster desde API para $teamTla")
             
             val playersDto = apiScraper.getTeamRoster(teamTla, "E2025")
-            val roster = convertToTeamRoster(teamTla, playersDto, season)
+            // Obtener el logo del equipo desde la API de feeds (partidos recientes)
+            val teamLogoUrl = getTeamLogoFromFeeds(teamTla)
+            val roster = convertToTeamRoster(teamTla, playersDto, season, teamLogoUrl)
             
             // Guardar en cache local
             saveRosterToCache(roster)
@@ -84,6 +86,7 @@ class TeamRosterRepositoryImpl @Inject constructor(
             val roster = TeamRosterMapper.fromEntity(rosterEntity, players)
             
             Log.d(TAG, "📱 [LOCAL] ✅ Roster encontrado en cache para $teamTla (${players.size} jugadores)")
+            Log.d(TAG, "📱 [LOCAL] 🔗 Logo URL desde cache: ${roster.logoUrl}")
             roster
             
         } catch (e: Exception) {
@@ -97,7 +100,9 @@ class TeamRosterRepositoryImpl @Inject constructor(
             Log.d(TAG, "🌐 [NETWORK] 🔄 Refrescando roster forzadamente desde API para equipo $teamTla")
             
             val playersDto = apiScraper.getTeamRoster(teamTla, "E2025")
-            val roster = convertToTeamRoster(teamTla, playersDto, season)
+            // Obtener el logo del equipo desde la API de feeds
+            val teamLogoUrl = getTeamLogoFromFeeds(teamTla)
+            val roster = convertToTeamRoster(teamTla, playersDto, season, teamLogoUrl)
             
             // Guardar en cache local (reemplaza datos existentes)
             saveRosterToCache(roster)
@@ -139,7 +144,12 @@ class TeamRosterRepositoryImpl @Inject constructor(
     /**
      * Convierte los DTOs de jugadores de la API a un TeamRoster de dominio
      */
-    private suspend fun convertToTeamRoster(teamTla: String, playersDto: List<PlayerDto>, season: String): TeamRoster {
+    private suspend fun convertToTeamRoster(
+        teamTla: String, 
+        playersDto: List<PlayerDto>, 
+        season: String,
+        logoUrl: String? = null
+    ): TeamRoster {
         Log.d(TAG, "🔄 Convirtiendo ${playersDto.size} jugadores de DTO a domain model para $teamTla")
         
         val players = playersDto
@@ -159,8 +169,10 @@ class TeamRosterRepositoryImpl @Inject constructor(
             season = season,
             players = players.sortedBy { it.jersey ?: 999 },
             coaches = emptyList(),
-            logoUrl = getTeamLogoUrl(teamTla)
-        )
+            logoUrl = logoUrl ?: getTeamLogoUrl(teamTla) // Usar logoUrl del parámetro o fallback
+        ).also { roster ->
+            Log.d(TAG, "🔗 TeamRoster creado con logoUrl: ${roster.logoUrl} para equipo: ${roster.teamName}")
+        }
     }
     
     /**
@@ -191,28 +203,70 @@ class TeamRosterRepositoryImpl @Inject constructor(
     }
     
     /**
+     * Obtiene el logo del equipo desde la API de feeds buscando en partidos recientes
+     */
+    private suspend fun getTeamLogoFromFeeds(teamTla: String): String? {
+        return try {
+            Log.d(TAG, "🔍 Buscando logo para $teamTla desde API de feeds...")
+            
+            // Buscar en las últimas jornadas para encontrar el equipo
+            for (round in 1..5) {
+                try {
+                    val matches = apiScraper.getMatches()
+                    val matchWithTeam = matches.find { match ->
+                        match.homeTeamId.equals(teamTla, ignoreCase = true) || 
+                        match.awayTeamId.equals(teamTla, ignoreCase = true)
+                    }
+                    
+                    if (matchWithTeam != null) {
+                        val logoUrl = if (matchWithTeam.homeTeamId.equals(teamTla, ignoreCase = true)) {
+                            matchWithTeam.homeTeamLogo
+                        } else {
+                            matchWithTeam.awayTeamLogo
+                        }
+                        
+                        if (!logoUrl.isNullOrEmpty()) {
+                            Log.d(TAG, "🖼️ Logo encontrado para $teamTla: $logoUrl")
+                            return logoUrl
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Error buscando logo para $teamTla en jornada $round: ${e.message}")
+                }
+            }
+            
+            Log.w(TAG, "⚠️ No se encontró logo para $teamTla en la API de feeds, usando fallback")
+            null
+            
+        } catch (e: Exception) {
+            Log.w(TAG, "Error obteniendo logo desde feeds para $teamTla: ${e.message}")
+            null
+        }
+    }
+
+    /**
      * Mapea códigos TLA a nombres de equipos
      */
     private fun getTeamNameFromTla(tla: String): String {
         return when (tla.lowercase()) {
-            "ber" -> "ALBA Berlin"
-            "asm" -> "AS Monaco"
-            "bas" -> "Baskonia Vitoria-Gasteiz"
-            "csk" -> "CSKA Moscow"
-            "efs" -> "Anadolu Efes Istanbul"
-            "fcb" -> "FC Barcelona"
-            "bay" -> "FC Bayern Munich"
-            "mta" -> "Maccabi Playtika Tel Aviv"
-            "oly" -> "Olympiacos Piraeus"
-            "pan" -> "Panathinaikos AKTOR Athens"
-            "par" -> "Paris Basketball"
-            "rea" -> "Real Madrid"
-            "red" -> "EA7 Emporio Armani Milan"
-            "ulk" -> "Fenerbahce Beko Istanbul"
-            "vir" -> "Virtus Segafredo Bologna"
-            "vil" -> "LDLC ASVEL Villeurbanne"
-            "zal" -> "Zalgiris Kaunas"
-            "val" -> "Valencia Basket"
+            "ber", "alb" -> "ALBA Berlin"
+            "asm", "mon" -> "AS Monaco"
+            "bas", "bkn" -> "Baskonia Vitoria-Gasteiz"
+            "csk", "csk" -> "CSKA Moscow"
+            "efs", "ist" -> "Anadolu Efes Istanbul"
+            "fcb", "bar" -> "FC Barcelona"
+            "bay", "mun" -> "FC Bayern Munich"
+            "mta", "tel" -> "Maccabi Playtika Tel Aviv"
+            "oly", "oly" -> "Olympiacos Piraeus"
+            "pan", "pan" -> "Panathinaikos AKTOR Athens"
+            "par", "prs" -> "Paris Basketball"
+            "rea", "mad" -> "Real Madrid"
+            "red", "mil" -> "EA7 Emporio Armani Milan"
+            "ulk", "fen" -> "Fenerbahce Beko Istanbul"
+            "vir", "vir" -> "Virtus Segafredo Bologna"
+            "vil", "asv" -> "LDLC ASVEL Villeurbanne"
+            "zal", "zal" -> "Zalgiris Kaunas"
+            "val", "pam" -> "Valencia Basket"
             else -> tla.uppercase()
         }
     }
@@ -222,24 +276,24 @@ class TeamRosterRepositoryImpl @Inject constructor(
      */
     private fun getTeamLogoUrl(tla: String): String? {
         return when (tla.lowercase()) {
-            "ber" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/alba-berlin.png"
-            "asm" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/as-monaco.png"
-            "bas" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/baskonia-vitoria-gasteiz.png"
-            "csk" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/cska-moscow.png"
-            "efs" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/anadolu-efes-istanbul.png"
-            "fcb" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/fc-barcelona.png"
-            "bay" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/fc-bayern-munich.png"
-            "mta" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/maccabi-playtika-tel-aviv.png"
-            "oly" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/olympiacos-piraeus.png"
-            "pan" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/panathinaikos-aktor-athens.png"
-            "par" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/paris-basketball.png"
-            "rea" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/real-madrid.png"
-            "red" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/ea7-emporio-armani-milan.png"
-            "ulk" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/fenerbahce-beko-istanbul.png"
-            "vir" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/virtus-segafredo-bologna.png"
-            "vil" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/ldlc-asvel-villeurbanne.png"
-            "zal" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/zalgiris-kaunas.png"
-            "val" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/valencia-basket.png"
+            "ber", "alb" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/alba-berlin.png"
+            "asm", "mon" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/as-monaco.png"
+            "bas", "bkn" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/baskonia-vitoria-gasteiz.png"
+            "csk", "csk" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/cska-moscow.png"
+            "efs", "ist" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/anadolu-efes-istanbul.png"
+            "fcb", "bar" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/fc-barcelona.png"
+            "bay", "mun" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/fc-bayern-munich.png"
+            "mta", "tel" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/maccabi-playtika-tel-aviv.png"
+            "oly", "oly" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/olympiacos-piraeus.png"
+            "pan", "pan" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/panathinaikos-aktor-athens.png"
+            "par", "prs" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/paris-basketball.png"
+            "rea", "mad" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/real-madrid.png"
+            "red", "mil" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/ea7-emporio-armani-milan.png"
+            "ulk", "fen" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/fenerbahce-beko-istanbul.png"
+            "vir", "vir" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/virtus-segafredo-bologna.png"
+            "vil", "asv" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/ldlc-asvel-villeurbanne.png"
+            "zal", "zal" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/zalgiris-kaunas.png"
+            "val", "pam" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/valencia-basket.png"
             else -> null
         }
     }
