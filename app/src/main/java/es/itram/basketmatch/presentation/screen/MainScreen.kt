@@ -22,6 +22,7 @@ import es.itram.basketmatch.presentation.component.LoadingIndicator
 import es.itram.basketmatch.presentation.component.MatchCard
 import es.itram.basketmatch.presentation.component.HeaderDateSelector
 import es.itram.basketmatch.presentation.component.SyncProgressIndicator
+import es.itram.basketmatch.presentation.component.NoMatchesTodayCard
 import es.itram.basketmatch.presentation.viewmodel.MainViewModel
 
 /**
@@ -88,14 +89,11 @@ fun MainScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = if (selectedDate != null) {
-                            "No hay partidos para la fecha seleccionada"
-                        } else {
-                            "No hay partidos disponibles"
-                        },
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    NoMatchesTodayCard(
+                        isToday = viewModel.isSelectedDateToday(),
+                        nextMatchDay = viewModel.findNextMatchDay(),
+                        onNavigateToNextMatchDay = { viewModel.goToNextAvailableMatchDay() },
+                        modifier = Modifier.padding(16.dp)
                     )
                 }
             }
