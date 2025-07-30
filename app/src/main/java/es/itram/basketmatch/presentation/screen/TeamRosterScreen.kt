@@ -191,21 +191,24 @@ private fun TeamInfoHeader(teamRoster: TeamRoster) {
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             // Logo del equipo
-            teamRoster.logoUrl?.let { logoUrl ->
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
-                ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                if (teamRoster.logoUrl != null) {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
-                            .data(logoUrl)
+                            .data(teamRoster.logoUrl)
                             .crossfade(true)
                             .build(),
                         contentDescription = "Logo de ${teamRoster.teamName}",
@@ -214,9 +217,17 @@ private fun TeamInfoHeader(teamRoster: TeamRoster) {
                             .clip(CircleShape),
                         contentScale = ContentScale.Fit
                     )
+                } else {
+                    // Mostrar icono por defecto si no hay logo
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
             }
+            Spacer(modifier = Modifier.height(12.dp))
             
             Text(
                 text = teamRoster.teamName,

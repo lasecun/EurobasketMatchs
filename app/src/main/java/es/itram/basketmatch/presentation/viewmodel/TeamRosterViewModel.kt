@@ -42,6 +42,7 @@ class TeamRosterViewModel @Inject constructor(
             getTeamRosterUseCase(teamTla).fold(
                 onSuccess = { teamRoster ->
                     Log.d(TAG, "✅ Roster cargado exitosamente: ${teamRoster.players.size} jugadores")
+                    Log.d(TAG, "🖼️ DEBUG_LOGO_URL: '${teamRoster.logoUrl}' para equipo: '${teamRoster.teamName}'")
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         teamRoster = teamRoster,
