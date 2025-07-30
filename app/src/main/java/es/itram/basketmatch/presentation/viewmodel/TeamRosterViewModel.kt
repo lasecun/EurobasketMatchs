@@ -27,6 +27,9 @@ class TeamRosterViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(TeamRosterUiState())
     val uiState: StateFlow<TeamRosterUiState> = _uiState.asStateFlow()
     
+    // Variable para mantener el jugador seleccionado
+    private var selectedPlayer: es.itram.basketmatch.domain.model.Player? = null
+    
     /**
      * Carga el roster de un equipo por su código TLA
      */
@@ -103,7 +106,23 @@ class TeamRosterViewModel @Inject constructor(
      * Obtiene un jugador por su código
      */
     fun getPlayerById(playerId: String): es.itram.basketmatch.domain.model.Player? {
-        return _uiState.value.teamRoster?.players?.find { it.code == playerId }
+        val player = _uiState.value.teamRoster?.players?.find { it.code == playerId }
+        selectedPlayer = player // Guardar referencia
+        return player
+    }
+    
+    /**
+     * Selecciona un jugador para navegación
+     */
+    fun selectPlayer(player: es.itram.basketmatch.domain.model.Player) {
+        selectedPlayer = player
+    }
+    
+    /**
+     * Obtiene el jugador seleccionado
+     */
+    fun getSelectedPlayer(): es.itram.basketmatch.domain.model.Player? {
+        return selectedPlayer
     }
 }
 

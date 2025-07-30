@@ -1,6 +1,7 @@
 package es.itram.basketmatch.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -103,6 +104,10 @@ fun EuroLeagueNavigation(navController: NavHostController) {
         ) { backStackEntry ->
             val teamTla = backStackEntry.arguments?.getString("teamTla") ?: ""
             val teamName = backStackEntry.arguments?.getString("teamName") ?: ""
+            
+            // Crear ViewModel aquí para mantener el estado
+            val teamRosterViewModel: es.itram.basketmatch.presentation.viewmodel.TeamRosterViewModel = hiltViewModel()
+            
             TeamRosterScreen(
                 teamTla = teamTla,
                 teamName = teamName,
@@ -110,35 +115,32 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                     navController.popBackStack()
                 },
                 onPlayerClick = { player ->
-                    navController.navigate(NavigationRoutes.playerDetail(player.code, teamName))
-                }
+                    // Guardar el jugador seleccionado
+                    PlayerNavigationHelper.setSelectedPlayer(player, teamName)
+                    navController.navigate(NavigationRoutes.playerDetail())
+                },
+                viewModel = teamRosterViewModel
             )
         }
         
-        composable(
-            route = NavigationRoutes.PLAYER_DETAIL,
-            arguments = listOf(
-                navArgument("playerId") { type = NavType.StringType },
-                navArgument("teamName") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val playerId = backStackEntry.arguments?.getString("playerId") ?: ""
-            val teamName = backStackEntry.arguments?.getString("teamName") ?: ""
-            // Necesitamos obtener el jugador del ViewModel
-            val teamRosterViewModel: es.itram.basketmatch.presentation.viewmodel.TeamRosterViewModel = hiltViewModel()
-            val player = teamRosterViewModel.getPlayerById(playerId)
+        composable(NavigationRoutes.PLAYER_DETAIL) {
+            val player = PlayerNavigationHelper.getSelectedPlayer()
+            val teamName = PlayerNavigationHelper.getSelectedTeamName()
             
             if (player != null) {
                 PlayerDetailScreen(
                     player = player,
                     teamName = teamName,
                     onNavigateBack = {
+                        PlayerNavigationHelper.clearSelection()
                         navController.popBackStack()
                     }
                 )
             } else {
                 // Si no se encuentra el jugador, volver atrás
-                navController.popBackStack()
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
             }
         }
     }

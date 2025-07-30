@@ -37,6 +37,8 @@ android {
         debug {
             isDebuggable = true
             applicationIdSuffix = ".debug"
+            enableUnitTestCoverage = true
+            enableAndroidTestCoverage = true
         }
     }
     compileOptions {
@@ -59,7 +61,15 @@ android {
     testOptions {
         unitTests {
             isReturnDefaultValues = true
+            isIncludeAndroidResources = true
         }
+        unitTests.all {
+            it.useJUnitPlatform()
+            it.testLogging {
+                events("passed", "failed", "skipped")
+            }
+        }
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
 }
 
@@ -125,6 +135,9 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.hilt.android.testing)
+    androidTestImplementation(libs.truth)
+    androidTestImplementation(libs.turbine)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
     kspAndroidTest(libs.hilt.compiler)
     
     // Debug
