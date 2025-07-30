@@ -111,7 +111,7 @@ class MatchWebMapperTest {
     }
 
     @Test
-    fun `toDomain should generate team logos when DTO logos are null`() {
+    fun `toDomain should handle null team logos when DTO logos are null`() {
         // Given
         val matchWithoutLogos = MatchWebDto(
             id = "match789",
@@ -128,9 +128,11 @@ class MatchWebMapperTest {
         // When
         val result = MatchWebMapper.toDomain(matchWithoutLogos)
 
-        // Then
-        assertThat(result.homeTeamLogo).isEqualTo("https://img.euroleaguebasketball.net/design/ec/logos/clubs/zalgiris-kaunas.png")
-        assertThat(result.awayTeamLogo).isEqualTo("https://img.euroleaguebasketball.net/design/ec/logos/clubs/anadolu-efes-istanbul.png")
+        // Then - Sin fallback obsoleto, los logos deben ser null
+        assertThat(result.homeTeamLogo).isNull()
+        assertThat(result.awayTeamLogo).isNull()
+        assertThat(result.homeTeamName).isEqualTo("Zalgiris Kaunas") // Nombre generado desde TLA
+        assertThat(result.awayTeamName).isEqualTo("Anadolu Efes Istanbul") // Nombre generado desde TLA
     }
 
     @Test
@@ -419,7 +421,7 @@ class MatchWebMapperTest {
         assertThat(result.awayTeamId).isEmpty()
         assertThat(result.homeTeamName).isEqualTo("Home Team") // Usa el nombre del DTO
         assertThat(result.awayTeamName).isEqualTo("Away Team") // Usa el nombre del DTO
-        assertThat(result.homeTeamLogo).isNull() // No puede generar logo sin TLA
+        assertThat(result.homeTeamLogo).isNull() // Sin fallback obsoleto
         assertThat(result.awayTeamLogo).isNull()
     }
 }
