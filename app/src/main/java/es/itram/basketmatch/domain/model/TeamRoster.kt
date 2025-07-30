@@ -8,7 +8,8 @@ data class TeamRoster(
     val teamName: String,
     val season: String,
     val players: List<Player>,
-    val coaches: List<Coach> = emptyList()
+    val coaches: List<Coach> = emptyList(),
+    val logoUrl: String? = null
 )
 
 /**

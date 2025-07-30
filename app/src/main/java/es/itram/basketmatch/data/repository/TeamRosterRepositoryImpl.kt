@@ -14,6 +14,7 @@ import es.itram.basketmatch.domain.model.Player
 import es.itram.basketmatch.domain.model.PlayerPosition
 import es.itram.basketmatch.domain.model.TeamRoster
 import es.itram.basketmatch.domain.repository.TeamRosterRepository
+import es.itram.basketmatch.utils.PlayerImageUtil
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,7 +26,8 @@ import javax.inject.Singleton
 class TeamRosterRepositoryImpl @Inject constructor(
     private val apiScraper: EuroLeagueJsonApiScraper,
     private val teamRosterDao: TeamRosterDao,
-    private val playerDao: PlayerDao
+    private val playerDao: PlayerDao,
+    private val playerImageUtil: PlayerImageUtil
 ) : TeamRosterRepository {
     
     companion object {
@@ -120,34 +122,10 @@ class TeamRosterRepositoryImpl @Inject constructor(
             val rosterEntity = TeamRosterMapper.toEntity(roster)
             teamRosterDao.insertTeamRoster(rosterEntity)
             
-            // Guardar jugadores
-            val playerEntities = PlayerMapper.fromDtoListToEntityList(
-                roster.players.map { player ->
-                    // Convertir Player de vuelta a PlayerDto para usar el mapper existente
-                    // Esto es un workaround temporal hasta refactorizar los mappers
-                    PlayerDto(
-                        person = PersonDto(
-                            code = player.code,
-                            name = player.name,
-                            passportSurname = player.surname.takeIf { it.isNotBlank() },
-                            jerseyName = player.surname.takeIf { it.isNotBlank() },
-                            height = player.height?.replace("cm", "")?.toIntOrNull(),
-                            weight = player.weight?.replace("kg", "")?.toIntOrNull(),
-                            birthDate = player.dateOfBirth,
-                            birthCountry = player.placeOfBirth?.let { CountryDto("", it) },
-                            country = player.nationality?.let { CountryDto("", it) },
-                            images = player.profileImageUrl?.let { PlayerImageUrls(profile = it) }
-                        ),
-                        type = "J", // Jugador
-                        typeName = "Player",
-                        active = player.isActive,
-                        dorsal = player.jersey?.toString(),
-                        position = player.position?.ordinal,
-                        positionName = player.position?.name
-                    )
-                },
-                roster.teamCode
-            )
+            // Guardar jugadores - usar directamente PlayerMapper.toEntity en lugar del workaround
+            val playerEntities = roster.players.map { player ->
+                PlayerMapper.toEntity(player, roster.teamCode)
+            }
             
             playerDao.insertPlayers(playerEntities)
             
@@ -161,47 +139,27 @@ class TeamRosterRepositoryImpl @Inject constructor(
     /**
      * Convierte los DTOs de jugadores de la API a un TeamRoster de dominio
      */
-    private fun convertToTeamRoster(teamTla: String, playersDto: List<PlayerDto>, season: String): TeamRoster {
+    private suspend fun convertToTeamRoster(teamTla: String, playersDto: List<PlayerDto>, season: String): TeamRoster {
         Log.d(TAG, "🔄 Convirtiendo ${playersDto.size} jugadores de DTO a domain model para $teamTla")
         
         val players = playersDto
             .filter { it.type == "J" } // Solo jugadores, no entrenadores
             .mapNotNull { playerDto ->
                 try {
-                    // Generar un código único si no está disponible
-                    val playerCode = playerDto.person.code 
-                        ?: generatePlayerCode(playerDto.person.name, playerDto.person.passportSurname, playerDto.dorsal)
-                    
-                    Player(
-                        code = playerCode,
-                        name = playerDto.person.name,
-                        surname = playerDto.person.passportSurname ?: playerDto.person.jerseyName ?: "",
-                        fullName = "${playerDto.person.name} ${playerDto.person.passportSurname ?: ""}".trim(),
-                        jersey = playerDto.dorsal?.toIntOrNull() ?: playerDto.dorsalRaw?.toIntOrNull(),
-                        position = convertPosition(playerDto.positionName),
-                        height = playerDto.person.height?.let { "${it}cm" },
-                        weight = playerDto.person.weight?.let { "${it}kg" },
-                        dateOfBirth = playerDto.person.birthDate,
-                        placeOfBirth = playerDto.person.birthCountry?.name,
-                        nationality = playerDto.person.country?.name,
-                        experience = null,
-                        profileImageUrl = playerDto.person.images?.profile ?: playerDto.person.images?.headshot,
-                        isActive = playerDto.active,
-                        isStarter = false, // No disponible en la nueva API
-                        isCaptain = false  // No disponible en la nueva API
-                    )
+                    PlayerMapper.fromDto(playerDto, teamTla, playerImageUtil)
                 } catch (e: Exception) {
                     Log.w(TAG, "Error convirtiendo jugador ${playerDto.person.name}: ${e.message}")
-                null
+                    null
+                }
             }
-        }
         
         return TeamRoster(
             teamCode = teamTla,
             teamName = getTeamNameFromTla(teamTla),
             season = season,
             players = players.sortedBy { it.jersey ?: 999 },
-            coaches = emptyList()
+            coaches = emptyList(),
+            logoUrl = getTeamLogoUrl(teamTla)
         )
     }
     
@@ -256,6 +214,33 @@ class TeamRosterRepositoryImpl @Inject constructor(
             "zal" -> "Zalgiris Kaunas"
             "val" -> "Valencia Basket"
             else -> tla.uppercase()
+        }
+    }
+    
+    /**
+     * Mapea códigos TLA a URLs de logos de equipos
+     */
+    private fun getTeamLogoUrl(tla: String): String? {
+        return when (tla.lowercase()) {
+            "ber" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/alba-berlin.png"
+            "asm" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/as-monaco.png"
+            "bas" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/baskonia-vitoria-gasteiz.png"
+            "csk" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/cska-moscow.png"
+            "efs" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/anadolu-efes-istanbul.png"
+            "fcb" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/fc-barcelona.png"
+            "bay" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/fc-bayern-munich.png"
+            "mta" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/maccabi-playtika-tel-aviv.png"
+            "oly" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/olympiacos-piraeus.png"
+            "pan" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/panathinaikos-aktor-athens.png"
+            "par" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/paris-basketball.png"
+            "rea" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/real-madrid.png"
+            "red" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/ea7-emporio-armani-milan.png"
+            "ulk" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/fenerbahce-beko-istanbul.png"
+            "vir" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/virtus-segafredo-bologna.png"
+            "vil" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/ldlc-asvel-villeurbanne.png"
+            "zal" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/zalgiris-kaunas.png"
+            "val" -> "https://img.euroleaguebasketball.net/design/ec/logos/clubs/valencia-basket.png"
+            else -> null
         }
     }
 }

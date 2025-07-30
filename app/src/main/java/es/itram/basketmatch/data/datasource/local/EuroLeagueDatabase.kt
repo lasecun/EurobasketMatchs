@@ -1,12 +1,8 @@
 package es.itram.basketmatch.data.datasource.local
 
 import androidx.room.Database
-import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
-import android.content.Context
 import es.itram.basketmatch.data.datasource.local.dao.TeamDao
 import es.itram.basketmatch.data.datasource.local.dao.MatchDao
 import es.itram.basketmatch.data.datasource.local.dao.StandingDao
@@ -32,8 +28,8 @@ import es.itram.basketmatch.data.datasource.local.converter.SeasonTypeConverter
         PlayerEntity::class,
         TeamRosterEntity::class
     ],
-    version = 3,
-    exportSchema = true
+    version = 4, // Incrementamos la versión para incluir logoUrl en TeamRosterEntity
+    exportSchema = false // Deshabilitamos el schema export para desarrollo
 )
 @TypeConverters(
     LocalDateTimeConverter::class,
@@ -50,79 +46,9 @@ abstract class EuroLeagueDatabase : RoomDatabase() {
 
     companion object {
         const val DATABASE_NAME = "euroleague_database"
-
-        @Volatile
-        private var INSTANCE: EuroLeagueDatabase? = null
-
-        private val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Agregar las nuevas columnas para nombres e imágenes de equipos en la tabla matches
-                database.execSQL("""
-                    ALTER TABLE matches ADD COLUMN homeTeamName TEXT NOT NULL DEFAULT ''
-                """)
-                database.execSQL("""
-                    ALTER TABLE matches ADD COLUMN homeTeamLogo TEXT
-                """)
-                database.execSQL("""
-                    ALTER TABLE matches ADD COLUMN awayTeamName TEXT NOT NULL DEFAULT ''
-                """)
-                database.execSQL("""
-                    ALTER TABLE matches ADD COLUMN awayTeamLogo TEXT
-                """)
-            }
-        }
-
-        private val MIGRATION_2_3 = object : Migration(2, 3) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Crear tabla players
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS `players` (
-                        `id` TEXT NOT NULL PRIMARY KEY,
-                        `teamCode` TEXT NOT NULL,
-                        `playerCode` TEXT NOT NULL,
-                        `name` TEXT NOT NULL,
-                        `surname` TEXT NOT NULL,
-                        `fullName` TEXT NOT NULL,
-                        `jersey` INTEGER,
-                        `position` TEXT,
-                        `height` TEXT,
-                        `weight` TEXT,
-                        `dateOfBirth` TEXT,
-                        `placeOfBirth` TEXT,
-                        `nationality` TEXT,
-                        `experience` INTEGER,
-                        `profileImageUrl` TEXT,
-                        `isActive` INTEGER NOT NULL DEFAULT 1,
-                        `isStarter` INTEGER NOT NULL DEFAULT 0,
-                        `isCaptain` INTEGER NOT NULL DEFAULT 0,
-                        `lastUpdated` INTEGER NOT NULL DEFAULT 0
-                    )
-                """)
-                
-                // Crear tabla team_rosters
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS `team_rosters` (
-                        `teamCode` TEXT NOT NULL PRIMARY KEY,
-                        `teamName` TEXT NOT NULL,
-                        `season` TEXT NOT NULL,
-                        `lastUpdated` INTEGER NOT NULL DEFAULT 0
-                    )
-                """)
-            }
-        }
-
-        fun getDatabase(context: Context): EuroLeagueDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    EuroLeagueDatabase::class.java,
-                    DATABASE_NAME
-                )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
-                .build()
-                INSTANCE = instance
-                instance
-            }
-        }
+        
+        // Nota: Las migraciones han sido deshabilitadas para desarrollo.
+        // La base de datos se recreará automáticamente cuando haya cambios de esquema
+        // gracias a fallbackToDestructiveMigration().
     }
 }

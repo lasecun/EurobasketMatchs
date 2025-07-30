@@ -194,6 +194,30 @@ private fun TeamInfoHeader(teamRoster: TeamRoster) {
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Logo del equipo
+            teamRoster.logoUrl?.let { logoUrl ->
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(logoUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Logo de ${teamRoster.teamName}",
+                        modifier = Modifier
+                            .size(60.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+            
             Text(
                 text = teamRoster.teamName,
                 style = MaterialTheme.typography.headlineSmall,
