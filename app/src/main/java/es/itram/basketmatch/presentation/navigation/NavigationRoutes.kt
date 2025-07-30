@@ -9,10 +9,10 @@ object NavigationRoutes {
     const val TEAM_DETAIL = "team_detail/{teamId}"
     const val MATCH_DETAIL = "match_detail/{matchId}"
     const val TEAM_ROSTER = "team_roster/{teamTla}/{teamName}"
-    const val PLAYER_DETAIL = "player_detail/{playerId}/{teamName}"
+    const val PLAYER_DETAIL = "player_detail"
     
     fun teamDetail(teamId: String) = "team_detail/$teamId"
     fun matchDetail(matchId: String) = "match_detail/$matchId"
     fun teamRoster(teamTla: String, teamName: String = "") = "team_roster/$teamTla/$teamName"
-    fun playerDetail(playerId: String, teamName: String = "") = "player_detail/$playerId/$teamName"
+    fun playerDetail() = PLAYER_DETAIL
 }
