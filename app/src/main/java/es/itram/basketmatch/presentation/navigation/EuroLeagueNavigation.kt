@@ -12,6 +12,7 @@ import es.itram.basketmatch.presentation.screen.CalendarScreen
 import es.itram.basketmatch.presentation.screen.TeamDetailScreen
 import es.itram.basketmatch.presentation.screen.MatchDetailScreen
 import es.itram.basketmatch.presentation.screen.TeamRosterScreen
+import es.itram.basketmatch.presentation.screen.PlayerDetailScreen
 import es.itram.basketmatch.presentation.viewmodel.MainViewModel
 
 /**
@@ -107,8 +108,38 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                 teamName = teamName,
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onPlayerClick = { player ->
+                    navController.navigate(NavigationRoutes.playerDetail(player.code, teamName))
                 }
             )
+        }
+        
+        composable(
+            route = NavigationRoutes.PLAYER_DETAIL,
+            arguments = listOf(
+                navArgument("playerId") { type = NavType.StringType },
+                navArgument("teamName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val playerId = backStackEntry.arguments?.getString("playerId") ?: ""
+            val teamName = backStackEntry.arguments?.getString("teamName") ?: ""
+            // Necesitamos obtener el jugador del ViewModel
+            val teamRosterViewModel: es.itram.basketmatch.presentation.viewmodel.TeamRosterViewModel = hiltViewModel()
+            val player = teamRosterViewModel.getPlayerById(playerId)
+            
+            if (player != null) {
+                PlayerDetailScreen(
+                    player = player,
+                    teamName = teamName,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            } else {
+                // Si no se encuentra el jugador, volver atrás
+                navController.popBackStack()
+            }
         }
     }
 }
