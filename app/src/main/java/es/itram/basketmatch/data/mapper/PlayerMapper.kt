@@ -6,6 +6,7 @@ import es.itram.basketmatch.data.datasource.remote.dto.PlayerDto
 import es.itram.basketmatch.domain.model.Player
 import es.itram.basketmatch.domain.model.PlayerPosition
 import es.itram.basketmatch.domain.model.TeamRoster
+import es.itram.basketmatch.utils.PlayerImageUtil
 
 /**
  * Mapper para convertir entre diferentes representaciones de jugadores y rosters
@@ -23,17 +24,20 @@ object PlayerMapper {
     }
     
     /**
-     * Convierte PlayerDto (de la API) a Player (dominio)
+     * Convierte PlayerDto a Player (modelo de dominio)
+     * Obtiene la imagen del jugador desde la web oficial o genera un placeholder
      */
-    fun fromDto(dto: PlayerDto): Player {
-        // Solo procesar jugadores (type="J"), no entrenadores (type="E")
-        if (dto.type != "J") {
-            throw IllegalArgumentException("Solo se pueden procesar jugadores (type='J')")
-        }
+    suspend fun fromDto(dto: PlayerDto, teamCode: String, imageUtil: PlayerImageUtil): Player {
+        val playerCode = dto.person.code ?: generatePlayerCode(
+            dto.person.name, 
+            dto.person.passportSurname, 
+            dto.dorsal
+        )
         
-        // Generar un código único si no está disponible
-        val playerCode = dto.person.code 
-            ?: generatePlayerCode(dto.person.name, dto.person.passportSurname, dto.dorsal)
+        // Intentar obtener la imagen desde la web oficial o usar placeholder
+        val imageUrl = PlayerImageUtil.DEFAULT_PLAYER_IMAGES[playerCode] 
+            ?: imageUtil.getPlayerImageUrl(playerCode, dto.person.name, teamCode)
+            ?: imageUtil.generatePlaceholderImageUrl(dto.person.name)
         
         return Player(
             code = playerCode,
@@ -48,7 +52,7 @@ object PlayerMapper {
             placeOfBirth = dto.person.birthCountry?.name,
             nationality = dto.person.country?.name,
             experience = null, // No disponible en la API
-            profileImageUrl = dto.person.images?.profile ?: dto.person.images?.headshot,
+            profileImageUrl = imageUrl,
             isActive = dto.active,
             isStarter = false, // No disponible en la nueva API
             isCaptain = false  // No disponible en la nueva API
@@ -109,12 +113,13 @@ object PlayerMapper {
     /**
      * Convierte lista de PlayerDto a lista de PlayerEntity
      * Filtra solo los jugadores (type="J"), excluyendo entrenadores
+     * Nota: Esta función ya no se usa con las nuevas imágenes, se mantiene para compatibilidad
      */
-    fun fromDtoListToEntityList(dtoList: List<PlayerDto>, teamCode: String): List<PlayerEntity> {
+    suspend fun fromDtoListToEntityList(dtoList: List<PlayerDto>, teamCode: String, imageUtil: PlayerImageUtil): List<PlayerEntity> {
         return dtoList
             .filter { it.type == "J" } // Solo jugadores, no entrenadores
             .map { dto ->
-                val player = fromDto(dto)
+                val player = fromDto(dto, teamCode, imageUtil)
                 toEntity(player, teamCode)
             }
     }
@@ -141,7 +146,8 @@ object TeamRosterMapper {
             teamName = entity.teamName,
             season = entity.season,
             players = players,
-            coaches = emptyList() // Por ahora no manejamos coaches
+            coaches = emptyList(), // Por ahora no manejamos coaches
+            logoUrl = entity.logoUrl
         )
     }
     
@@ -153,6 +159,7 @@ object TeamRosterMapper {
             teamCode = teamRoster.teamCode,
             teamName = teamRoster.teamName,
             season = teamRoster.season,
+            logoUrl = teamRoster.logoUrl,
             lastUpdated = System.currentTimeMillis()
         )
     }

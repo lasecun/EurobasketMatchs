@@ -12,5 +12,6 @@ data class TeamRosterEntity(
     val teamCode: String,
     val teamName: String,
     val season: String,
+    val logoUrl: String? = null,
     val lastUpdated: Long = System.currentTimeMillis()
 )

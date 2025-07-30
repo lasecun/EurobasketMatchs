@@ -31,7 +31,9 @@ object DatabaseModule {
             context.applicationContext,
             EuroLeagueDatabase::class.java,
             EuroLeagueDatabase.DATABASE_NAME
-        ).build()
+        )
+        .fallbackToDestructiveMigration() // Permite recrear la BD cuando hay cambios de esquema
+        .build()
     }
 
     @Provides

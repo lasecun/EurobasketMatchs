@@ -14,6 +14,8 @@ import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueJsonApiScra
 import es.itram.basketmatch.data.mapper.MatchWebMapper
 import es.itram.basketmatch.data.mapper.TeamWebMapper
 import es.itram.basketmatch.domain.service.DataSyncService
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 /**
@@ -22,6 +24,16 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+    
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
     
     @Provides
     @Singleton

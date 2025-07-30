@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 3,
-    "identityHash": "f7cddd3d2046d5aa30fba30314995dda",
+    "identityHash": "875ff65335cce5d78e078c2498658786",
     "entities": [
       {
         "tableName": "teams",
@@ -466,7 +466,7 @@
       },
       {
         "tableName": "team_rosters",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`teamCode` TEXT NOT NULL, `teamName` TEXT NOT NULL, `season` TEXT NOT NULL, `lastUpdated` INTEGER NOT NULL, PRIMARY KEY(`teamCode`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`teamCode` TEXT NOT NULL, `teamName` TEXT NOT NULL, `season` TEXT NOT NULL, `logoUrl` TEXT, `lastUpdated` INTEGER NOT NULL, PRIMARY KEY(`teamCode`))",
         "fields": [
           {
             "fieldPath": "teamCode",
@@ -485,6 +485,12 @@
             "columnName": "season",
             "affinity": "TEXT",
             "notNull": true
+          },
+          {
+            "fieldPath": "logoUrl",
+            "columnName": "logoUrl",
+            "affinity": "TEXT",
+            "notNull": false
           },
           {
             "fieldPath": "lastUpdated",
@@ -506,7 +512,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f7cddd3d2046d5aa30fba30314995dda')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '875ff65335cce5d78e078c2498658786')"
     ]
   }
 }
