@@ -1,144 +1,157 @@
 package es.itram.basketmatch.utils
 
 import com.google.common.truth.Truth.assertThat
+import io.mockk.coEvery
+import io.mockk.mockk
+import kotlinx.coroutines.test.runTest
+import okhttp3.OkHttpClient
+import okhttp3.Response
+import okhttp3.ResponseBody
 import org.junit.Test
 
 class PlayerImageUtilTest {
 
+    private val mockHttpClient = mockk<OkHttpClient>()
+    private val playerImageUtil = PlayerImageUtil(mockHttpClient)
+
     @Test
-    fun `getPlayerImageUrl should generate correct URL for valid personId`() {
+    fun `generatePlaceholderImageUrl should generate correct URL for player name`() {
         // Arrange
-        val personId = "P001234"
+        val playerName = "John Smith"
 
         // Act
-        val result = PlayerImageUtil.getPlayerImageUrl(personId)
+        val result = playerImageUtil.generatePlaceholderImageUrl(playerName)
 
         // Assert
-        assertThat(result).contains(personId)
-        assertThat(result).startsWith("https://")
-        assertThat(result).contains("euroleaguebasketball.net")
+        assertThat(result).contains("JS")
+        assertThat(result).startsWith("https://ui-avatars.com")
+        assertThat(result).contains("background=004996")
     }
 
     @Test
-    fun `getPlayerImageUrl should handle empty personId`() {
+    fun `generatePlaceholderImageUrl should handle single name correctly`() {
         // Arrange
-        val personId = ""
+        val playerName = "Madonna"
 
         // Act
-        val result = PlayerImageUtil.getPlayerImageUrl(personId)
+        val result = playerImageUtil.generatePlaceholderImageUrl(playerName)
+
+        // Assert
+        assertThat(result).contains("M")
+        assertThat(result).startsWith("https://ui-avatars.com")
+    }
+
+    @Test
+    fun `generatePlaceholderImageUrl should handle empty name correctly`() {
+        // Arrange
+        val playerName = ""
+
+        // Act
+        val result = playerImageUtil.generatePlaceholderImageUrl(playerName)
 
         // Assert
         assertThat(result).isNotEmpty()
-        assertThat(result).startsWith("https://")
+        assertThat(result).startsWith("https://ui-avatars.com")
     }
 
     @Test
-    fun `getPlayerImageUrl should handle null personId`() {
+    fun `generatePlaceholderImageUrl should handle multiple names correctly`() {
         // Arrange
-        val personId: String? = null
+        val playerName = "John Michael Smith Johnson"
 
         // Act
-        val result = PlayerImageUtil.getPlayerImageUrl(personId)
+        val result = playerImageUtil.generatePlaceholderImageUrl(playerName)
 
         // Assert
-        assertThat(result).isNotEmpty()
-        assertThat(result).startsWith("https://")
+        assertThat(result).contains("JM") // Only first two names
+        assertThat(result).startsWith("https://ui-avatars.com")
     }
 
     @Test
-    fun `getPlayerImageUrl should handle personId with special characters`() {
+    fun `getPlayerImageUrl should return null when http request fails`() = runTest {
         // Arrange
-        val personId = "P-001_234"
+        val playerCode = "003733"
+        val playerName = "Sergio Llull"
+        val teamCode = "MAD"
+        
+        val mockResponse = mockk<Response>()
+        coEvery { mockResponse.isSuccessful } returns false
+        coEvery { mockHttpClient.newCall(any()).execute() } returns mockResponse
 
         // Act
-        val result = PlayerImageUtil.getPlayerImageUrl(personId)
+        val result = playerImageUtil.getPlayerImageUrl(playerCode, playerName, teamCode)
 
         // Assert
-        assertThat(result).contains(personId)
-        assertThat(result).startsWith("https://")
+        assertThat(result).isNull()
     }
 
     @Test
-    fun `getPlayerImageUrl should generate consistent URLs for same personId`() {
+    fun `getPlayerImageUrl should return image URL when found in HTML`() = runTest {
         // Arrange
-        val personId = "P001234"
+        val playerCode = "003733"
+        val playerName = "Sergio Llull"
+        val teamCode = "MAD"
+        val expectedImageUrl = "https://example.com/player.png"
+        val htmlContent = """{"photo":"$expectedImageUrl"}"""
+        
+        val mockResponseBody = mockk<ResponseBody>()
+        val mockResponse = mockk<Response>()
+        
+        coEvery { mockResponseBody.string() } returns htmlContent
+        coEvery { mockResponse.isSuccessful } returns true
+        coEvery { mockResponse.body } returns mockResponseBody
+        coEvery { mockHttpClient.newCall(any()).execute() } returns mockResponse
 
         // Act
-        val result1 = PlayerImageUtil.getPlayerImageUrl(personId)
-        val result2 = PlayerImageUtil.getPlayerImageUrl(personId)
+        val result = playerImageUtil.getPlayerImageUrl(playerCode, playerName, teamCode)
 
         // Assert
-        assertThat(result1).isEqualTo(result2)
+        assertThat(result).isEqualTo(expectedImageUrl)
     }
 
     @Test
-    fun `getPlayerImageUrl should generate different URLs for different personIds`() {
+    fun `getPlayerImageUrl should return null when image not found in HTML`() = runTest {
         // Arrange
-        val personId1 = "P001234"
-        val personId2 = "P005678"
+        val playerCode = "003733"
+        val playerName = "Sergio Llull"
+        val teamCode = "MAD"
+        val htmlContent = """<html><body>No photo data</body></html>"""
+        
+        val mockResponseBody = mockk<ResponseBody>()
+        val mockResponse = mockk<Response>()
+        
+        coEvery { mockResponseBody.string() } returns htmlContent
+        coEvery { mockResponse.isSuccessful } returns true
+        coEvery { mockResponse.body } returns mockResponseBody
+        coEvery { mockHttpClient.newCall(any()).execute() } returns mockResponse
 
         // Act
-        val result1 = PlayerImageUtil.getPlayerImageUrl(personId1)
-        val result2 = PlayerImageUtil.getPlayerImageUrl(personId2)
+        val result = playerImageUtil.getPlayerImageUrl(playerCode, playerName, teamCode)
 
         // Assert
-        assertThat(result1).isNotEqualTo(result2)
-        assertThat(result1).contains(personId1)
-        assertThat(result2).contains(personId2)
+        assertThat(result).isNull()
     }
 
     @Test
-    fun `getPlayerImageUrl should handle very long personId`() {
+    fun `getPlayerImageUrl should handle exception gracefully`() = runTest {
         // Arrange
-        val personId = "P" + "0".repeat(100) + "1234"
+        val playerCode = "003733"
+        val playerName = "Sergio Llull"
+        val teamCode = "MAD"
+        
+        coEvery { mockHttpClient.newCall(any()).execute() } throws RuntimeException("Network error")
 
         // Act
-        val result = PlayerImageUtil.getPlayerImageUrl(personId)
+        val result = playerImageUtil.getPlayerImageUrl(playerCode, playerName, teamCode)
 
         // Assert
-        assertThat(result).contains(personId)
-        assertThat(result).startsWith("https://")
+        assertThat(result).isNull()
     }
 
     @Test
-    fun `getPlayerImageUrl should handle personId with numbers only`() {
-        // Arrange
-        val personId = "001234"
-
-        // Act
-        val result = PlayerImageUtil.getPlayerImageUrl(personId)
-
+    fun `DEFAULT_PLAYER_IMAGES should contain expected entries`() {
         // Assert
-        assertThat(result).contains(personId)
-        assertThat(result).startsWith("https://")
-    }
-
-    @Test
-    fun `getPlayerImageUrl should handle personId with letters only`() {
-        // Arrange
-        val personId = "PLAYER"
-
-        // Act
-        val result = PlayerImageUtil.getPlayerImageUrl(personId)
-
-        // Assert
-        assertThat(result).contains(personId)
-        assertThat(result).startsWith("https://")
-    }
-
-    @Test
-    fun `getPlayerImageUrl should be case sensitive`() {
-        // Arrange
-        val personId1 = "p001234"
-        val personId2 = "P001234"
-
-        // Act
-        val result1 = PlayerImageUtil.getPlayerImageUrl(personId1)
-        val result2 = PlayerImageUtil.getPlayerImageUrl(personId2)
-
-        // Assert
-        assertThat(result1).isNotEqualTo(result2)
-        assertThat(result1).contains(personId1)
-        assertThat(result2).contains(personId2)
+        assertThat(PlayerImageUtil.DEFAULT_PLAYER_IMAGES).containsKey("003733")
+        assertThat(PlayerImageUtil.DEFAULT_PLAYER_IMAGES["003733"]).contains("https://")
     }
 }
