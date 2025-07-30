@@ -74,6 +74,12 @@ interface PlayerDao {
     suspend fun getPlayersUpdatedAfter(teamCode: String, timestamp: Long): List<PlayerEntity>
     
     /**
+     * Obtiene el jugador más recientemente actualizado de un equipo para verificar cache
+     */
+    @Query("SELECT * FROM players WHERE teamCode = :teamCode ORDER BY lastUpdated DESC LIMIT 1")
+    suspend fun getLatestPlayerByTeam(teamCode: String): PlayerEntity?
+    
+    /**
      * Elimina jugadores antiguos (más de X días)
      */
     @Query("DELETE FROM players WHERE lastUpdated < :timestamp")

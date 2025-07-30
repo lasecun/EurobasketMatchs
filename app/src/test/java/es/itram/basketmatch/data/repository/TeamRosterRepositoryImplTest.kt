@@ -53,12 +53,14 @@ class TeamRosterRepositoryImplTest {
             )
         )
 
-        // Mock que no hay cache
+        // Mock que no hay cache válido
+        coEvery { playerDao.getLatestPlayerByTeam("MAD") } returns null
         coEvery { teamRosterDao.getTeamRoster("MAD") } returns null
         coEvery { playerDao.getPlayersByTeamSync("MAD") } returns emptyList()
         
         // Mock API response
         coEvery { apiScraper.getTeamRoster("MAD", "E2025") } returns playersDto
+        coEvery { apiScraper.getMatches() } returns emptyList() // Mock para obtener logo
         
         // Mock guardado en cache
         coEvery { teamRosterDao.insertTeamRoster(any()) } returns Unit
@@ -78,12 +80,14 @@ class TeamRosterRepositoryImplTest {
     @Test
     fun `getTeamRoster should return failure when api throws exception`() = runTest {
         // Given
-        // Mock que no hay cache
+        // Mock que no hay cache válido
+        coEvery { playerDao.getLatestPlayerByTeam("MAD") } returns null
         coEvery { teamRosterDao.getTeamRoster("MAD") } returns null
         coEvery { playerDao.getPlayersByTeamSync("MAD") } returns emptyList()
         
         // Mock API error
         coEvery { apiScraper.getTeamRoster("MAD", "E2025") } throws RuntimeException("Network error")
+        coEvery { apiScraper.getMatches() } returns emptyList() // Mock para obtener logo
 
         // When
         val result = repository.getTeamRoster("MAD", "E2025")
@@ -97,13 +101,27 @@ class TeamRosterRepositoryImplTest {
     fun `getTeamRoster should use cached data when available`() = runTest {
         // Given - First call
         val playersDto = listOf(TestDataFactory.createTestPlayerDto())
+        
+        // Mock primera llamada sin cache
+        coEvery { playerDao.getLatestPlayerByTeam("MAD") } returns null
+        coEvery { teamRosterDao.getTeamRoster("MAD") } returns null
+        coEvery { playerDao.getPlayersByTeamSync("MAD") } returns emptyList()
         coEvery { apiScraper.getTeamRoster("MAD", "E2025") } returns playersDto
+        coEvery { apiScraper.getMatches() } returns emptyList()
+        coEvery { teamRosterDao.insertTeamRoster(any()) } returns Unit
+        coEvery { playerDao.insertPlayers(any()) } returns Unit
 
         // When - First call to populate cache
         val firstResult = repository.getTeamRoster("MAD", "E2025")
         
         // Then
         assertTrue(firstResult.isSuccess)
+
+        // Mock segunda llamada con cache válido
+        val testPlayerEntity = TestDataFactory.createTestPlayerEntity(teamCode = "MAD")
+        coEvery { playerDao.getLatestPlayerByTeam("MAD") } returns testPlayerEntity
+        coEvery { teamRosterDao.getTeamRoster("MAD") } returns TestDataFactory.createTestTeamRosterEntity()
+        coEvery { playerDao.getPlayersByTeamSync("MAD") } returns listOf(testPlayerEntity)
 
         // When - Second call should use cache
         val secondResult = repository.getTeamRoster("MAD", "E2025")
