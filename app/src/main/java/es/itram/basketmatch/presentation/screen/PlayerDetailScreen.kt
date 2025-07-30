@@ -120,8 +120,8 @@ private fun PlayerHeaderCard(
             // Foto del jugador
             Box(
                 modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
@@ -133,8 +133,8 @@ private fun PlayerHeaderCard(
                             .build(),
                         contentDescription = "Foto de ${player.fullName}",
                         modifier = Modifier
-                            .size(120.dp)
-                            .clip(CircleShape),
+                            .fillMaxWidth()
+                            .aspectRatio(1f),
                         contentScale = ContentScale.Crop
                     )
                 } else {

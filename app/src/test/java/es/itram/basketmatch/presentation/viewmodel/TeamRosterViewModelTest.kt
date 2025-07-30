@@ -63,6 +63,7 @@ class TeamRosterViewModelTest {
         assertEquals("MAD", viewModel.uiState.value.teamRoster?.teamCode)
         assertEquals(3, viewModel.uiState.value.teamRoster?.players?.size)
         assertNull(viewModel.uiState.value.error)
+        assertNull(viewModel.uiState.value.loadingProgress) // Progress should be cleared after loading
     }
 
     @Test
@@ -80,6 +81,7 @@ class TeamRosterViewModelTest {
         assertNull(viewModel.uiState.value.teamRoster)
         assertNotNull(viewModel.uiState.value.error)
         assertEquals("Team not found", viewModel.uiState.value.error)
+        assertNull(viewModel.uiState.value.loadingProgress) // Progress should be cleared on error
     }
 
     @Test
@@ -95,6 +97,7 @@ class TeamRosterViewModelTest {
         assertFalse(viewModel.uiState.value.isRefreshing)
         assertNotNull(viewModel.uiState.value.teamRoster)
         assertNull(viewModel.uiState.value.error)
+        assertNull(viewModel.uiState.value.loadingProgress) // Progress should be cleared after refresh
     }
 
     @Test
@@ -110,5 +113,21 @@ class TeamRosterViewModelTest {
 
         // Then
         assertNull(viewModel.uiState.value.error)
+    }
+
+    @Test
+    fun `resetMessages should clear error and success messages`() = runTest {
+        // Given - Set error state first
+        coEvery { 
+            getTeamRosterUseCase("INVALID") 
+        } returns Result.failure(RuntimeException("Error"))
+        viewModel.loadTeamRoster("INVALID")
+
+        // When
+        viewModel.resetMessages()
+
+        // Then
+        assertNull(viewModel.uiState.value.error)
+        assertNull(viewModel.uiState.value.successMessage)
     }
 }
