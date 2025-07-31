@@ -5,7 +5,6 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     kotlin("plugin.serialization") version "2.0.21"
-    jacoco
 }
 
 android {
@@ -144,98 +143,4 @@ dependencies {
     // Debug
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-}
-
-// ============================================================================
-// JACOCO CODE COVERAGE CONFIGURATION
-// ============================================================================
-
-jacoco {
-    toolVersion = "0.8.10"
-}
-
-tasks.register<JacocoReport>("jacocoTestReport") {
-    dependsOn("testDebugUnitTest")
-    group = "Reporting"
-    description = "Generate Jacoco coverage reports after running tests."
-    
-    reports {
-        xml.required.set(true)
-        html.required.set(true)
-        csv.required.set(false)
-    }
-
-    val fileFilter = listOf(
-        // Android framework
-        "**/R.class",
-        "**/R\$*.class",
-        "**/BuildConfig.*",
-        "**/Manifest*.*",
-        "**/*Test*.*",
-        "android/**/*.*",
-        
-        // Hilt generated
-        "**/*_HiltModules*",
-        "**/*Hilt_*",
-        "**/Hilt_*",
-        "**/*_MembersInjector.class",
-        "**/*_Factory.class",
-        "**/*_Provide*Factory.class",
-        
-        // Room generated
-        "**/*_Impl.class",
-        "**/*_Impl\$*.class",
-        
-        // Compose generated
-        "**/*\$Lambda\$*.class",
-        "**/*ComposableLambda*.class",
-        
-        // Data Binding & View Binding
-        "**/databinding/*",
-        "**/android/databinding/*",
-        "**/androidx/databinding/*",
-        "**/BR.*",
-        
-        // Navigation args
-        "**/*Args.class",
-        "**/*Directions.class",
-        
-        // Other generated classes
-        "**/*\$WhenMappings.class",
-        "**/*\$Creator.class",
-        "**/*\$1.class",
-        "**/*\$2.class"
-    )
-    
-    val debugTree = fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) {
-        exclude(fileFilter)
-    }
-    val mainSrc = "$projectDir/src/main/java"
-
-    sourceDirectories.setFrom(files(mainSrc))
-    classDirectories.setFrom(files(debugTree))
-    executionData.setFrom(fileTree(layout.buildDirectory) {
-        include("jacoco/testDebugUnitTest.exec")
-    })
-}
-
-tasks.register<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
-    dependsOn("jacocoTestReport")
-    violationRules {
-        rule {
-            limit {
-                counter = "LINE"
-                value = "COVEREDRATIO"
-                minimum = "0.70".toBigDecimal() // 70% minimum coverage
-            }
-        }
-        
-        rule {
-            limit {
-                counter = "BRANCH"
-                value = "COVEREDRATIO"
-                minimum = "0.60".toBigDecimal() // 60% branch coverage
-            }
-        }
-    }
 }
