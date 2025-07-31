@@ -342,8 +342,7 @@ private fun MatchesSection(
             
             matches.forEach { match ->
                 MatchCard(
-                    match = match,
-                    onTeamClick = onTeamClick
+                    match = match
                 )
                 
                 if (match != matches.last()) {

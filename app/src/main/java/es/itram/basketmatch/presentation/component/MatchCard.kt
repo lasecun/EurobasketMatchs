@@ -163,12 +163,17 @@ private fun TeamInfo(
         modifier = modifier.padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Logo arriba (sin click)
-        TeamLogo(logoUrl = teamLogo)
+        // Logo arriba (ahora también clickeable)
+        TeamLogo(
+            logoUrl = teamLogo,
+            modifier = Modifier
+                .clip(CircleShape)
+                .clickable { onTeamClick(teamId) }
+        )
         
         Spacer(modifier = Modifier.height(4.dp))
         
-        // Nombre abajo (solo este es clickeable)
+        // Nombre abajo (clickeable)
         Text(
             text = teamName,
             style = MaterialTheme.typography.bodyMedium,

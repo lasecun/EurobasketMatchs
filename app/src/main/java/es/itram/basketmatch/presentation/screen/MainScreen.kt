@@ -105,8 +105,7 @@ fun MainScreen(
                     items(matches) { match ->
                         MatchCard(
                             match = match,
-                            onMatchClick = onNavigateToMatchDetail,
-                            onTeamClick = onNavigateToTeamDetail
+                            onMatchClick = onNavigateToMatchDetail
                         )
                     }
                 }
