@@ -3,25 +3,21 @@ package es.itram.basketmatch.data.repository
 import android.util.Log
 import es.itram.basketmatch.data.datasource.local.dao.PlayerDao
 import es.itram.basketmatch.data.datasource.local.dao.TeamRosterDao
-import es.itram.basketmatch.data.datasource.remote.dto.CountryDto
 import es.itram.basketmatch.data.datasource.remote.dto.PlayerDto
-import es.itram.basketmatch.data.datasource.remote.dto.PersonDto
-import es.itram.basketmatch.data.datasource.remote.dto.PlayerImageUrls
 import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueJsonApiScraper
 import es.itram.basketmatch.data.mapper.PlayerMapper
 import es.itram.basketmatch.data.mapper.TeamRosterMapper
-import es.itram.basketmatch.domain.model.Player
 import es.itram.basketmatch.domain.model.PlayerPosition
 import es.itram.basketmatch.domain.model.TeamRoster
+import es.itram.basketmatch.domain.repository.MatchRepository
 import es.itram.basketmatch.domain.repository.TeamRosterRepository
 import es.itram.basketmatch.utils.PlayerImageUtil
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Implementación del repositorio para roster de equipos
@@ -32,13 +28,17 @@ class TeamRosterRepositoryImpl @Inject constructor(
     private val apiScraper: EuroLeagueJsonApiScraper,
     private val teamRosterDao: TeamRosterDao,
     private val playerDao: PlayerDao,
-    private val playerImageUtil: PlayerImageUtil
+    private val playerImageUtil: PlayerImageUtil,
+    private val matchRepository: MatchRepository
 ) : TeamRosterRepository {
     
     companion object {
         private const val TAG = "TeamRosterRepository"
         private const val CACHE_VALIDITY_HOURS = 2 // Cache válido por 2 horas
     }
+    
+    // Cache en memoria para logos de equipos para evitar búsquedas repetidas
+    private val teamLogoCache = mutableMapOf<String, String?>()
     
     override suspend fun getTeamRoster(teamTla: String, season: String): Result<TeamRoster> {
         return try {
@@ -253,37 +253,54 @@ class TeamRosterRepositoryImpl @Inject constructor(
     }
     
     /**
-     * Obtiene el logo del equipo desde la API de feeds buscando en partidos recientes
+     * Obtiene el logo del equipo desde el cache de partidos para evitar llamadas duplicadas a la API
      */
     private suspend fun getTeamLogoFromFeeds(teamTla: String): String? {
         return try {
-            Log.d(TAG, "🔍 Buscando logo para $teamTla desde API de feeds...")
+            Log.d(TAG, "🔍 Buscando logo para $teamTla...")
             
-            // Obtener todos los partidos una sola vez en lugar de en cada iteración
-            val matches = apiScraper.getMatches()
+            // Primero verificar si ya tenemos el logo en cache
+            teamLogoCache[teamTla]?.let { cachedLogo ->
+                Log.d(TAG, "🖼️ Logo encontrado en cache para $teamTla: $cachedLogo")
+                return cachedLogo
+            }
+            
+            Log.d(TAG, "💾 [CACHE] Buscando logo en partidos cacheados para $teamTla")
+            
+            // Usar el repositorio de partidos que ya tiene cache inteligente
+            val matches = matchRepository.getAllMatches().first()
+            Log.d(TAG, "💾 [CACHE] ✅ Usando ${matches.size} partidos desde cache local")
+            
             val matchWithTeam = matches.find { match ->
                 match.homeTeamId.equals(teamTla, ignoreCase = true) || 
                 match.awayTeamId.equals(teamTla, ignoreCase = true)
             }
             
-            if (matchWithTeam != null) {
-                val logoUrl = if (matchWithTeam.homeTeamId.equals(teamTla, ignoreCase = true)) {
+            val logoUrl = if (matchWithTeam != null) {
+                if (matchWithTeam.homeTeamId.equals(teamTla, ignoreCase = true)) {
                     matchWithTeam.homeTeamLogo
                 } else {
                     matchWithTeam.awayTeamLogo
                 }
-                
-                if (!logoUrl.isNullOrEmpty()) {
-                    Log.d(TAG, "🖼️ Logo encontrado para $teamTla: $logoUrl")
-                    return logoUrl
-                }
+            } else {
+                null
             }
             
-            Log.w(TAG, "⚠️ No se encontró logo para $teamTla en la API de feeds, usando fallback")
-            null
+            // Guardar en cache (incluso si es null para evitar búsquedas repetidas)
+            teamLogoCache[teamTla] = logoUrl
+            
+            if (!logoUrl.isNullOrEmpty()) {
+                Log.d(TAG, "🖼️ Logo encontrado para $teamTla: $logoUrl")
+                logoUrl
+            } else {
+                Log.w(TAG, "⚠️ No se encontró logo para $teamTla en partidos cacheados")
+                null
+            }
             
         } catch (e: Exception) {
-            Log.w(TAG, "Error obteniendo logo desde feeds para $teamTla: ${e.message}")
+            Log.w(TAG, "❌ Error obteniendo logo desde cache de partidos para $teamTla: ${e.message}")
+            // Guardar null en cache para evitar reintentos
+            teamLogoCache[teamTla] = null
             null
         }
     }
