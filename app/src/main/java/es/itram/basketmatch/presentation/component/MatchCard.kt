@@ -33,7 +33,6 @@ import java.time.format.DateTimeFormatter
 fun MatchCard(
     match: Match,
     onMatchClick: (String) -> Unit = {},
-    onTeamClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -85,7 +84,6 @@ fun MatchCard(
                     teamLogo = match.homeTeamLogo,
                     score = match.homeScore,
                     isHome = true,
-                    onTeamClick = onTeamClick,
                     modifier = Modifier.weight(1f)
                 )
                 
@@ -118,7 +116,6 @@ fun MatchCard(
                     teamLogo = match.awayTeamLogo,
                     score = match.awayScore,
                     isHome = false,
-                    onTeamClick = onTeamClick,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -156,24 +153,18 @@ private fun TeamInfo(
     teamLogo: String?,
     score: Int?,
     isHome: Boolean,
-    onTeamClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier.padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Logo arriba (ahora también clickeable)
-        TeamLogo(
-            logoUrl = teamLogo,
-            modifier = Modifier
-                .clip(CircleShape)
-                .clickable { onTeamClick(teamId) }
-        )
+        // Logo arriba (sin click)
+        TeamLogo(logoUrl = teamLogo)
         
         Spacer(modifier = Modifier.height(4.dp))
         
-        // Nombre abajo (clickeable)
+        // Nombre abajo (sin click)
         Text(
             text = teamName,
             style = MaterialTheme.typography.bodyMedium,
@@ -181,10 +172,7 @@ private fun TeamInfo(
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
-            modifier = Modifier
-                .clip(RoundedCornerShape(4.dp))
-                .clickable { onTeamClick(teamId) }
-                .padding(4.dp)
+            modifier = Modifier.padding(4.dp)
         )
     }
 }
