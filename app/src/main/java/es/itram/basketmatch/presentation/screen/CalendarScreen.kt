@@ -174,8 +174,7 @@ fun CalendarScreen(
                                         items(dayMatches) { match ->
                                             MatchCard(
                                                 match = match,
-                                                onMatchClick = onNavigateToMatchDetail,
-                                                onTeamClick = onNavigateToTeamDetail
+                                                onMatchClick = onNavigateToMatchDetail
                                             )
                                         }
                                     }
