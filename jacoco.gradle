@@ -1,0 +1,113 @@
+apply plugin: 'jacoco'
+
+jacoco {
+    toolVersion = '0.8.10'
+}
+
+android {
+    testOptions {
+        unitTests.all {
+            jacoco {
+                includeNoLocationClasses = true
+                excludes = ['jdk.internal.*']
+            }
+        }
+    }
+}
+
+task jacocoTestReport(type: JacocoReport, dependsOn: ['testDebugUnitTest']) {
+    group = "Reporting"
+    description = "Generate Jacoco coverage reports after running tests."
+    
+    reports {
+        xml.enabled = true
+        html.enabled = true
+        csv.enabled = false
+    }
+
+    def fileFilter = [
+        // Android framework
+        '**/R.class',
+        '**/R$*.class',
+        '**/BuildConfig.*',
+        '**/Manifest*.*',
+        '**/*Test*.*',
+        'android/**/*.*',
+        
+        // Hilt generated
+        '**/*_HiltModules*',
+        '**/*Hilt_*',
+        '**/Hilt_*',
+        '**/*_MembersInjector.class',
+        '**/*_Factory.class',
+        '**/*_Provide*Factory.class',
+        
+        // Room generated
+        '**/*_Impl.class',
+        '**/*_Impl$*.class',
+        
+        // Compose generated
+        '**/*$Lambda$*.class',
+        '**/*ComposableLambda*.class',
+        
+        // Data Binding & View Binding
+        '**/databinding/*',
+        '**/android/databinding/*',
+        '**/androidx/databinding/*',
+        '**/BR.*',
+        
+        // Navigation args
+        '**/*Args.class',
+        '**/*Directions.class',
+        
+        // Other generated classes
+        '**/*$WhenMappings.class',
+        '**/*$Creator.class',
+        '**/*$1.class',
+        '**/*$2.class'
+    ]
+    
+    def debugTree = fileTree(dir: "$project.buildDir/tmp/kotlin-classes/debug", excludes: fileFilter)
+    def mainSrc = "$project.projectDir/src/main/java"
+
+    sourceDirectories.setFrom(files([mainSrc]))
+    classDirectories.setFrom(files([debugTree]))
+    executionData.setFrom(fileTree(dir: project.buildDir, includes: [
+        'jacoco/testDebugUnitTest.exec'
+    ]))
+}
+
+task jacocoTestCoverageVerification(type: JacocoCoverageVerification, dependsOn: 'jacocoTestReport') {
+    violationRules {
+        rule {
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.70 // 70% minimum coverage
+            }
+        }
+        
+        rule {
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.60 // 60% branch coverage
+            }
+        }
+    }
+}
+
+// Configure coverage for CI
+if (project.hasProperty("ci")) {
+    jacocoTestCoverageVerification {
+        violationRules {
+            rule {
+                limit {
+                    counter = 'LINE'
+                    value = 'COVEREDRATIO'
+                    minimum = 0.65 // Slightly lower for CI to allow incremental improvements
+                }
+            }
+        }
+    }
+}

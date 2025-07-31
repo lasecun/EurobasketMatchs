@@ -1,0 +1,232 @@
+name: 🚀 CI Pipeline - Build & Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  # ============================================================================
+  # JOB 1: BUILD & TEST
+  # ============================================================================
+  build-and-test:
+    name: 🏗️ Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+    # ----------------------
+    # SETUP ENVIRONMENT
+    # ----------------------
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: ☕ Setup JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: 🐘 Setup Gradle
+      uses: gradle/gradle-build-action@v2
+      with:
+        gradle-home-cache-cleanup: true
+
+    - name: 🔧 Make gradlew executable
+      run: chmod +x ./gradlew
+
+    # ----------------------
+    # DEPENDENCY MANAGEMENT  
+    # ----------------------
+    - name: 📦 Cache Gradle Dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+          ~/.android/build-cache
+        key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          gradle-${{ runner.os }}-
+
+    # ----------------------
+    # BUILD VALIDATION
+    # ----------------------
+    - name: 🔍 Validate Gradle Wrapper
+      uses: gradle/wrapper-validation-action@v1
+
+    - name: 🧹 Clean Project
+      run: ./gradlew clean
+
+    - name: 🏗️ Build Debug APK
+      run: ./gradlew assembleDebug --stacktrace
+
+    # ----------------------
+    # TESTING SUITE
+    # ----------------------
+    - name: 🧪 Run Unit Tests
+      run: ./gradlew testDebugUnitTest --continue --stacktrace
+
+    - name: 📊 Generate Test Report
+      run: ./gradlew testDebugUnitTest jacocoTestReport --continue
+
+    # ----------------------
+    # CODE QUALITY
+    # ----------------------
+    - name: 🔍 Run Android Lint
+      run: ./gradlew lintDebug --continue
+
+    - name: 📝 Generate Lint Report
+      run: ./gradlew lintDebug
+      continue-on-error: true
+
+    # ----------------------
+    # ARTIFACT UPLOAD
+    # ----------------------
+    - name: 📤 Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: debug-apk-${{ github.sha }}
+        path: app/build/outputs/apk/debug/*.apk
+        retention-days: 7
+
+    - name: 📊 Upload Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-${{ github.sha }}
+        path: |
+          app/build/reports/tests/
+          app/build/test-results/
+        retention-days: 7
+
+    - name: 📋 Upload Lint Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: lint-results-${{ github.sha }}
+        path: |
+          app/build/reports/lint-results-debug.html
+          app/build/reports/lint-results-debug.xml
+        retention-days: 7
+
+    # ----------------------
+    # COVERAGE REPORTING
+    # ----------------------
+    - name: 📈 Upload Coverage to Codecov
+      uses: codecov/codecov-action@v3
+      if: success()
+      with:
+        file: app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  # ============================================================================
+  # JOB 2: CODE QUALITY ANALYSIS
+  # ============================================================================
+  code-quality:
+    name: 🔍 Code Quality Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build-and-test
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: ☕ Setup JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: 🔧 Make gradlew executable
+      run: chmod +x ./gradlew
+
+    - name: 📊 Run Detekt (Static Analysis)
+      run: ./gradlew detekt
+      continue-on-error: true
+
+    - name: 📋 Upload Detekt Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: detekt-results-${{ github.sha }}
+        path: app/build/reports/detekt/
+        retention-days: 7
+
+  # ============================================================================
+  # JOB 3: SECURITY SCAN
+  # ============================================================================
+  security-scan:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build-and-test
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: 🔍 Run Dependency Check
+      uses: dependency-check/Dependency-Check_Action@main
+      id: depcheck
+      with:
+        project: 'EuroLeague-App'
+        path: '.'
+        format: 'ALL'
+        args: >
+          --enableRetired
+          --enableExperimental
+          --exclude "**/build/**"
+          --exclude "**/gradle/**"
+
+    - name: 📋 Upload Dependency Check Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: dependency-check-results-${{ github.sha }}
+        path: reports/
+        retention-days: 7
+
+  # ============================================================================
+  # JOB 4: NOTIFICATION & SUMMARY
+  # ============================================================================
+  notification:
+    name: 📬 Build Summary
+    runs-on: ubuntu-latest
+    needs: [build-and-test, code-quality, security-scan]
+    if: always()
+    
+    steps:
+    - name: 📊 Build Status Summary
+      run: |
+        echo "## 🚀 CI Pipeline Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📋 Job Status Overview" >> $GITHUB_STEP_SUMMARY
+        echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| 🏗️ Build & Test | ${{ needs.build-and-test.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| 🔍 Code Quality | ${{ needs.code-quality.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| 🔒 Security Scan | ${{ needs.security-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📱 Artifacts Generated" >> $GITHUB_STEP_SUMMARY
+        echo "- 📦 Debug APK" >> $GITHUB_STEP_SUMMARY
+        echo "- 🧪 Test Reports" >> $GITHUB_STEP_SUMMARY
+        echo "- 📋 Lint Analysis" >> $GITHUB_STEP_SUMMARY
+        echo "- 🔍 Code Quality Reports" >> $GITHUB_STEP_SUMMARY
+        echo "- 🔒 Security Scan Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
