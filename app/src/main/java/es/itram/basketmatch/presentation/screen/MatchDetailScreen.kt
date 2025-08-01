@@ -41,9 +41,21 @@ fun MatchDetailScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
 
+    // 📊 Analytics: Track screen view
+    LaunchedEffect(Unit) {
+        viewModel.trackScreenView()
+    }
+
     // Cargar datos cuando se inicia la pantalla
     LaunchedEffect(matchId) {
         viewModel.loadMatchDetails(matchId)
+    }
+    
+    // Track match viewed when match data is loaded
+    LaunchedEffect(match) {
+        match?.let { matchData ->
+            viewModel.trackMatchViewed(matchData)
+        }
     }
 
     Scaffold(

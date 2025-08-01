@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +42,11 @@ fun MainScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     val syncProgress by viewModel.syncProgress.collectAsStateWithLifecycle()
 
+    // 📊 Analytics: Track screen view
+    LaunchedEffect(Unit) {
+        viewModel.trackMainScreenView()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -50,7 +56,11 @@ fun MainScreen(
         // Header con navegación de fechas
         HeaderDateSelector(
             selectedDate = selectedDate,
-            onDateClick = onNavigateToCalendar,
+            onDateClick = {
+                // 📊 Analytics: Track calendar navigation from main screen
+                viewModel.trackCalendarNavigation()
+                onNavigateToCalendar()
+            },
             onPreviousDay = { viewModel.goToPreviousDay() },
             onNextDay = { viewModel.goToNextDay() }
         )
@@ -105,7 +115,11 @@ fun MainScreen(
                     items(matches) { match ->
                         MatchCard(
                             match = match,
-                            onMatchClick = onNavigateToMatchDetail
+                            onMatchClick = { matchId ->
+                                // 📊 Analytics: Track match selection from main screen
+                                viewModel.trackMatchClicked(match)
+                                onNavigateToMatchDetail(matchId)
+                            }
                         )
                     }
                 }

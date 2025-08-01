@@ -20,10 +20,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import es.itram.basketmatch.domain.model.Player
 import es.itram.basketmatch.domain.model.PlayerPosition
+import es.itram.basketmatch.presentation.viewmodel.PlayerDetailViewModel
 
 /**
  * Pantalla de detalle de un jugador
@@ -33,8 +35,15 @@ import es.itram.basketmatch.domain.model.PlayerPosition
 fun PlayerDetailScreen(
     player: Player,
     teamName: String,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    viewModel: PlayerDetailViewModel = hiltViewModel()
 ) {
+    // 📊 Analytics: Track player view
+    LaunchedEffect(player.code) {
+        viewModel.trackScreenView()
+        viewModel.trackPlayerViewed(player)
+    }
+    
     Scaffold(
         topBar = {
             TopAppBar(

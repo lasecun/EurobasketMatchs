@@ -1,6 +1,7 @@
 package es.itram.basketmatch.presentation.viewmodel
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import es.itram.basketmatch.analytics.AnalyticsManager
 import es.itram.basketmatch.domain.usecase.GetMatchByIdUseCase
 import es.itram.basketmatch.testutil.TestDataFactory
 import io.mockk.every
@@ -30,13 +31,15 @@ class MatchDetailViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
 
     private lateinit var getMatchByIdUseCase: GetMatchByIdUseCase
+    private lateinit var analyticsManager: AnalyticsManager
     private lateinit var viewModel: MatchDetailViewModel
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         getMatchByIdUseCase = mockk()
-        viewModel = MatchDetailViewModel(getMatchByIdUseCase)
+        analyticsManager = mockk(relaxed = true)
+        viewModel = MatchDetailViewModel(getMatchByIdUseCase, analyticsManager)
     }
 
     @After

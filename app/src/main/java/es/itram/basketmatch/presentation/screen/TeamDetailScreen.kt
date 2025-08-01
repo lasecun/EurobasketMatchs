@@ -17,8 +17,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import es.itram.basketmatch.presentation.viewmodel.TeamDetailViewModel
+import es.itram.basketmatch.domain.entity.Match
+import es.itram.basketmatch.domain.entity.MatchStatus
+import es.itram.basketmatch.domain.entity.Team
 import es.itram.basketmatch.presentation.component.MatchCard
+import es.itram.basketmatch.presentation.viewmodel.TeamDetailViewModel
 import es.itram.basketmatch.presentation.component.LoadingIndicator
 import es.itram.basketmatch.presentation.component.ErrorMessage
 
@@ -30,6 +33,7 @@ import es.itram.basketmatch.presentation.component.ErrorMessage
 fun TeamDetailScreen(
     teamId: String,
     onNavigateBack: () -> Unit,
+    onNavigateToRoster: ((teamTla: String, teamName: String) -> Unit)? = null,
     viewModel: TeamDetailViewModel = hiltViewModel()
 ) {
     val team by viewModel.team.collectAsStateWithLifecycle()
@@ -38,6 +42,11 @@ fun TeamDetailScreen(
     val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+
+    // 📊 Analytics: Track screen view
+    LaunchedEffect(Unit) {
+        viewModel.trackScreenView()
+    }
 
     LaunchedEffect(teamId) {
         viewModel.loadTeamDetails(teamId)
@@ -91,10 +100,18 @@ fun TeamDetailScreen(
                 ) {
                     // Información del equipo
                     item {
+                        val currentTeam = team!!
                         TeamInfoCard(
-                            team = team!!,
+                            team = currentTeam,
                             standing = standing,
-                            winPercentage = viewModel.getWinPercentage()
+                            winPercentage = viewModel.getWinPercentage(),
+                            onNavigateToRoster = onNavigateToRoster?.let {
+                                {
+                                    // 📊 Analytics: Track team roster access from team detail
+                                    viewModel.trackRosterAccess(currentTeam.code, currentTeam.name)
+                                    it(currentTeam.code, currentTeam.name)
+                                }
+                            }
                         )
                     }
                     
@@ -131,7 +148,8 @@ fun TeamDetailScreen(
 private fun TeamInfoCard(
     team: es.itram.basketmatch.domain.entity.Team,
     standing: es.itram.basketmatch.domain.entity.Standing?,
-    winPercentage: Double
+    winPercentage: Double,
+    onNavigateToRoster: (() -> Unit)? = null
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -260,6 +278,31 @@ private fun TeamInfoCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                }
+            }
+            
+            // Botón para ver roster del equipo
+            if (onNavigateToRoster != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Divider()
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                OutlinedButton(
+                    onClick = onNavigateToRoster,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Ver Roster del Equipo")
                 }
             }
         }

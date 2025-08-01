@@ -1,8 +1,10 @@
 package es.itram.basketmatch.presentation.viewmodel
 
+import android.os.Bundle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import es.itram.basketmatch.analytics.AnalyticsManager
 import es.itram.basketmatch.domain.entity.Match
 import es.itram.basketmatch.domain.entity.Team
 import es.itram.basketmatch.domain.usecase.GetAllMatchesUseCase
@@ -22,7 +24,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
     private val getAllMatchesUseCase: GetAllMatchesUseCase,
-    private val getAllTeamsUseCase: GetAllTeamsUseCase
+    private val getAllTeamsUseCase: GetAllTeamsUseCase,
+    private val analyticsManager: AnalyticsManager
 ) : ViewModel() {
 
     private val _currentMonth = MutableStateFlow(YearMonth.now())
@@ -45,6 +48,19 @@ class CalendarViewModel @Inject constructor(
 
     init {
         loadData()
+        
+        // 📊 Analytics: Track calendar screen access
+        trackScreenView()
+    }
+    
+    /**
+     * 📊 Analytics: Track screen view
+     */
+    fun trackScreenView() {
+        analyticsManager.trackScreenView(
+            screenName = AnalyticsManager.SCREEN_CALENDAR,
+            screenClass = "CalendarViewModel"
+        )
     }
 
     private fun loadData() {
@@ -58,8 +74,22 @@ class CalendarViewModel @Inject constructor(
                 _teams.value = teams.associateBy { it.id }
                 _matches.value = matches
                 _error.value = null
+                
+                // 📊 Analytics: Track successful calendar data load
+                analyticsManager.logCustomEvent("calendar_data_loaded", Bundle().apply {
+                    putInt("teams_count", teams.size)
+                    putInt("matches_count", matches.size)
+                    putString("current_month", _currentMonth.value.toString())
+                })
+                
             } catch (e: Exception) {
                 _error.value = e.message ?: "Error desconocido"
+                
+                // 📊 Analytics: Track calendar data load error
+                analyticsManager.logCustomEvent("calendar_load_error", Bundle().apply {
+                    putString("error_message", e.message)
+                    putString("error_class", e.javaClass.simpleName)
+                })
             } finally {
                 _isLoading.value = false
             }
@@ -67,25 +97,70 @@ class CalendarViewModel @Inject constructor(
     }
 
     fun goToPreviousMonth() {
-        _currentMonth.value = _currentMonth.value.minusMonths(1)
+        val previousMonth = _currentMonth.value.minusMonths(1)
+        _currentMonth.value = previousMonth
+        
+        // 📊 Analytics: Track month navigation
+        analyticsManager.logCustomEvent("calendar_month_navigation", Bundle().apply {
+            putString("direction", "previous")
+            putString("new_month", previousMonth.toString())
+            putString("screen", "calendar")
+        })
     }
 
     fun goToNextMonth() {
-        _currentMonth.value = _currentMonth.value.plusMonths(1)
+        val nextMonth = _currentMonth.value.plusMonths(1)
+        _currentMonth.value = nextMonth
+        
+        // 📊 Analytics: Track month navigation
+        analyticsManager.logCustomEvent("calendar_month_navigation", Bundle().apply {
+            putString("direction", "next")
+            putString("new_month", nextMonth.toString())
+            putString("screen", "calendar")
+        })
     }
 
     fun goToCurrentMonth() {
-        _currentMonth.value = YearMonth.now()
+        val currentMonth = YearMonth.now()
+        _currentMonth.value = currentMonth
+        
+        // 📊 Analytics: Track return to current month
+        analyticsManager.logCustomEvent("calendar_month_navigation", Bundle().apply {
+            putString("direction", "current")
+            putString("new_month", currentMonth.toString())
+            putString("screen", "calendar")
+        })
     }
 
     fun selectDate(date: LocalDate) {
+        val previousDate = _selectedDate.value
         _selectedDate.value = if (_selectedDate.value == date) null else date
+        
+        // 📊 Analytics: Track date selection
+        analyticsManager.logCustomEvent("calendar_date_selected", Bundle().apply {
+            putString("selected_date", date.toString())
+            putBoolean("is_deselection", _selectedDate.value == null)
+            putInt("matches_on_date", getMatchesForDate(date).size)
+            putString("screen", "calendar")
+            putString("month", _currentMonth.value.toString())
+        })
     }
 
     fun getMatchesForDate(date: LocalDate): List<Match> {
-        return _matches.value.filter { match ->
+        val matchesForDate = _matches.value.filter { match ->
             match.dateTime.toLocalDate() == date
         }.sortedBy { it.dateTime }
+        
+        // 📊 Analytics: Track date exploration (only for dates with matches)
+        if (matchesForDate.isNotEmpty()) {
+            analyticsManager.logCustomEvent("calendar_date_explored", Bundle().apply {
+                putString("explored_date", date.toString())
+                putInt("matches_found", matchesForDate.size)
+                putString("screen", "calendar")
+            })
+        }
+        
+        return matchesForDate
     }
 
     fun hasMatchesOnDate(date: LocalDate): Boolean {
