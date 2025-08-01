@@ -18,6 +18,7 @@ Documentación relacionada con testing y pruebas:
 Documentación sobre integración continua y despliegue:
 - [`GITHUB_ACTIONS_CLEANUP.md`](./ci-cd/GITHUB_ACTIONS_CLEANUP.md) - Resumen de limpieza de GitHub Actions
 - [`WORKFLOWS_OPTIMIZATION_SUMMARY.md`](./ci-cd/WORKFLOWS_OPTIMIZATION_SUMMARY.md) - Resumen de optimización de workflows
+- [`DATA_SOURCES_ARCHITECTURE.md`](./ci-cd/DATA_SOURCES_ARCHITECTURE.md) - Arquitectura y fuentes de datos del proyecto
 
 ### 🛡️ GitHub
 Documentación específica de configuración de GitHub:

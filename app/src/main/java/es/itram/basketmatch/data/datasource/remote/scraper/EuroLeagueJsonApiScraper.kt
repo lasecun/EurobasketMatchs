@@ -67,7 +67,7 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
                                 logoUrl = match.home.imageUrls?.crest,
                                 country = extractCountryFromName(match.home.name),
                                 venue = null,
-                                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/"
+                                profileUrl = generateTeamProfileUrl(match.home.code)
                             )
                         )
                         
@@ -81,7 +81,7 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
                                 logoUrl = match.away.imageUrls?.crest,
                                 country = extractCountryFromName(match.away.name),
                                 venue = null,
-                                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/"
+                                profileUrl = generateTeamProfileUrl(match.away.code)
                             )
                         )
                     }
@@ -255,6 +255,16 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
         return countryMappings.entries.find { 
             lowerName.contains(it.key) 
         }?.value
+    }
+    
+    /**
+     * Genera URL del perfil del equipo basada en feeds API data
+     * Nota: Mantenemos compatibilidad con el sitio web oficial pero indicamos que los datos vienen de feeds API
+     */
+    private fun generateTeamProfileUrl(teamCode: String): String {
+        // Podríamos generar URLs más específicas basadas en el código del equipo si fuera necesario
+        // Por ahora usamos una URL genérica que indica que los datos vienen de la API de feeds
+        return "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/teams/$teamCode"
     }
     
     /**

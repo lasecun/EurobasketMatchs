@@ -9,6 +9,17 @@ import javax.inject.Singleton
 
 /**
  * Data source remoto para obtener datos de EuroLeague desde la API JSON oficial
+ * 
+ * ARQUITECTURA DE FUENTES DE DATOS:
+ * - PRINCIPAL: feeds.incrowdsports.com (API de feeds) - Para todos los datos principales
+ * - SECUNDARIA: www.euroleaguebasketball.net - Solo para imágenes de jugadores
+ * 
+ * Esta clase es un wrapper sobre EuroLeagueJsonApiScraper que proporciona:
+ * - Manejo de errores centralizado
+ * - Equipos de fallback si la API falla
+ * - Interfaz consistente para los repositorios
+ * 
+ * Nota: DataSyncService también usa directamente EuroLeagueJsonApiScraper para sincronización masiva
  */
 @Singleton
 class EuroLeagueRemoteDataSource @Inject constructor(
