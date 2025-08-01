@@ -40,6 +40,13 @@ jobs:
     - name: 🔧 Make gradlew executable
       run: chmod +x ./gradlew
 
+    - name: 🔧 Setup CI Gradle Properties
+      run: |
+        # Copy CI-specific properties for optimal CI performance
+        cp gradle-ci.properties gradle.properties
+        echo "org.gradle.console=plain" >> gradle.properties
+        echo "org.gradle.logging.level=lifecycle" >> gradle.properties
+
     # ----------------------
     # DEPENDENCY MANAGEMENT  
     # ----------------------
@@ -61,19 +68,20 @@ jobs:
       uses: gradle/wrapper-validation-action@v1
 
     - name: 🧹 Clean Project
-      run: ./gradlew clean
+      run: ./gradlew clean --stacktrace --no-daemon
 
     - name: 🏗️ Build Debug APK
-      run: ./gradlew assembleDebug --stacktrace
+      run: ./gradlew assembleDebug --stacktrace --no-daemon
 
     # ----------------------
     # TESTING SUITE
     # ----------------------
     - name: 🧪 Run Unit Tests
-      run: ./gradlew testDebugUnitTest --continue --stacktrace
+      run: ./gradlew testDebugUnitTest --continue --stacktrace --no-daemon
 
     - name: 📊 Generate Test Report
-      run: ./gradlew testDebugUnitTest jacocoTestReport --continue
+      run: ./gradlew testDebugUnitTest jacocoTestReport --continue --no-daemon
+      if: always()
 
     # ----------------------
     # CODE QUALITY

@@ -17,7 +17,7 @@ jobs:
   pr-validation:
     name: 🔍 PR Validation
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     
     steps:
     - name: 📥 Checkout Repository
@@ -38,13 +38,17 @@ jobs:
     - name: 🏷️ Validate PR Title
       run: |
         PR_TITLE="${{ github.event.pull_request.title }}"
-        if [[ $PR_TITLE =~ ^(feat|fix|docs|style|refactor|perf|test|chore|ci)(\(.+\))?: .+ ]]; then
+        echo "Validating PR title: '$PR_TITLE'"
+        
+        # Check if title matches conventional commit format
+        if echo "$PR_TITLE" | grep -qE '^(feat|fix|docs|style|refactor|perf|test|chore|ci)(\(.+\))?: .+'; then
           echo "✅ PR title follows conventional commit format"
           echo "**✅ Title Format:** Valid conventional commit" >> $GITHUB_STEP_SUMMARY
         else
           echo "❌ PR title should follow conventional commit format"
           echo "**❌ Title Format:** Invalid - should be 'type(scope): description'" >> $GITHUB_STEP_SUMMARY
           echo "Examples: feat: add new feature, fix: resolve bug, docs: update readme" >> $GITHUB_STEP_SUMMARY
+          echo "Current title: '$PR_TITLE'" >> $GITHUB_STEP_SUMMARY
           exit 1
         fi
 
@@ -71,7 +75,14 @@ jobs:
     - name: 🔧 Make gradlew executable
       run: chmod +x ./gradlew
 
-    - name: 📦 Cache Gradle Dependencies
+    - name: � Setup CI Gradle Properties
+      run: |
+        # Copy CI-specific properties
+        cp gradle-ci.properties gradle.properties
+        echo "org.gradle.console=plain" >> gradle.properties
+        echo "org.gradle.logging.level=lifecycle" >> gradle.properties
+
+    - name: �📦 Cache Gradle Dependencies
       uses: actions/cache@v4
       with:
         path: |
@@ -81,8 +92,8 @@ jobs:
 
     - name: 🧹 Clean & Build
       run: |
-        ./gradlew clean
-        ./gradlew assembleDebug --stacktrace
+        ./gradlew clean --stacktrace
+        ./gradlew assembleDebug --stacktrace --no-daemon
 
     - name: ✅ Build Success
       run: |
