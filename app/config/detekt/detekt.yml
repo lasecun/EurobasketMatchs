@@ -1,0 +1,43 @@
+# Detekt Configuration for EuroLeague Android App
+# Configuración simplificada para funcionar con CI/CD
+
+build:
+  maxIssues: 200
+
+config:
+  validation: true
+  warningsAsErrors: false
+
+style:
+  MaxLineLength:
+    maxLineLength: 160
+  WildcardImport:
+    active: false
+  MagicNumber:
+    active: false
+
+complexity:
+  CyclomaticComplexMethod:
+    active: true
+    threshold: 25
+  LongMethod:
+    active: true  
+    threshold: 150
+  LongParameterList:
+    active: true
+    functionThreshold: 10
+    constructorThreshold: 12
+  TooManyFunctions:
+    active: false
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: false
+  TooGenericExceptionThrown:
+    active: false
+  SwallowedException:
+    active: false
+
+potential-bugs:
+  UnsafeCast:
+    active: false
