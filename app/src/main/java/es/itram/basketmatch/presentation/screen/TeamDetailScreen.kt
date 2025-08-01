@@ -1,29 +1,48 @@
 package es.itram.basketmatch.presentation.screen
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DividerDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import es.itram.basketmatch.domain.entity.Match
-import es.itram.basketmatch.domain.entity.MatchStatus
-import es.itram.basketmatch.domain.entity.Team
+import es.itram.basketmatch.presentation.component.ErrorMessage
+import es.itram.basketmatch.presentation.component.LoadingIndicator
 import es.itram.basketmatch.presentation.component.MatchCard
 import es.itram.basketmatch.presentation.viewmodel.TeamDetailViewModel
-import es.itram.basketmatch.presentation.component.LoadingIndicator
-import es.itram.basketmatch.presentation.component.ErrorMessage
 
 /**
  * Pantalla de detalles del equipo
@@ -60,7 +79,7 @@ fun TeamDetailScreen(
             title = { Text(team?.name ?: "Cargando...") },
             navigationIcon = {
                 IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                 }
             },
             actions = {
@@ -186,9 +205,9 @@ private fun TeamInfoCard(
             // Estadísticas de la temporada
             if (standing != null) {
                 Spacer(modifier = Modifier.height(16.dp))
-                
-                Divider()
-                
+
+                HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
+
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Text(
@@ -284,9 +303,9 @@ private fun TeamInfoCard(
             // Botón para ver roster del equipo
             if (onNavigateToRoster != null) {
                 Spacer(modifier = Modifier.height(16.dp))
-                
-                Divider()
-                
+
+                HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
+
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 OutlinedButton(
