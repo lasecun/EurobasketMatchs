@@ -51,6 +51,11 @@ fun CalendarScreen(
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    
+    // 📊 Analytics: Track screen view
+    LaunchedEffect(Unit) {
+        viewModel.trackScreenView()
+    }
 
     Column(
         modifier = Modifier.fillMaxSize()

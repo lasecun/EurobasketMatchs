@@ -5,6 +5,7 @@ import es.itram.basketmatch.domain.model.TeamRoster
 import es.itram.basketmatch.domain.model.Player
 import es.itram.basketmatch.domain.model.PlayerPosition
 import es.itram.basketmatch.domain.usecase.GetTeamRosterUseCase
+import es.itram.basketmatch.analytics.AnalyticsManager
 import es.itram.basketmatch.testutil.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -28,7 +29,7 @@ class TeamRosterViewModelProgressTest {
 
     @Before
     fun setup() {
-        viewModel = TeamRosterViewModel(getTeamRosterUseCase)
+        viewModel = TeamRosterViewModel(getTeamRosterUseCase, mockk(relaxed = true))
     }
 
     @Test

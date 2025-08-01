@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import es.itram.basketmatch.analytics.AnalyticsManager
 import es.itram.basketmatch.domain.model.Player
 import es.itram.basketmatch.domain.model.PlayerPosition
 import es.itram.basketmatch.domain.model.TeamRoster
@@ -45,6 +46,11 @@ fun TeamRosterScreen(
     viewModel: TeamRosterViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    
+    // 📊 Analytics: Track screen view
+    LaunchedEffect(Unit) {
+        viewModel.trackScreenView()
+    }
     
     // Cargar roster cuando se monta la pantalla, pero solo si no está ya cargado para este equipo
     LaunchedEffect(teamTla, uiState.teamRoster?.teamCode) {
