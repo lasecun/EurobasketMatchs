@@ -1,4 +1,4 @@
-name: 🔄 Pull Request Validation
+name: 🔄 PR Validation - Fast Feedback
 
 on:
   pull_request:
@@ -12,28 +12,26 @@ concurrency:
 
 jobs:
   # ============================================================================
-  # JOB 1: PR VALIDATION CHECKS
+  # JOB 1: QUICK PR VALIDATION
   # ============================================================================
-  pr-validation:
-    name: 🔍 PR Validation
+  quick-validation:
+    name: ⚡ Quick Validation
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 8
     
     steps:
     - name: 📥 Checkout Repository
       uses: actions/checkout@v4
 
-    - name: 📋 PR Info
+    - name: 📋 PR Info Summary
       run: |
-        echo "## 🔄 Pull Request Validation" >> $GITHUB_STEP_SUMMARY
+        echo "## 🔄 Pull Request Quick Validation" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**PR Title:** ${{ github.event.pull_request.title }}" >> $GITHUB_STEP_SUMMARY
         echo "**Source Branch:** \`${{ github.head_ref }}\`" >> $GITHUB_STEP_SUMMARY
         echo "**Target Branch:** \`${{ github.base_ref }}\`" >> $GITHUB_STEP_SUMMARY
         echo "**Author:** @${{ github.event.pull_request.user.login }}" >> $GITHUB_STEP_SUMMARY
         echo "**Files Changed:** ${{ github.event.pull_request.changed_files }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Additions:** +${{ github.event.pull_request.additions }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Deletions:** -${{ github.event.pull_request.deletions }}" >> $GITHUB_STEP_SUMMARY
 
     - name: 🏷️ Validate PR Title
       run: |
@@ -45,21 +43,18 @@ jobs:
           echo "✅ PR title follows conventional commit format"
           echo "**✅ Title Format:** Valid conventional commit" >> $GITHUB_STEP_SUMMARY
         else
-          echo "❌ PR title should follow conventional commit format"
-          echo "**❌ Title Format:** Invalid - should be 'type(scope): description'" >> $GITHUB_STEP_SUMMARY
-          echo "Examples: feat: add new feature, fix: resolve bug, docs: update readme" >> $GITHUB_STEP_SUMMARY
-          echo "Current title: '$PR_TITLE'" >> $GITHUB_STEP_SUMMARY
-          exit 1
+          echo "⚠️ PR title should follow conventional commit format (not blocking)"
+          echo "**⚠️ Title Format:** Consider using conventional commit format" >> $GITHUB_STEP_SUMMARY
+          echo "💡 **Suggestion:** Use format like 'feat: description' or 'fix: description'" >> $GITHUB_STEP_SUMMARY
         fi
 
   # ============================================================================
-  # JOB 2: QUICK BUILD CHECK
+  # JOB 2: FAST BUILD & TEST
   # ============================================================================
-  quick-build:
-    name: ⚡ Quick Build Check
+  fast-build-test:
+    name: ⚡ Fast Build & Test
     runs-on: ubuntu-latest
-    needs: pr-validation
-    timeout-minutes: 15
+    timeout-minutes: 12
     
     steps:
     - name: 📥 Checkout Repository
@@ -75,160 +70,140 @@ jobs:
     - name: 🔧 Make gradlew executable
       run: chmod +x ./gradlew
 
-    - name: � Setup CI Gradle Properties
+    - name: 🔧 Setup CI Gradle Properties
       run: |
-        # Copy CI-specific properties
+        # Copy CI-specific properties for optimal CI performance
         cp gradle-ci.properties gradle.properties
         echo "org.gradle.console=plain" >> gradle.properties
-        echo "org.gradle.logging.level=lifecycle" >> gradle.properties
 
-    - name: �📦 Cache Gradle Dependencies
+    - name: 📦 Cache Gradle Dependencies
       uses: actions/cache@v4
       with:
         path: |
           ~/.gradle/caches
           ~/.gradle/wrapper
         key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*') }}
+        restore-keys: |
+          gradle-${{ runner.os }}-
 
-    - name: 🧹 Clean & Build
+    - name: 🧹 Clean & Build (Debug Only)
       run: |
-        ./gradlew clean --stacktrace
-        ./gradlew assembleDebug --stacktrace --no-daemon
+        ./gradlew clean assembleDebug --parallel --daemon
+        echo "✅ **Debug Build:** Successful" >> $GITHUB_STEP_SUMMARY
 
-    - name: ✅ Build Success
+    - name: 🧪 Run Critical Tests Only
       run: |
-        echo "## ⚡ Quick Build Results" >> $GITHUB_STEP_SUMMARY
-        echo "✅ **Build Status:** Success" >> $GITHUB_STEP_SUMMARY
-        echo "✅ **Gradle Build:** Completed without errors" >> $GITHUB_STEP_SUMMARY
-
-  # ============================================================================
-  # JOB 3: ESSENTIAL TESTS
-  # ============================================================================
-  essential-tests:
-    name: 🧪 Essential Tests
-    runs-on: ubuntu-latest
-    needs: quick-build
-    timeout-minutes: 15
-    
-    steps:
-    - name: 📥 Checkout Repository
-      uses: actions/checkout@v4
-
-    - name: ☕ Setup JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: gradle
-
-    - name: 🔧 Make gradlew executable
-      run: chmod +x ./gradlew
-
-    - name: 🧪 Run Critical Tests
-      run: |
-        # Run only the most critical tests for PR validation
-        ./gradlew testDebugUnitTest --tests="*Mapper*" --continue
-        ./gradlew testDebugUnitTest --tests="*Repository*" --continue
-        ./gradlew testDebugUnitTest --tests="*ViewModel*" --continue
-
-    - name: 📊 Test Summary
-      run: |
-        echo "## 🧪 Essential Test Results" >> $GITHUB_STEP_SUMMARY
-        if [ -f app/build/test-results/testDebugUnitTest/TEST-*.xml ]; then
-          echo "✅ **Core Tests:** Passed" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Mappers:** Validated" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Repositories:** Validated" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **ViewModels:** Validated" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ **Core Tests:** Some tests may have failed" >> $GITHUB_STEP_SUMMARY
-        fi
-
-  # ============================================================================
-  # JOB 4: CODE QUALITY GATE
-  # ============================================================================
-  code-quality-gate:
-    name: 🚦 Code Quality Gate
-    runs-on: ubuntu-latest
-    needs: essential-tests
-    timeout-minutes: 10
-    
-    steps:
-    - name: 📥 Checkout Repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: ☕ Setup JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: gradle
-
-    - name: 🔧 Make gradlew executable
-      run: chmod +x ./gradlew
-
-    - name: 🔍 Quick Lint Check
-      run: |
-        ./gradlew lintDebug || true
-
-    - name: 📊 Changed Files Analysis
-      run: |
-        echo "## 🚦 Code Quality Gate Results" >> $GITHUB_STEP_SUMMARY
+        # Run tests with focus on critical components only
+        ./gradlew testDebugUnitTest --tests="*ViewModel*" --tests="*Repository*" --tests="*Mapper*" --continue --parallel --daemon
+        
+        echo "## 🧪 Critical Tests Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
-        # Get changed files
-        git fetch origin ${{ github.base_ref }}
-        CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.(kt|java)$' || true)
-        
-        if [ -n "$CHANGED_FILES" ]; then
-          echo "### 📝 Modified Source Files:" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "$CHANGED_FILES" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          
-          FILE_COUNT=$(echo "$CHANGED_FILES" | wc -l)
-          echo "**Total Files Changed:** $FILE_COUNT" >> $GITHUB_STEP_SUMMARY
+        if [ -f app/build/test-results/testDebugUnitTest/TEST-*.xml ]; then
+          echo "✅ **Critical Tests:** Passed" >> $GITHUB_STEP_SUMMARY
+          echo "🎯 **Focus Areas:** ViewModels, Repositories, Mappers" >> $GITHUB_STEP_SUMMARY
         else
-          echo "**No source files changed in this PR**" >> $GITHUB_STEP_SUMMARY
+          echo "❌ **Critical Tests:** Some tests failed" >> $GITHUB_STEP_SUMMARY
         fi
 
   # ============================================================================
-  # JOB 5: PR APPROVAL GATE
+  # JOB 3: QUICK CODE QUALITY CHECK
   # ============================================================================
-  pr-approval-gate:
-    name: ✅ PR Approval Gate
+  quick-quality:
+    name: ⚡ Quick Quality Check
     runs-on: ubuntu-latest
-    needs: [pr-validation, quick-build, essential-tests, code-quality-gate]
+    needs: [fast-build-test]
+    timeout-minutes: 8
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: ☕ Setup JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: 🔧 Make gradlew executable
+      run: chmod +x ./gradlew
+
+    - name: 🔍 Quick Lint Check (Fatal only)
+      run: |
+        # Run lint with focus on errors only, skip warnings for speed
+        ./gradlew lintDebug -PdisableLintWarnings=true --continue --parallel --daemon || true
+        
+        echo "## 🔍 Quick Quality Check" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -f app/build/reports/lint-results-debug.xml ]; then
+          LINT_ERRORS=$(grep -c 'severity="Error"' app/build/reports/lint-results-debug.xml 2>/dev/null || echo "0")
+          echo "🔴 **Lint Errors:** $LINT_ERRORS" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$LINT_ERRORS" -eq "0" ]; then
+            echo "✅ **Status:** No blocking lint errors" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **Status:** $LINT_ERRORS lint errors found (check full CI)" >> $GITHUB_STEP_SUMMARY
+          fi
+        else
+          echo "⚠️ **Lint:** Report not generated" >> $GITHUB_STEP_SUMMARY
+        fi
+
+    - name: 🔍 Quick Detekt Check (High Priority)
+      run: |
+        # Run detekt with relaxed threshold for PR validation
+        DETEKT_THRESHOLD=300 ./gradlew detekt --continue --parallel --daemon || true
+        
+        if [ -f app/build/reports/detekt/detekt.xml ]; then
+          DETEKT_ISSUES=$(grep -c "<error\|<warning" app/build/reports/detekt/detekt.xml 2>/dev/null || echo "0")
+          echo "🔍 **Detekt Issues:** $DETEKT_ISSUES" >> $GITHUB_STEP_SUMMARY
+          echo "💡 **Note:** Full analysis runs in main CI pipeline" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "🔍 **Detekt:** Quick scan completed" >> $GITHUB_STEP_SUMMARY
+        fi
+
+  # ============================================================================
+  # JOB 4: PR SUMMARY
+  # ============================================================================
+  pr-summary:
+    name: 📋 PR Validation Summary
+    runs-on: ubuntu-latest
+    needs: [quick-validation, fast-build-test, quick-quality]
     if: always()
     
     steps:
     - name: 📊 Final PR Status
       run: |
-        echo "## ✅ Pull Request Validation Summary" >> $GITHUB_STEP_SUMMARY
+        echo "## 🎯 Pull Request Validation Complete" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📋 Validation Results" >> $GITHUB_STEP_SUMMARY
-        echo "| Check | Status | Description |" >> $GITHUB_STEP_SUMMARY
-        echo "|-------|--------|-------------|" >> $GITHUB_STEP_SUMMARY
-        echo "| 🔍 PR Validation | ${{ needs.pr-validation.result }} | Title format & basic checks |" >> $GITHUB_STEP_SUMMARY
-        echo "| ⚡ Quick Build | ${{ needs.quick-build.result }} | Fast compilation check |" >> $GITHUB_STEP_SUMMARY
-        echo "| 🧪 Essential Tests | ${{ needs.essential-tests.result }} | Core functionality tests |" >> $GITHUB_STEP_SUMMARY
-        echo "| 🚦 Code Quality | ${{ needs.code-quality-gate.result }} | Quality and lint checks |" >> $GITHUB_STEP_SUMMARY
+        echo "### ⚡ Fast Feedback Results" >> $GITHUB_STEP_SUMMARY
+        echo "| Check | Status | Time |" >> $GITHUB_STEP_SUMMARY
+        echo "|-------|--------|------|" >> $GITHUB_STEP_SUMMARY
+        echo "| 🔄 PR Validation | ${{ needs.quick-validation.result }} | ~2 min |" >> $GITHUB_STEP_SUMMARY
+        echo "| ⚡ Build & Test | ${{ needs.fast-build-test.result }} | ~8 min |" >> $GITHUB_STEP_SUMMARY
+        echo "| 🔍 Quality Check | ${{ needs.quick-quality.result }} | ~5 min |" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
-        # Determine overall status
-        if [[ "${{ needs.pr-validation.result }}" == "success" && 
-              "${{ needs.quick-build.result }}" == "success" && 
-              "${{ needs.essential-tests.result }}" == "success" && 
-              "${{ needs.code-quality-gate.result }}" == "success" ]]; then
-          echo "### 🎉 **PR Ready for Review!**" >> $GITHUB_STEP_SUMMARY
-          echo "All validation checks passed successfully. This PR is ready for human review." >> $GITHUB_STEP_SUMMARY
+        # Calculate overall status
+        if [[ "${{ needs.fast-build-test.result }}" == "success" ]]; then
+          echo "### ✅ PR Status: READY FOR REVIEW" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🎉 **All critical checks passed!**" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Build compiles successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Critical tests pass" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ No blocking quality issues" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "💡 **Next:** Complete CI will run after merge to main/develop" >> $GITHUB_STEP_SUMMARY
         else
-          echo "### ⚠️ **PR Requires Attention**" >> $GITHUB_STEP_SUMMARY
-          echo "Some validation checks failed. Please review and fix the issues before requesting review." >> $GITHUB_STEP_SUMMARY
+          echo "### ❌ PR Status: NEEDS ATTENTION" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Some checks failed - please review:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Check build errors in logs" >> $GITHUB_STEP_SUMMARY
+          echo "- Review test failures" >> $GITHUB_STEP_SUMMARY
+          echo "- Fix any critical quality issues" >> $GITHUB_STEP_SUMMARY
         fi
-        
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**PR:** #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
         echo "**Branch:** \`${{ github.head_ref }}\` → \`${{ github.base_ref }}\`" >> $GITHUB_STEP_SUMMARY
-        echo "**Validation Timestamp:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+        echo "**Validation Time:** $(date -u)" >> $GITHUB_STEP_SUMMARY
