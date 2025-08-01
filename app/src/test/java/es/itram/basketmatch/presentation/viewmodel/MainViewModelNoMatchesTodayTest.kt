@@ -1,6 +1,7 @@
 package es.itram.basketmatch.presentation.viewmodel
 
 import com.google.common.truth.Truth.assertThat
+import es.itram.basketmatch.analytics.AnalyticsManager
 import es.itram.basketmatch.domain.entity.Match
 import es.itram.basketmatch.domain.entity.MatchStatus
 import es.itram.basketmatch.domain.entity.SeasonType
@@ -34,6 +35,7 @@ class MainViewModelNoMatchesTodayTest {
     private val getAllMatchesUseCase = mockk<GetAllMatchesUseCase>()
     private val getAllTeamsUseCase = mockk<GetAllTeamsUseCase>()
     private val dataSyncService = mockk<DataSyncService>()
+    private val analyticsManager = mockk<AnalyticsManager>(relaxed = true)
     private val savedStateHandle = mockk<SavedStateHandle>()
 
     private lateinit var viewModel: MainViewModel
@@ -67,7 +69,7 @@ class MainViewModelNoMatchesTodayTest {
         every { getAllMatchesUseCase() } returns flowOf(matches)
         
         // When
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase, dataSyncService, savedStateHandle)
+        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase, dataSyncService, analyticsManager, savedStateHandle)
         
         // Simular estar en "hoy" (sin partidos)
         viewModel.selectDate(today)
@@ -90,7 +92,7 @@ class MainViewModelNoMatchesTodayTest {
         every { getAllMatchesUseCase() } returns flowOf(matches)
         
         // When
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase, dataSyncService, savedStateHandle)
+        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase, dataSyncService, analyticsManager, savedStateHandle)
         
         viewModel.selectDate(today)
         
@@ -112,7 +114,7 @@ class MainViewModelNoMatchesTodayTest {
         every { getAllMatchesUseCase() } returns flowOf(matches)
         
         // When
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase, dataSyncService, savedStateHandle)
+        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase, dataSyncService, analyticsManager, savedStateHandle)
         
         viewModel.selectDate(today) // Empezar en hoy
         
@@ -132,7 +134,7 @@ class MainViewModelNoMatchesTodayTest {
         every { getAllMatchesUseCase() } returns flowOf(emptyList())
         
         // When
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase, dataSyncService, savedStateHandle)
+        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase, dataSyncService, analyticsManager, savedStateHandle)
         
         viewModel.selectDate(today)
         
@@ -152,7 +154,7 @@ class MainViewModelNoMatchesTodayTest {
         every { getAllMatchesUseCase() } returns flowOf(emptyList())
         
         // When
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase, dataSyncService, savedStateHandle)
+        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase, dataSyncService, analyticsManager, savedStateHandle)
         
         viewModel.selectDate(today)
         
@@ -168,7 +170,7 @@ class MainViewModelNoMatchesTodayTest {
         every { getAllMatchesUseCase() } returns flowOf(emptyList())
         
         // When
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase, dataSyncService, savedStateHandle)
+        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase, dataSyncService, analyticsManager, savedStateHandle)
         
         viewModel.selectDate(tomorrow)
         
@@ -191,7 +193,7 @@ class MainViewModelNoMatchesTodayTest {
         every { getAllMatchesUseCase() } returns flowOf(matches)
         
         // When
-        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase, dataSyncService, savedStateHandle)
+        viewModel = MainViewModel(getAllMatchesUseCase, getAllTeamsUseCase, dataSyncService, analyticsManager, savedStateHandle)
         
         viewModel.selectDate(today)
         

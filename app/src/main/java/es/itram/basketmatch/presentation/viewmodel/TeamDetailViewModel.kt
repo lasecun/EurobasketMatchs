@@ -1,9 +1,11 @@
 package es.itram.basketmatch.presentation.viewmodel
 
+import android.os.Bundle
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import es.itram.basketmatch.analytics.AnalyticsManager
 import es.itram.basketmatch.domain.entity.Match
 import es.itram.basketmatch.domain.entity.Standing
 import es.itram.basketmatch.domain.entity.Team
@@ -24,7 +26,8 @@ import javax.inject.Inject
 class TeamDetailViewModel @Inject constructor(
     private val teamRepository: TeamRepository,
     private val matchRepository: MatchRepository,
-    private val standingRepository: StandingRepository
+    private val standingRepository: StandingRepository,
+    private val analyticsManager: AnalyticsManager
 ) : ViewModel() {
 
     private val _team = MutableStateFlow<Team?>(null)
@@ -67,10 +70,27 @@ class TeamDetailViewModel @Inject constructor(
                 _isFavorite.value = team?.isFavorite ?: false
                 _error.value = null
                 
+                // 📊 Analytics: Track team viewed
+                team?.let { teamData ->
+                    analyticsManager.trackTeamViewed(
+                        teamCode = teamData.code,
+                        teamName = teamData.name,
+                        source = "team_detail_screen"
+                    )
+                }
+                
                 Log.d("TeamDetailViewModel", "Carga de detalles completada")
             } catch (e: Exception) {
                 Log.e("TeamDetailViewModel", "Error cargando detalles: ${e.message}", e)
                 _error.value = e.message ?: "Error desconocido"
+                
+                // 📊 Analytics: Track team loading error
+                analyticsManager.logCustomEvent("team_load_error", android.os.Bundle().apply {
+                    putString("team_id", teamId)
+                    putString("error_message", e.message)
+                    putString("error_class", e.javaClass.simpleName)
+                })
+                
             } finally {
                 _isLoading.value = false
             }
@@ -86,6 +106,13 @@ class TeamDetailViewModel @Inject constructor(
                 teamRepository.updateTeam(updatedTeam)
                 _isFavorite.value = updatedTeam.isFavorite
                 _team.value = updatedTeam
+                
+                // 📊 Analytics: Track favorite toggle
+                analyticsManager.trackFavoriteAdded(
+                    contentType = "team",
+                    contentId = currentTeam.code
+                )
+                
             } catch (e: Exception) {
                 _error.value = "Error al actualizar favorito: ${e.message}"
             }
@@ -115,5 +142,27 @@ class TeamDetailViewModel @Inject constructor(
 
     fun clearError() {
         _error.value = null
+    }
+    
+    /**
+     * 📊 Analytics: Track team roster access from team detail
+     */
+    fun trackRosterAccess(teamCode: String, teamName: String) {
+        analyticsManager.logCustomEvent("team_roster_accessed", android.os.Bundle().apply {
+            putString("team_code", teamCode)
+            putString("team_name", teamName)
+            putString("source", "team_detail_screen")
+            putString("access_type", "roster_button")
+        })
+    }
+
+    /**
+     * 📊 Analytics: Track screen view
+     */
+    fun trackScreenView() {
+        analyticsManager.trackScreenView(
+            screenName = AnalyticsManager.SCREEN_TEAM_DETAIL,
+            screenClass = "TeamDetailScreen"
+        )
     }
 }

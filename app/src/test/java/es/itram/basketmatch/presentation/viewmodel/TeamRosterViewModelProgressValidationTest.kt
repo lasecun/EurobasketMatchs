@@ -2,6 +2,7 @@ package es.itram.basketmatch.presentation.viewmodel
 
 import com.google.common.truth.Truth.assertThat
 import es.itram.basketmatch.domain.usecase.GetTeamRosterUseCase
+import es.itram.basketmatch.analytics.AnalyticsManager
 import es.itram.basketmatch.testutil.MainDispatcherRule
 import es.itram.basketmatch.testutil.TestDataFactory
 import io.mockk.coEvery
@@ -26,7 +27,7 @@ class TeamRosterViewModelProgressValidationTest {
 
     @Before
     fun setup() {
-        viewModel = TeamRosterViewModel(getTeamRosterUseCase)
+        viewModel = TeamRosterViewModel(getTeamRosterUseCase, mockk(relaxed = true))
     }
 
     @Test

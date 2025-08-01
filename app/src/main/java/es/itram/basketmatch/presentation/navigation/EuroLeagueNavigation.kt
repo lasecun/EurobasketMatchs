@@ -73,6 +73,9 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                 teamId = teamId,
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onNavigateToRoster = { teamTla, teamName ->
+                    navController.navigate(NavigationRoutes.teamRoster(teamTla, teamName))
                 }
             )
         }

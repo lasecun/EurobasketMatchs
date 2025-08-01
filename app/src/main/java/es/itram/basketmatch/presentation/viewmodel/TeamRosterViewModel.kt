@@ -1,9 +1,11 @@
 package es.itram.basketmatch.presentation.viewmodel
 
+import android.os.Bundle
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import es.itram.basketmatch.analytics.AnalyticsManager
 import es.itram.basketmatch.domain.model.TeamRoster
 import es.itram.basketmatch.domain.usecase.GetTeamRosterUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +19,8 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class TeamRosterViewModel @Inject constructor(
-    private val getTeamRosterUseCase: GetTeamRosterUseCase
+    private val getTeamRosterUseCase: GetTeamRosterUseCase,
+    private val analyticsManager: AnalyticsManager
 ) : ViewModel() {
     
     companion object {
@@ -72,6 +75,13 @@ class TeamRosterViewModel @Inject constructor(
                         Log.d(TAG, "✅ Roster cargado exitosamente: ${teamRoster.players.size} jugadores")
                         Log.d(TAG, "🖼️ DEBUG_LOGO_URL: '${teamRoster.logoUrl}' para equipo: '${teamRoster.teamName}'")
                         
+                        // 📊 Analytics: Track roster viewed successfully
+                        analyticsManager.trackRosterViewed(
+                            teamCode = teamTla,
+                            teamName = teamRoster.teamName,
+                            playerCount = teamRoster.players.size
+                        )
+                        
                         // Paso 3: Procesando datos
                         _uiState.value = _uiState.value.copy(
                             loadingProgress = LoadingProgress(
@@ -102,6 +112,14 @@ class TeamRosterViewModel @Inject constructor(
                     },
                     onFailure = { error ->
                         Log.e(TAG, "❌ Error cargando roster", error)
+                        
+                        // 📊 Analytics: Track roster loading error
+                        analyticsManager.logCustomEvent("roster_load_error", android.os.Bundle().apply {
+                            putString("team_code", teamTla)
+                            putString("error_message", error.message)
+                            putString("error_class", error.javaClass.simpleName)
+                        })
+                        
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             error = error.message ?: "Error desconocido cargando roster",
@@ -164,6 +182,13 @@ class TeamRosterViewModel @Inject constructor(
                 getTeamRosterUseCase.refresh(teamTla).fold(
                     onSuccess = { teamRoster ->
                         Log.d(TAG, "✅ Roster refrescado exitosamente: ${teamRoster.players.size} jugadores")
+                        
+                        // 📊 Analytics: Track roster refreshed
+                        analyticsManager.logCustomEvent("roster_refreshed", android.os.Bundle().apply {
+                            putString("team_code", teamTla)
+                            putString("team_name", teamRoster.teamName)
+                            putInt("player_count", teamRoster.players.size)
+                        })
                         
                         // Paso 3: Procesando datos
                         _uiState.value = _uiState.value.copy(
@@ -243,6 +268,13 @@ class TeamRosterViewModel @Inject constructor(
      */
     fun selectPlayer(player: es.itram.basketmatch.domain.model.Player) {
         selectedPlayer = player
+        
+        // 📊 Analytics: Track player selection from roster
+        analyticsManager.trackPlayerViewed(
+            playerCode = player.code,
+            playerName = player.name,
+            teamCode = _uiState.value.teamRoster?.teamCode ?: ""
+        )
     }
     
     /**
@@ -250,6 +282,16 @@ class TeamRosterViewModel @Inject constructor(
      */
     fun getSelectedPlayer(): es.itram.basketmatch.domain.model.Player? {
         return selectedPlayer
+    }
+    
+    /**
+     * 📊 Track screen view for analytics
+     */
+    fun trackScreenView() {
+        analyticsManager.trackScreenView(
+            screenName = AnalyticsManager.SCREEN_TEAM_ROSTER,
+            screenClass = "TeamRosterScreen"
+        )
     }
 }
 

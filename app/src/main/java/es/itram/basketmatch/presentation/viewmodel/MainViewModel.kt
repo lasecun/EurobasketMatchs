@@ -1,10 +1,12 @@
 package es.itram.basketmatch.presentation.viewmodel
 
+import android.os.Bundle
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import es.itram.basketmatch.analytics.AnalyticsManager
 import es.itram.basketmatch.domain.entity.Match
 import es.itram.basketmatch.domain.entity.Team
 import es.itram.basketmatch.domain.usecase.GetAllMatchesUseCase
@@ -29,6 +31,7 @@ class MainViewModel @Inject constructor(
     private val getAllMatchesUseCase: GetAllMatchesUseCase,
     private val getAllTeamsUseCase: GetAllTeamsUseCase,
     private val dataSyncService: DataSyncService,
+    private val analyticsManager: AnalyticsManager,
     val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -62,6 +65,16 @@ class MainViewModel @Inject constructor(
     init {
         Log.d("MainViewModel", "🚀 Inicializando MainViewModel con sincronización automática...")
         checkAndSyncData()
+    }
+    
+    /**
+     * 📊 Analytics: Track main screen view
+     */
+    fun trackMainScreenView() {
+        analyticsManager.trackScreenView(
+            screenName = AnalyticsManager.SCREEN_HOME,
+            screenClass = "MainViewModel"
+        )
     }
     
     /**
@@ -183,6 +196,14 @@ class MainViewModel @Inject constructor(
                     Log.d("MainViewModel", "🔄 Sincronización manual exitosa: ${result.teamsCount} equipos, ${result.matchesCount} partidos")
                     _syncMessage.value = "Datos actualizados: ${result.teamsCount} equipos, ${result.matchesCount} partidos"
                     
+                    // 📊 Analytics: Track successful data refresh
+                    analyticsManager.logCustomEvent("data_refreshed", android.os.Bundle().apply {
+                        putString("refresh_type", "manual_refresh")
+                        putString("screen", "home")
+                        putInt("teams_count", result.teamsCount)
+                        putInt("matches_count", result.matchesCount)
+                    })
+                    
                     // Recargar datos locales
                     loadLocalData()
                     
@@ -206,6 +227,13 @@ class MainViewModel @Inject constructor(
     fun selectDate(date: LocalDate) {
         _selectedDate.value = date
         filterMatchesBySelectedDate()
+        
+        // 📊 Analytics: Track date navigation
+        analyticsManager.logCustomEvent("date_selected", android.os.Bundle().apply {
+            putString("selected_date", date.toString())
+            putString("screen", "home")
+            putInt("total_matches", _matches.value.size)
+        })
     }
 
     /**
@@ -344,7 +372,46 @@ class MainViewModel @Inject constructor(
         if (nextMatchDay != null) {
             _selectedDate.value = nextMatchDay
             filterMatchesBySelectedDate()
+            
+            // 📊 Analytics: Track next match day navigation
+            analyticsManager.logCustomEvent("next_match_day_navigation", android.os.Bundle().apply {
+                putString("next_match_date", nextMatchDay.toString())
+                putString("screen", "home")
+                putString("action", "go_to_next_match_day")
+            })
         }
+    }
+    
+    /**
+     * 📊 Analytics: Track calendar navigation from main screen
+     */
+    fun trackCalendarNavigation() {
+        analyticsManager.logCustomEvent("calendar_navigation", android.os.Bundle().apply {
+            putString("source_screen", "home")
+            putString("selected_date", _selectedDate.value.toString())
+            putInt("current_matches", _matches.value.size)
+        })
+    }
+    
+    /**
+     * 📊 Analytics: Track match click from main screen
+     */
+    fun trackMatchClicked(match: Match) {
+        analyticsManager.trackMatchViewed(
+            matchId = match.id,
+            homeTeam = match.homeTeamName,
+            awayTeam = match.awayTeamName,
+            isLive = match.status == es.itram.basketmatch.domain.entity.MatchStatus.LIVE
+        )
+        
+        analyticsManager.logCustomEvent("match_clicked_from_home", android.os.Bundle().apply {
+            putString("match_id", match.id)
+            putString("home_team", match.homeTeamName)
+            putString("away_team", match.awayTeamName)
+            putString("match_status", match.status.name)
+            putString("source", "home_screen")
+            putString("selected_date", _selectedDate.value.toString())
+        })
     }
     
     /**

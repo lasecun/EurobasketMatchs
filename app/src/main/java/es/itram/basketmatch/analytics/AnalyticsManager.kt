@@ -24,7 +24,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AnalyticsManager @Inject constructor(
-    private val firebaseAnalytics: FirebaseAnalytics,
+    val firebaseAnalytics: FirebaseAnalytics,
     private val crashlytics: FirebaseCrashlytics
 ) {
     
@@ -292,5 +292,12 @@ class AnalyticsManager @Inject constructor(
     
     fun logMessage(message: String, priority: Int = android.util.Log.INFO) {
         crashlytics.log("Priority: $priority - $message")
+    }
+    
+    /**
+     * 🎯 Log custom events with bundle
+     */
+    fun logCustomEvent(eventName: String, bundle: Bundle) {
+        firebaseAnalytics.logEvent(eventName, bundle)
     }
 }
