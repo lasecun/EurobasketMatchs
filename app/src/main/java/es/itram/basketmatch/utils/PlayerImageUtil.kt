@@ -14,9 +14,14 @@ class PlayerImageUtil @Inject constructor(
 ) {
     
     /**
-     * Obtiene la URL de la imagen de un jugador desde la web oficial de EuroLeague
-     * @param playerCode Código del jugador (ej: "003733")
-     * @param playerName Nombre del jugador para construir la URL
+     * Obtiene la URL de la imagen de un jugador desde el sitio web oficial de EuroLeague
+     * 
+     * NOTA: Esta función específicamente utiliza el sitio web oficial (www.euroleaguebasketball.net)
+     * para obtener imágenes de jugadores, ya que la API de feeds no proporciona URLs de imágenes de jugadores.
+     * Los datos de partidos y equipos se obtienen de la API de feeds (feeds.incrowdsports.com).
+     * 
+     * @param playerCode Código único del jugador
+     * @param playerName Nombre del jugador
      * @param teamCode Código del equipo
      * @return URL de la imagen o null si no se encuentra
      */
@@ -30,6 +35,7 @@ class PlayerImageUtil @Inject constructor(
             val formattedName = formatPlayerNameForUrl(playerName)
             
             // Construir la URL de la página del jugador
+            // NOTA: Usamos el sitio web oficial para imágenes porque la API de feeds no las incluye
             val playerPageUrl = "https://www.euroleaguebasketball.net/euroleague/players/$formattedName/$playerCode/"
             
             // Hacer la petición HTTP

@@ -85,7 +85,8 @@ View (Composable) ←→ ViewModel ←→ Use Case ←→ Repository
 ## 🎯 Fuentes de Datos
 
 ### API de EuroLeague
-- **Fuente Principal**: [EuroLeague Basketball Official API](https://www.euroleaguebasketball.net/)
+- **Fuente Principal**: [EuroLeague Feeds API](https://feeds.incrowdsports.com/provider/euroleague-feeds/v2) - API oficial de datos en tiempo real
+- **Fuente Secundaria**: [EuroLeague Basketball Official](https://www.euroleaguebasketball.net/) - Para imágenes de jugadores y contenido complementario
 - **Datos disponibles**:
   - Calendario de partidos 2026
   - Información de equipos participantes
