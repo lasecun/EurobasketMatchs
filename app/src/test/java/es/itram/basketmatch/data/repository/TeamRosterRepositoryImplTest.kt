@@ -5,7 +5,6 @@ import es.itram.basketmatch.data.datasource.local.dao.TeamRosterDao
 import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueJsonApiScraper
 import es.itram.basketmatch.domain.repository.MatchRepository
 import es.itram.basketmatch.testutil.TestDataFactory
-import es.itram.basketmatch.utils.PlayerImageUtil
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
@@ -20,7 +19,6 @@ class TeamRosterRepositoryImplTest {
     private lateinit var apiScraper: EuroLeagueJsonApiScraper
     private lateinit var teamRosterDao: TeamRosterDao
     private lateinit var playerDao: PlayerDao
-    private lateinit var playerImageUtil: PlayerImageUtil
     private lateinit var matchRepository: MatchRepository
     private lateinit var repository: TeamRosterRepositoryImpl
 
@@ -29,15 +27,12 @@ class TeamRosterRepositoryImplTest {
         apiScraper = mockk()
         teamRosterDao = mockk()
         playerDao = mockk()
-        playerImageUtil = mockk()
         matchRepository = mockk()
         
         // Configurar mocks por defecto
-        coEvery { playerImageUtil.getPlayerImageUrl(any(), any(), any()) } returns null
-        coEvery { playerImageUtil.generatePlaceholderImageUrl(any()) } returns "https://placeholder.com/image.jpg"
         coEvery { matchRepository.getAllMatches() } returns flowOf(emptyList())
         
-        repository = TeamRosterRepositoryImpl(apiScraper, teamRosterDao, playerDao, playerImageUtil, matchRepository)
+        repository = TeamRosterRepositoryImpl(apiScraper, teamRosterDao, playerDao, matchRepository)
     }
 
     @Test

@@ -1,17 +1,25 @@
 package es.itram.basketmatch.data.mapper
 
+import android.util.Log
 import es.itram.basketmatch.data.datasource.local.entity.PlayerEntity
 import es.itram.basketmatch.data.datasource.local.entity.TeamRosterEntity
 import es.itram.basketmatch.data.datasource.remote.dto.PlayerDto
 import es.itram.basketmatch.domain.model.Player
 import es.itram.basketmatch.domain.model.PlayerPosition
 import es.itram.basketmatch.domain.model.TeamRoster
-import es.itram.basketmatch.utils.PlayerImageUtil
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.util.regex.Pattern
 
 /**
  * Mapper para convertir entre diferentes representaciones de jugadores y rosters
  */
 object PlayerMapper {
+    
+    private const val TAG = "PlayerMapper"
+    private val httpClient = OkHttpClient()
     
     /**
      * Genera un código único para jugadores que no tienen código en la API
@@ -24,20 +32,83 @@ object PlayerMapper {
     }
     
     /**
+     * Genera una URL de imagen placeholder basada en las iniciales del jugador
+     */
+    private fun generatePlaceholderImageUrl(playerName: String): String {
+        val initials = playerName.split(" ")
+            .take(2)
+            .map { it.firstOrNull()?.uppercase() ?: "" }
+            .joinToString("")
+        
+        // Usar un servicio de avatares con las iniciales
+        return "https://ui-avatars.com/api/?name=$initials&size=400&background=004996&color=ffffff&font-size=0.4"
+    }
+    
+    /**
+     * Obtiene la URL de imagen real del jugador desde el sitio web oficial
+     */
+    private suspend fun getPlayerImageFromWeb(playerCode: String?, playerName: String): String? = withContext(Dispatchers.IO) {
+        try {
+            if (playerCode.isNullOrBlank()) return@withContext null
+            
+            val normalizedName = playerName.lowercase()
+                .replace(" ", "-")
+                .replace(",", "")
+                .replace(".", "")
+                .replace("'", "")
+            
+            val url = "https://www.euroleaguebasketball.net/euroleague/players/$normalizedName/$playerCode/"
+            Log.d(TAG, "🌐 Trying to get image for $playerName from: $url")
+            
+            val request = Request.Builder()
+                .url(url)
+                .addHeader("User-Agent", "Mozilla/5.0 (Android 14)")
+                .build()
+            
+            val response = httpClient.newCall(request).execute()
+            if (!response.isSuccessful) return@withContext null
+            
+            val html = response.body?.string() ?: return@withContext null
+            
+            // Buscar el patrón "photo":"https://media-cdn.incrowdsports.com/[UUID].png"
+            val pattern = Pattern.compile("\"photo\":\"(https://media-cdn\\.incrowdsports\\.com/[^\"]+\\.(?:png|jpg))\"")
+            val matcher = pattern.matcher(html)
+            
+            if (matcher.find()) {
+                val imageUrl = matcher.group(1)
+                Log.d(TAG, "✅ Found image for $playerName: $imageUrl")
+                return@withContext imageUrl
+            }
+            
+            Log.d(TAG, "❌ No image found for $playerName")
+            return@withContext null
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting image for $playerName", e)
+            return@withContext null
+        }
+    }
+    
+    /**
      * Convierte PlayerDto a Player (modelo de dominio)
      * Obtiene la imagen del jugador desde la web oficial o genera un placeholder
      */
-    suspend fun fromDto(dto: PlayerDto, teamCode: String, imageUtil: PlayerImageUtil): Player {
+    suspend fun fromDto(dto: PlayerDto, teamCode: String): Player {
         val playerCode = dto.person.code ?: generatePlayerCode(
             dto.person.name, 
             dto.person.passportSurname, 
             dto.dorsal
         )
         
-        // Intentar obtener la imagen desde la web oficial o usar placeholder
-        val imageUrl = PlayerImageUtil.DEFAULT_PLAYER_IMAGES[playerCode] 
-            ?: imageUtil.getPlayerImageUrl(playerCode, dto.person.name, teamCode)
-            ?: imageUtil.generatePlaceholderImageUrl(dto.person.name)
+        // Usar las imágenes que vienen directamente en el PlayerDto desde feeds API
+        val profileImage = dto.images?.profile
+        val headshotImage = dto.images?.headshot
+        
+        // Si las imágenes de la API están vacías, intentar obtener desde el web oficial
+        val imageUrl = profileImage 
+            ?: headshotImage 
+            ?: getPlayerImageFromWeb(dto.person.code, dto.person.name)
+            ?: generatePlaceholderImageUrl(dto.person.name)
         
         return Player(
             code = playerCode,
@@ -115,11 +186,11 @@ object PlayerMapper {
      * Filtra solo los jugadores (type="J"), excluyendo entrenadores
      * Nota: Esta función ya no se usa con las nuevas imágenes, se mantiene para compatibilidad
      */
-    suspend fun fromDtoListToEntityList(dtoList: List<PlayerDto>, teamCode: String, imageUtil: PlayerImageUtil): List<PlayerEntity> {
+    suspend fun fromDtoListToEntityList(dtoList: List<PlayerDto>, teamCode: String): List<PlayerEntity> {
         return dtoList
             .filter { it.type == "J" } // Solo jugadores, no entrenadores
             .map { dto ->
-                val player = fromDto(dto, teamCode, imageUtil)
+                val player = fromDto(dto, teamCode)
                 toEntity(player, teamCode)
             }
     }

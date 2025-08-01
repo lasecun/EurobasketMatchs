@@ -11,7 +11,6 @@ import es.itram.basketmatch.domain.model.PlayerPosition
 import es.itram.basketmatch.domain.model.TeamRoster
 import es.itram.basketmatch.domain.repository.MatchRepository
 import es.itram.basketmatch.domain.repository.TeamRosterRepository
-import es.itram.basketmatch.utils.PlayerImageUtil
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
@@ -28,7 +27,6 @@ class TeamRosterRepositoryImpl @Inject constructor(
     private val apiScraper: EuroLeagueJsonApiScraper,
     private val teamRosterDao: TeamRosterDao,
     private val playerDao: PlayerDao,
-    private val playerImageUtil: PlayerImageUtil,
     private val matchRepository: MatchRepository
 ) : TeamRosterRepository {
     
@@ -204,7 +202,7 @@ class TeamRosterRepositoryImpl @Inject constructor(
         
         val players = validPlayerDtos.mapNotNull { playerDto ->
             try {
-                PlayerMapper.fromDto(playerDto, teamTla, playerImageUtil)
+                PlayerMapper.fromDto(playerDto, teamTla)
             } catch (e: Exception) {
                 Log.w(TAG, "⚠️ Error convirtiendo jugador ${playerDto.person.name}: ${e.message}")
                 null
