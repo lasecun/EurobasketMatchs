@@ -79,10 +79,6 @@ jobs:
     - name: 🧪 Run Unit Tests
       run: ./gradlew testDebugUnitTest --continue --stacktrace --no-daemon
 
-    - name: 📊 Generate Test Report
-      run: ./gradlew testDebugUnitTest jacocoTestReport --continue --no-daemon
-      if: always()
-
     # ----------------------
     # CODE QUALITY
     # ----------------------
@@ -123,18 +119,6 @@ jobs:
           app/build/reports/lint-results-debug.html
           app/build/reports/lint-results-debug.xml
         retention-days: 7
-
-    # ----------------------
-    # COVERAGE REPORTING
-    # ----------------------
-    - name: 📈 Upload Coverage to Codecov
-      uses: codecov/codecov-action@v3
-      if: success()
-      with:
-        file: app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
 
   # ============================================================================
   # JOB 2: CODE QUALITY ANALYSIS
