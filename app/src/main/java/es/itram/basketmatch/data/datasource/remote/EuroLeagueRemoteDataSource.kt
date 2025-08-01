@@ -10,9 +10,10 @@ import javax.inject.Singleton
 /**
  * Data source remoto para obtener datos de EuroLeague desde la API JSON oficial
  * 
- * ARQUITECTURA DE FUENTES DE DATOS:
- * - PRINCIPAL: feeds.incrowdsports.com (API de feeds) - Para todos los datos principales
- * - SECUNDARIA: www.euroleaguebasketball.net - Solo para imágenes de jugadores
+ * ARQUITECTURA UNIFICADA:
+ * - ÚNICA FUENTE: feeds.incrowdsports.com (API de feeds) - Para TODOS los datos
+ * - ✅ Equipos, partidos, rosters, estadísticas, imágenes
+ * - ✅ Logos de equipos e imágenes de jugadores incluidos
  * 
  * Esta clase es un wrapper sobre EuroLeagueJsonApiScraper que proporciona:
  * - Manejo de errores centralizado
@@ -80,7 +81,8 @@ class EuroLeagueRemoteDataSource @Inject constructor(
     }
     
     /**
-     * Equipos de fallback en caso de que el scraping falle
+     * Equipos de fallback en caso de que la feeds API falle
+     * Todos los datos están alineados con la feeds API unificada
      */
     private fun getFallbackTeams(): List<TeamWebDto> {
         return listOf(
@@ -92,7 +94,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "Spain",
                 venue = "WiZink Center",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/real-madrid/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/MAD"
             ),
             TeamWebDto(
                 id = "fc_barcelona",
@@ -102,7 +104,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "Spain",
                 venue = "Palau de la Música Catalana",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/fc-barcelona/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/BAR"
             ),
             TeamWebDto(
                 id = "panathinaikos",
@@ -112,7 +114,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "Greece",
                 venue = "OAKA",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/panathinaikos-aktor-athens/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/PAN"
             ),
             TeamWebDto(
                 id = "olympiacos",
@@ -122,7 +124,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "Greece",
                 venue = "Peace and Friendship Stadium",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/olympiacos-piraeus/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/OLY"
             ),
             TeamWebDto(
                 id = "fenerbahce",
@@ -132,7 +134,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "Turkey",
                 venue = "Ulker Sports and Event Hall",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/fenerbahce-beko-istanbul/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/ULK"
             ),
             TeamWebDto(
                 id = "anadolu_efes",
@@ -142,7 +144,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "Turkey",
                 venue = "Sinan Erdem Dome",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/anadolu-efes-istanbul/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/IST"
             ),
             TeamWebDto(
                 id = "baskonia",
@@ -152,7 +154,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "Spain",
                 venue = "Fernando Buesa Arena",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/baskonia-vitoria-gasteiz/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/BAS"
             ),
             TeamWebDto(
                 id = "valencia_basket",
@@ -162,7 +164,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "Spain",
                 venue = "Pabellón Fuente de San Luis",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/valencia-basket/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/PAM"
             ),
             TeamWebDto(
                 id = "zalgiris",
@@ -172,7 +174,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "Lithuania",
                 venue = "Zalgiris Arena",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/zalgiris-kaunas/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/ZAL"
             ),
             TeamWebDto(
                 id = "maccabi_tel_aviv",
@@ -182,7 +184,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "Israel",
                 venue = "Menora Mivtachim Arena",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/maccabi-rapyd-tel-aviv/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/TEL"
             ),
             TeamWebDto(
                 id = "as_monaco",
@@ -192,7 +194,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "Monaco",
                 venue = "Salle Gaston Médecin",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/as-monaco/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/MCO"
             ),
             TeamWebDto(
                 id = "bayern_munich",
@@ -202,7 +204,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "Germany",
                 venue = "BMW Park",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/fc-bayern-munich/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/MUN"
             ),
             TeamWebDto(
                 id = "virtus_bologna",
@@ -212,7 +214,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "Italy",
                 venue = "Segafredo Arena",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/virtus-bologna/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/VIR"
             ),
             TeamWebDto(
                 id = "milan",
@@ -222,7 +224,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "Italy",
                 venue = "Mediolanum Forum",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/ea7-emporio-armani-milan/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/MIL"
             ),
             TeamWebDto(
                 id = "red_star_belgrade",
@@ -232,7 +234,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "Serbia",
                 venue = "Štark Arena",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/crvena-zvezda-meridianbet-belgrade/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/RED"
             ),
             TeamWebDto(
                 id = "partizan_belgrade",
@@ -242,7 +244,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "Serbia",
                 venue = "Štark Arena",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/partizan-mozzart-bet-belgrade/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/PAR"
             ),
             TeamWebDto(
                 id = "asvel_villeurbanne",
@@ -252,7 +254,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "France",
                 venue = "LDLC Arena",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/ldlc-asvel-villeurbanne/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/ASV"
             ),
             TeamWebDto(
                 id = "paris_basketball",
@@ -262,7 +264,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
                 logoUrl = null,
                 country = "France",
                 venue = "Adidas Arena",
-                profileUrl = "https://www.euroleaguebasketball.net/euroleague/teams/paris-basketball/"
+                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/PRS"
             )
         )
     }

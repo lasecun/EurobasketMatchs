@@ -17,8 +17,18 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Scraper que utiliza la API JSON oficial de EuroLeague
- * Esta es mucho más confiable que el scraping HTML
+ * Cliente para la API JSON oficial de EuroLeague Feeds
+ * 
+ * FUENTE ÚNICA DE DATOS: feeds.incrowdsports.com
+ * ✅ Equipos (nombres, códigos, logos)
+ * ✅ Partidos (calendario, resultados, estado en tiempo real)
+ * ✅ Rosters (plantillas con imágenes de jugadores incluidas)
+ * ✅ Estadísticas y información completa
+ * 
+ * Esta API proporciona TODOS los datos necesarios incluyendo:
+ * - URLs de logos de equipos (imageUrls.crest)
+ * - URLs de imágenes de jugadores (images.profile, images.headshot)
+ * - Datos en tiempo real y actualizaciones automáticas
  */
 @Singleton
 class EuroLeagueJsonApiScraper @Inject constructor() {
@@ -258,13 +268,14 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
     }
     
     /**
-     * Genera URL del perfil del equipo basada en feeds API data
-     * Nota: Mantenemos compatibilidad con el sitio web oficial pero indicamos que los datos vienen de feeds API
+     * Genera URL del perfil del equipo desde feeds API
+     * 
+     * FUENTE ÚNICA: Todos los datos incluyendo perfiles vienen de feeds.incrowdsports.com
+     * No hay dependencias externas del sitio web oficial.
      */
     private fun generateTeamProfileUrl(teamCode: String): String {
-        // Podríamos generar URLs más específicas basadas en el código del equipo si fuera necesario
-        // Por ahora usamos una URL genérica que indica que los datos vienen de la API de feeds
-        return "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/teams/$teamCode"
+        // URL específica del equipo en la API de feeds
+        return "$FEEDS_BASE_URL/competitions/E/seasons/E2025/clubs/$teamCode"
     }
     
     /**
@@ -295,10 +306,20 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
             val url = "$ROSTER_URL/$teamTla/people"
             val jsonResponse = fetchJsonFromUrl(url)
             
+            Log.d(TAG, "🌐 [NETWORK] Raw JSON response for $teamTla roster: ${jsonResponse.take(500)}...")
+            
             // La API devuelve directamente un array de PlayerDto
             val rosterResponse = json.decodeFromString<TeamRosterResponse>(jsonResponse)
             
             Log.d(TAG, "🌐 [NETWORK] ✅ Roster obtenido exitosamente desde API: ${rosterResponse.size} jugadores para $teamTla")
+            
+            // Log para verificar las imágenes del primer jugador
+            if (rosterResponse.isNotEmpty()) {
+                val firstPlayer = rosterResponse[0]
+                Log.d(TAG, "🌐 [NETWORK] Primer jugador ${firstPlayer.person.name}: profile=${firstPlayer.images?.profile}, headshot=${firstPlayer.images?.headshot}")
+                Log.d(TAG, "🌐 [NETWORK] Primer jugador person.images: profile=${firstPlayer.person.images?.profile}, headshot=${firstPlayer.person.images?.headshot}")
+            }
+            
             rosterResponse
             
         } catch (e: Exception) {
