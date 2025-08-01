@@ -20,7 +20,7 @@ class NavigationRoutesTest {
     @Test
     fun `player detail route should be correct`() {
         // Assert
-        assertThat(NavigationRoutes.PLAYER_DETAIL).isEqualTo("player_detail")
+        assertThat(NavigationRoutes.PLAYER_DETAIL).isEqualTo("player_detail/{playerCode}/{teamName}")
     }
 
     @Test
@@ -66,10 +66,16 @@ class NavigationRoutesTest {
 
     @Test
     fun `playerDetail function should generate correct route`() {
+        // Arrange
+        val playerCode = "P004888"
+        val teamName = "Barcelona"
+
         // Act
-        val result = NavigationRoutes.playerDetail()
+        val result = NavigationRoutes.playerDetail(playerCode, teamName)
 
         // Assert
-        assertThat(result).isEqualTo("player_detail")
+        assertThat(result).contains("player_detail")
+        assertThat(result).contains(playerCode)
+        assertThat(result).contains(teamName)
     }
 }
