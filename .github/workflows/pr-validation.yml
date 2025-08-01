@@ -54,7 +54,7 @@ jobs:
   fast-build-test:
     name: ⚡ Fast Build & Test
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     
     steps:
     - name: 📥 Checkout Repository
@@ -91,19 +91,23 @@ jobs:
         ./gradlew clean assembleDebug --parallel --daemon
         echo "✅ **Debug Build:** Successful" >> $GITHUB_STEP_SUMMARY
 
-    - name: 🧪 Run Critical Tests Only
+    - name: 🧪 Run Unit Tests (All)
       run: |
-        # Run tests with focus on critical components only
-        ./gradlew testDebugUnitTest --tests="*ViewModel*" --tests="*Repository*" --tests="*Mapper*" --continue --parallel --daemon
+        # Run all unit tests with optimizations for speed
+        ./gradlew testDebugUnitTest --continue --parallel --daemon
         
-        echo "## 🧪 Critical Tests Summary" >> $GITHUB_STEP_SUMMARY
+        echo "## 🧪 Unit Tests Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
         if [ -f app/build/test-results/testDebugUnitTest/TEST-*.xml ]; then
-          echo "✅ **Critical Tests:** Passed" >> $GITHUB_STEP_SUMMARY
-          echo "🎯 **Focus Areas:** ViewModels, Repositories, Mappers" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Unit Tests:** All passed" >> $GITHUB_STEP_SUMMARY
+          
+          # Count test results if possible
+          TOTAL_TESTS=$(find app/build/test-results -name "*.xml" -exec grep -l "testcase" {} \; | xargs grep "testcase" | wc -l 2>/dev/null || echo "N/A")
+          echo "📊 **Total Tests Executed:** $TOTAL_TESTS" >> $GITHUB_STEP_SUMMARY
+          echo "🎯 **Coverage Areas:** ViewModels, Repositories, Mappers, Use Cases, Utils" >> $GITHUB_STEP_SUMMARY
         else
-          echo "❌ **Critical Tests:** Some tests failed" >> $GITHUB_STEP_SUMMARY
+          echo "❌ **Unit Tests:** Some tests failed" >> $GITHUB_STEP_SUMMARY
         fi
 
   # ============================================================================
