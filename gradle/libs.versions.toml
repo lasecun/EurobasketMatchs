@@ -28,6 +28,9 @@ coil = "2.7.0"
 
 # Testing
 mockk = "1.13.13"
+
+# Code Quality
+detekt = "1.23.7"
 coroutines-test = "1.9.0"
 arch-testing = "2.2.0"
 turbine = "1.1.0"
@@ -96,4 +99,5 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 
