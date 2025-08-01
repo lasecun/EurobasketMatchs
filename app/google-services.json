@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "123456789",
+    "project_id": "euroleague-app-placeholder",
+    "storage_bucket": "euroleague-app-placeholder.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:123456789:android:abcd1234567890ef",
+        "android_client_info": {
+          "package_name": "es.itram.basketmatch"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDummyKeyForDevelopment123456789"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:123456789:android:abcd1234567890ef",
+        "android_client_info": {
+          "package_name": "es.itram.basketmatch.debug"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDummyKeyForDevelopment123456789"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

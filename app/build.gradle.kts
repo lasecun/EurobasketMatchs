@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
     kotlin("plugin.serialization") version "2.0.21"
 }
 
@@ -118,6 +120,11 @@ dependencies {
     
     // Image Loading
     implementation(libs.coil.compose)
+    
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
     
     // Testing - Unit Tests
     testImplementation(libs.junit)
