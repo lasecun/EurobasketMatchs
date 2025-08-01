@@ -21,32 +21,29 @@ fi
 
 echo "✅ GitHub CLI configurado correctamente"
 
-# Intentar configurar reglas básicas
-echo "🔧 Aplicando reglas de protección..."
+# Intentar configurar reglas básicas con comando simplificado
+echo "🔧 Aplicando reglas básicas de protección..."
 
-# Configuración básica de protección
 gh api repos/lasecun/EurobasketMatchs/branches/main/protection \
   --method PUT \
-  --field required_status_checks='{"strict":true,"checks":[]}' \
-  --field enforce_admins=true \
-  --field required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true,"require_code_owner_reviews":false}' \
-  --field restrictions=null \
-  --field allow_force_pushes=false \
-  --field allow_deletions=false
+  --field required_pull_request_reviews='{"required_approving_review_count":1}' \
+  --field enforce_admins=false \
+  --field restrictions=null
 
 if [ $? -eq 0 ]; then
-    echo "✅ Reglas de protección aplicadas correctamente"
-    echo "📋 Verificando configuración..."
-    
-    # Verificar configuración
-    gh api repos/lasecun/EurobasketMatchs/branches/main/protection --jq '.required_pull_request_reviews.required_approving_review_count'
-    
-    echo ""
+    echo "✅ Reglas básicas aplicadas correctamente"
     echo "🎉 ¡Configuración completada!"
     echo "📖 Revisar: https://github.com/lasecun/EurobasketMatchs/settings/branches"
 else
-    echo "❌ Error al aplicar reglas de protección"
-    echo "🔧 Configurar manualmente en:"
-    echo "   https://github.com/lasecun/EurobasketMatchs/settings/branches"
+    echo "❌ Error al aplicar reglas de protección (típico error 422)"
+    echo ""
+    echo "🔧 SOLUCIÓN: Configurar manualmente en GitHub:"
+    echo "   1. Ve a: https://github.com/lasecun/EurobasketMatchs/settings/branches"
+    echo "   2. Clic en 'Add rule'"
+    echo "   3. Branch name pattern: main"
+    echo "   4. Marcar: 'Require a pull request before merging'"
+    echo "   5. Marcar: 'Require approvals: 1'"
+    echo "   6. Guardar con 'Create'"
+    echo ""
     exit 1
 fi

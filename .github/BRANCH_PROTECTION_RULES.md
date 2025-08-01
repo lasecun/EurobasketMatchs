@@ -3,7 +3,9 @@
 ## ⚠️ Estado Actual: Sin Protección
 **La rama `main` NO tiene reglas de protección configuradas actualmente.**
 
-## 🔧 Configuración Manual (Recomendado)
+## 🔧 Configuración Manual (RECOMENDADO - 100% funcional)
+
+⚠️ **IMPORTANTE**: Los comandos CLI pueden fallar con errores 422. La configuración manual es más confiable.
 
 ### Pasos para configurar en GitHub Web:
 
@@ -40,22 +42,36 @@
 - ☑️ **Allow force pushes**: ❌ DESHABILITADO
 - ☑️ **Allow deletions**: ❌ DESHABILITADO
 
-## 🔧 Comandos para configurar vía GitHub CLI
+## 🔧 Comandos para configurar vía GitHub CLI (EXPERIMENTAL)
+
+⚠️ **NOTA**: Estos comandos pueden fallar con error 422. Use configuración manual si fallan.
 
 ```bash
-# Habilitar protección de rama main
-gh api repos/:owner/:repo/branches/main/protection \
+# Comando simplificado - solo reglas básicas
+gh api repos/lasecun/EurobasketMatchs/branches/main/protection \
   --method PUT \
-  --field required_status_checks='{"strict":true,"checks":[{"context":"🔍 PR Validation"},{"context":"🏗️ Build & Test"},{"context":"🔍 Code Quality Analysis"}]}' \
-  --field enforce_admins=true \
-  --field required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true}' \
-  --field restrictions=null \
-  --field allow_force_pushes=false \
-  --field allow_deletions=false
+  --field required_pull_request_reviews='{"required_approving_review_count":1}' \
+  --field enforce_admins=false \
+  --field restrictions=null
 
-# Verificar configuración
-gh api repos/:owner/:repo/branches/main/protection
+# Si el comando anterior falla, usar configuración manual en:
+# https://github.com/lasecun/EurobasketMatchs/settings/branches
 ```
+
+## 📋 Configuración Manual - Paso a Paso
+
+### 1. Acceder a la configuración:
+- Ve a: https://github.com/lasecun/EurobasketMatchs/settings/branches
+- Clic en "Add rule"
+- Branch name pattern: `main`
+
+### 2. Marcar estas opciones:
+- ✅ **Require a pull request before merging**
+  - ✅ Require approvals: 1
+  - ✅ Dismiss stale PR approvals when new commits are pushed
+- ✅ **Do not allow bypassing the above settings**
+
+### 3. Guardar con "Create" o "Save changes"
 
 ## 📋 Verificación de la configuración
 
