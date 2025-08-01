@@ -1,11 +1,14 @@
-name: 🚀 CI Pipeline - Build & Test
+name: 🚀 CI Pipeline - Direct Push Validation
 
 on:
   push:
     branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
   workflow_dispatch:
+
+# Cancel previous runs for the same branch (but keep PR runs separate)
+concurrency:
+  group: ci-push-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # ============================================================================
