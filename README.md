@@ -279,7 +279,25 @@ git clone [repository-url]
 ./gradlew assembleDebug
 ```
 
-## 👥 Equipo y Contribución
+## � Documentación
+
+### 📖 Documentación Técnica
+Toda la documentación técnica del proyecto está organizada en la carpeta [`docs/`](./docs/):
+
+- **🚀 Implementación**: [`docs/implementation/`](./docs/implementation/) - Planes de implementación y optimización
+- **🧪 Testing**: [`docs/testing/`](./docs/testing/) - Guías y estado de las pruebas  
+- **🔄 CI/CD**: [`docs/ci-cd/`](./docs/ci-cd/) - Documentación de pipelines y optimizaciones
+- **🛡️ GitHub**: [`docs/github/`](./docs/github/) - Configuración y reglas de GitHub
+
+### 📋 Índice de Documentación
+Consulta el [índice completo de documentación](./docs/README.md) para una navegación detallada.
+
+### ⚙️ Configuración
+- **Workflows**: [`.github/workflows/`](./.github/workflows/) - Configuración de CI/CD
+- **Detekt**: [`app/config/detekt/`](./app/config/detekt/) - Análisis estático de código
+- **Gradle**: [`gradle/`](./gradle/) - Configuración de dependencias
+
+## �👥 Equipo y Contribución
 
 ### Estructura del Equipo
 - **Arquitecto de Software**: Diseño de arquitectura y patrones
