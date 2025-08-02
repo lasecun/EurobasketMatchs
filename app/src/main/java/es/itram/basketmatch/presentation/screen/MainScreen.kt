@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -19,11 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.itram.basketmatch.presentation.component.ErrorMessage
+import es.itram.basketmatch.presentation.component.HeaderDateSelector
 import es.itram.basketmatch.presentation.component.LoadingIndicator
 import es.itram.basketmatch.presentation.component.MatchCard
-import es.itram.basketmatch.presentation.component.HeaderDateSelector
-import es.itram.basketmatch.presentation.component.SyncProgressIndicator
 import es.itram.basketmatch.presentation.component.NoMatchesTodayCard
+import es.itram.basketmatch.presentation.component.SyncProgressIndicator
 import es.itram.basketmatch.presentation.viewmodel.MainViewModel
 
 /**
@@ -33,7 +31,6 @@ import es.itram.basketmatch.presentation.viewmodel.MainViewModel
 fun MainScreen(
     viewModel: MainViewModel,
     onNavigateToCalendar: () -> Unit,
-    onNavigateToTeamDetail: (String) -> Unit,
     onNavigateToMatchDetail: (String) -> Unit
 ) {
     val matches by viewModel.matches.collectAsStateWithLifecycle()
@@ -75,6 +72,7 @@ fun MainScreen(
                     SyncProgressIndicator(syncProgress = syncProgress)
                 }
             }
+
             isLoading -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -83,6 +81,7 @@ fun MainScreen(
                     LoadingIndicator()
                 }
             }
+
             error != null -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -94,6 +93,7 @@ fun MainScreen(
                     )
                 }
             }
+
             matches.isEmpty() -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -107,6 +107,7 @@ fun MainScreen(
                     )
                 }
             }
+
             else -> {
                 LazyColumn(
                     contentPadding = PaddingValues(vertical = 8.dp),
