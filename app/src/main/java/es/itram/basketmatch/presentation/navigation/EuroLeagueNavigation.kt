@@ -38,9 +38,6 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                 onNavigateToCalendar = {
                     navController.navigate(NavigationRoutes.CALENDAR)
                 },
-                onNavigateToTeamDetail = { teamId ->
-                    navController.navigate(NavigationRoutes.teamDetail(teamId))
-                },
                 onNavigateToMatchDetail = { matchId ->
                     navController.navigate(NavigationRoutes.matchDetail(matchId))
                 }
@@ -56,9 +53,6 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                     // Usar el ViewModel compartido directamente
                     mainViewModel.setSelectedDate(selectedDate)
                     navController.popBackStack()
-                },
-                onNavigateToTeamDetail = { teamId ->
-                    navController.navigate(NavigationRoutes.teamDetail(teamId))
                 },
                 onNavigateToMatchDetail = { matchId ->
                     navController.navigate(NavigationRoutes.matchDetail(matchId))

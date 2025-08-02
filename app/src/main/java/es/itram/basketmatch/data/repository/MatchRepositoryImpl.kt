@@ -2,11 +2,9 @@ package es.itram.basketmatch.data.repository
 
 import android.util.Log
 import es.itram.basketmatch.data.datasource.local.dao.MatchDao
-import es.itram.basketmatch.data.datasource.local.dao.TeamDao
 import es.itram.basketmatch.data.datasource.remote.EuroLeagueRemoteDataSource
 import es.itram.basketmatch.data.mapper.MatchMapper
 import es.itram.basketmatch.data.mapper.MatchWebMapper
-import es.itram.basketmatch.data.mapper.TeamMapper
 import es.itram.basketmatch.data.network.NetworkManager
 import es.itram.basketmatch.domain.entity.Match
 import es.itram.basketmatch.domain.entity.MatchStatus
@@ -30,7 +28,6 @@ import javax.inject.Singleton
 @Singleton
 class MatchRepositoryImpl @Inject constructor(
     private val matchDao: MatchDao,
-    private val teamDao: TeamDao,
     private val remoteDataSource: EuroLeagueRemoteDataSource,
     private val networkManager: NetworkManager
 ) : MatchRepository {
