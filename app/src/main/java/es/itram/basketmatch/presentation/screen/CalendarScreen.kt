@@ -61,13 +61,10 @@ import java.util.Locale
 fun CalendarScreen(
     onNavigateBack: () -> Unit,
     onDateSelected: (LocalDate) -> Unit,
-    onNavigateToTeamDetail: (String) -> Unit,
     onNavigateToMatchDetail: (String) -> Unit,
     viewModel: CalendarViewModel = hiltViewModel()
 ) {
     val currentMonth by viewModel.currentMonth.collectAsStateWithLifecycle()
-    val matches by viewModel.matches.collectAsStateWithLifecycle()
-    val teams by viewModel.teams.collectAsStateWithLifecycle()
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
