@@ -1,13 +1,11 @@
-name: 🧪 Test Suite - Comprehensive Testing
+name: 🧪 Test Suite - Comprehensive Analysis
 
 on:
-  push:
-    branches: [ main, develop, 'feature/**' ]
   pull_request:
     branches: [ main, develop ]
   schedule:
-    # Run tests every day at 6 AM UTC
-    - cron: '0 6 * * *'
+    # Run comprehensive tests every day at 7 AM UTC
+    - cron: '0 7 * * *'
   workflow_dispatch:
 
 jobs:

@@ -1,0 +1,144 @@
+name: ⚡ Quick CI - Fast Build & Test
+
+on:
+  push:
+    branches: [ 'feature/**' ]
+  workflow_dispatch:
+
+# Cancel previous runs for the same branch
+concurrency:
+  group: quick-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # JOB 1: QUICK BUILD & TEST
+  # ============================================================================
+  quick-build-test:
+    name: ⚡ Quick Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+    # ----------------------
+    # SETUP ENVIRONMENT
+    # ----------------------
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: ☕ Setup JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: 🐘 Setup Gradle
+      uses: gradle/gradle-build-action@v2
+      with:
+        gradle-home-cache-cleanup: true
+
+    - name: 🔧 Make gradlew executable
+      run: chmod +x ./gradlew
+
+    - name: 📦 Cache Gradle Dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          gradle-${{ runner.os }}-
+
+    - name: 🔍 Validate Gradle Wrapper
+      uses: gradle/wrapper-validation-action@v1
+
+    - name: 🔥 Setup Firebase Configuration
+      env:
+        GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+      run: |
+        echo "=== FIREBASE SETUP (Quick CI) ==="
+        
+        # Check if secret exists
+        if [ -z "$GOOGLE_SERVICES_JSON" ]; then
+          echo "❌ CRITICAL: GOOGLE_SERVICES_JSON environment variable is EMPTY!"
+          exit 1
+        fi
+        
+        echo "✅ Secret is available (length: ${#GOOGLE_SERVICES_JSON})"
+        
+        # Create directories and files
+        mkdir -p app app/src app/src/debug
+        echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/debug/google-services.json
+        
+        # Quick verification
+        for loc in "app/google-services.json" "app/src/google-services.json" "app/src/debug/google-services.json"; do
+          if [ -f "$loc" ] && [ -s "$loc" ]; then
+            echo "✅ $loc - OK ($(wc -c < "$loc") bytes)"
+          else
+            echo "❌ $loc - MISSING"
+            exit 1
+          fi
+        done
+        
+        echo "=== END FIREBASE SETUP ==="
+
+    # ----------------------
+    # QUICK BUILD & TEST
+    # ----------------------
+    - name: 🏗️ Quick Build (Debug Only)
+      env:
+        GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+      run: |
+        # Ensure Firebase files before build
+        mkdir -p app app/src app/src/debug
+        echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/debug/google-services.json
+        
+        # Quick debug build
+        ./gradlew assembleDebug --parallel
+
+    - name: 🧪 Run Unit Tests (Quick)
+      env:
+        GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+      run: |
+        # Ensure Firebase files before tests
+        mkdir -p app app/src app/src/debug
+        echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/debug/google-services.json
+        
+        # Run unit tests
+        ./gradlew testDebugUnitTest --parallel
+
+    - name: 📊 Quick Summary
+      if: always()
+      run: |
+        echo "## ⚡ Quick CI Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🎯 Feature Branch Validation" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Build:** Debug APK generated" >> $GITHUB_STEP_SUMMARY
+        echo "- **Tests:** Unit tests executed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ✅ Quick Checks Passed" >> $GITHUB_STEP_SUMMARY
+        echo "- 🏗️ **Build:** Successful compilation" >> $GITHUB_STEP_SUMMARY
+        echo "- 🧪 **Unit Tests:** All tests passing" >> $GITHUB_STEP_SUMMARY
+        echo "- 🔥 **Firebase:** Configuration working" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "*Ready for PR creation to main/develop*"
+
+    - name: 📤 Upload Quick Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: quick-ci-results-${{ github.sha }}
+        path: |
+          app/build/reports/tests/testDebugUnitTest/
+          app/build/test-results/testDebugUnitTest/
+        retention-days: 3

@@ -1,8 +1,8 @@
-name: 🚀 CI Pipeline - Build & Test
+name: 🚀 CI Pipeline - Complete Build & Analysis
 
 on:
   push:
-    branches: [ main, develop, 'feature/**' ]
+    branches: [ main, develop ]
   schedule:
     # Run complete CI daily at 6 AM UTC for main branch
     - cron: '0 6 * * *'
