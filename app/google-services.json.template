@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "816496413201",
-    "project_id": "basketmatch-79703",
-    "storage_bucket": "basketmatch-79703.firebasestorage.app"
+    "project_number": "YOUR_PROJECT_NUMBER",
+    "project_id": "YOUR_PROJECT_ID",
+    "storage_bucket": "YOUR_PROJECT_ID.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:816496413201:android:4270ece141c1daa8bcffb0",
+        "mobilesdk_app_id": "YOUR_MOBILESDK_APP_ID",
         "android_client_info": {
           "package_name": "es.itram.basketmatch"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAJ_yZ3SKDM8h58aogDNh_JSgpOedsiqZg"
+          "current_key": "YOUR_API_KEY_HERE"
         }
       ],
       "services": {
@@ -26,7 +26,7 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:816496413201:android:4270ece141c1daa8bcffb1",
+        "mobilesdk_app_id": "YOUR_DEBUG_MOBILESDK_APP_ID",
         "android_client_info": {
           "package_name": "es.itram.basketmatch.debug"
         }
@@ -34,7 +34,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAJ_yZ3SKDM8h58aogDNh_JSgpOedsiqZg"
+          "current_key": "YOUR_API_KEY_HERE"
         }
       ],
       "services": {

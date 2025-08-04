@@ -52,7 +52,7 @@ adb shell am start -n es.itram.basketmatch.debug/es.itram.basketmatch.MainActivi
 
 **Verificar**:
 - Package name exacto: `es.itram.basketmatch.debug`
-- API Key: `AIzaSyAJ_yZ3SKDM8h58aogDNh_JSgpOedsiqZg`
+- API Key: `[REDACTED - Check google-services.json]`
 - Project ID: `basketmatch-79703`
 
 ## 🧪 **Steps para Diagnosticar**
