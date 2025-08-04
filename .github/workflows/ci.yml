@@ -78,7 +78,14 @@ jobs:
     - name: 🔥 Setup Firebase Configuration
       run: |
         echo "Creating google-services.json from environment variable"
+        echo "Setting up Firebase configuration..."
+        if [ -z "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
+          echo "ERROR: GOOGLE_SERVICES_JSON secret is not set!"
+          exit 1
+        fi
         echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
+        echo "Firebase config file created successfully"
+        ls -la app/google-services.json
         echo "✅ Firebase configuration created"
 
     - name: 🧹 Clean Project
