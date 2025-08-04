@@ -30,56 +30,121 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    - name: 🔥 Setup Firebase Configuration
+    - name: � Setup Gradle
+      uses: gradle/gradle-build-action@v2
+      with:
+        gradle-home-cache-cleanup: true
+
+    - name: 🔧 Make gradlew executable
+      run: chmod +x ./gradlew
+
+    - name: �🔥 Setup Firebase Configuration
       env:
         GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
       run: |
-        echo "=== FIREBASE DEBUG (Test Suite) ==="
+        echo "=== EXTREME FIREBASE DEBUGGING (Test Suite) ==="
         echo "Working directory: $(pwd)"
+        echo "User: $(whoami)"
+        echo "Date: $(date)"
         
-        # Check if secret exists
+        # Step 1: Check environment variables
+        echo "--- Step 1: Environment Analysis ---"
         if [ -z "$GOOGLE_SERVICES_JSON" ]; then
-          echo "❌ CRITICAL: GOOGLE_SERVICES_JSON environment variable is EMPTY!"
+          echo "❌ CRITICAL: GOOGLE_SERVICES_JSON environment variable is EMPTY or NOT SET!"
+          echo "Available environment variables containing 'GOOGLE':"
+          env | grep -i google || echo "No Google-related environment variables found"
+          echo ""
+          echo "This means either:"
+          echo "1. The secret 'GOOGLE_SERVICES_JSON' is not configured in GitHub"
+          echo "2. The secret exists but contains no content"
+          echo "3. There's a permission issue accessing the secret"
+          echo ""
+          echo "SOLUTION: Go to GitHub repo → Settings → Secrets and variables → Actions"
+          echo "Check that 'GOOGLE_SERVICES_JSON' exists and has content"
           exit 1
         fi
         
-        echo "✅ Secret is available (length: ${#GOOGLE_SERVICES_JSON})"
+        echo "✅ Secret environment variable exists"
+        echo "📏 Content length: ${#GOOGLE_SERVICES_JSON} characters"
         
-        # Create directories for ALL possible locations
+        # Step 2: Analyze secret content
+        echo "--- Step 2: Content Analysis ---"
+        if [ ${#GOOGLE_SERVICES_JSON} -lt 50 ]; then
+          echo "⚠️  WARNING: Secret seems too short for a valid Firebase config"
+          echo "First 30 chars: '$(echo "$GOOGLE_SERVICES_JSON" | head -c 30)'"
+        fi
+        
+        # Check if it looks like JSON
+        if echo "$GOOGLE_SERVICES_JSON" | grep -q "^{"; then
+          echo "✅ Content starts with '{' (looks like JSON)"
+        else
+          echo "⚠️  Content doesn't start with '{' - may not be JSON"
+          echo "First 20 chars: '$(echo "$GOOGLE_SERVICES_JSON" | head -c 20)'"
+        fi
+        
+        # Step 3: Create directories
+        echo "--- Step 3: Directory Creation ---"
         mkdir -p app
         mkdir -p app/src
         mkdir -p app/src/debug
+        echo "✅ Created directories: app/, app/src/, app/src/debug/"
         
-        # Create files in ALL locations (like ci.yml does)
+        # Step 4: Create files in ALL possible locations
+        echo "--- Step 4: File Creation ---"
         echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
         echo "$GOOGLE_SERVICES_JSON" > app/src/google-services.json
         echo "$GOOGLE_SERVICES_JSON" > app/src/debug/google-services.json
         
-        # Verify ALL file locations
-        locations=("app/google-services.json" "app/src/google-services.json" "app/src/debug/google-services.json")
+        # Step 5: Verify ALL file locations
+        echo "--- Step 5: File Verification ---"
+        locations=(
+          "app/google-services.json"
+          "app/src/google-services.json" 
+          "app/src/debug/google-services.json"
+        )
         
         all_success=true
         for location in "${locations[@]}"; do
           if [ -f "$location" ] && [ -s "$location" ]; then
             size=$(wc -c < "$location")
             echo "✅ $location - EXISTS (${size} bytes)"
+            echo "   Permissions: $(ls -la "$location")"
+            echo "   First line: $(head -n 1 "$location" | head -c 50)..."
           else
             echo "❌ $location - MISSING or EMPTY"
             all_success=false
           fi
         done
         
+        # Step 6: Final validation
+        echo "--- Step 6: Final Validation ---"
         if [ "$all_success" = true ]; then
           echo "✅ ALL FILES CREATED SUCCESSFULLY"
+          
+          # Try to validate JSON structure
+          if command -v python3 >/dev/null 2>&1; then
+            echo "--- JSON Validation ---"
+            if echo "$GOOGLE_SERVICES_JSON" | python3 -m json.tool >/dev/null 2>&1; then
+              echo "✅ Valid JSON structure"
+            else
+              echo "⚠️  Invalid JSON structure - but files exist"
+            fi
+          fi
+          
+          # Show absolute paths (what Google Services plugin will see)
+          echo "--- Absolute Paths ---"
+          for location in "${locations[@]}"; do
+            echo "📁 $(pwd)/$location"
+          done
+          
         else
-          echo "❌ CRITICAL ERROR: Not all files were created"
+          echo "❌ CRITICAL ERROR: Not all files were created successfully"
+          echo "Directory structure:"
+          find app -name "*.json" -o -name "google-services*" 2>/dev/null || echo "No files found"
           exit 1
         fi
         
-        echo "=== END FIREBASE DEBUG ==="
-
-    - name: �🔧 Make gradlew executable
-      run: chmod +x ./gradlew
+        echo "=== END EXTREME FIREBASE DEBUGGING ==="
 
     - name: 📦 Cache Gradle Dependencies
       uses: actions/cache@v4
@@ -87,7 +152,12 @@ jobs:
         path: |
           ~/.gradle/caches
           ~/.gradle/wrapper
-        key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*') }}
+        key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          gradle-${{ runner.os }}-
+
+    - name: 🔍 Validate Gradle Wrapper
+      uses: gradle/wrapper-validation-action@v1
 
     - name: 🧪 Run Unit Tests
       env:
