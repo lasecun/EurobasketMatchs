@@ -79,7 +79,7 @@ adb shell setprop debug.firebase.analytics.app es.itram.basketmatch.debug
 ### Project Info
 - **Project ID**: `basketmatch-79703`
 - **Project Number**: `816496413201`
-- **API Key**: `AIzaSyAJ_yZ3SKDM8h58aogDNh_JSgpOedsiqZg`
+- **API Key**: `[REDACTED - Stored securely in google-services.json]`
 
 ### Package Names
 - **Release**: `es.itram.basketmatch`
