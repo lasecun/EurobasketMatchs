@@ -10,6 +10,7 @@ import es.itram.basketmatch.testutil.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
@@ -55,7 +56,7 @@ class TeamRosterViewModelProgressTest {
         
         // When
         viewModel.loadTeamRoster(teamTla)
-        
+        advanceUntilIdle() // Wait for async operations to complete        
         // Then
         val uiState = viewModel.uiState.value
         assertThat(uiState.isLoading).isFalse()
@@ -90,7 +91,7 @@ class TeamRosterViewModelProgressTest {
         
         // When
         viewModel.refreshTeamRoster(teamTla)
-        
+        advanceUntilIdle() // Wait for async operations to complete        
         // Then
         val uiState = viewModel.uiState.value
         assertThat(uiState.isRefreshing).isFalse()
@@ -117,7 +118,7 @@ class TeamRosterViewModelProgressTest {
         
         // When
         viewModel.loadTeamRoster(teamTla)
-        
+        advanceUntilIdle() // Wait for async operations to complete        
         // Then
         val uiState = viewModel.uiState.value
         assertThat(uiState.isLoading).isFalse()
@@ -137,7 +138,7 @@ class TeamRosterViewModelProgressTest {
         
         // When
         viewModel.loadTeamRoster(teamTla)
-        
+        advanceUntilIdle() // Wait for async operations to complete        
         // Then
         val uiState = viewModel.uiState.value
         assertThat(uiState.isLoading).isFalse()
@@ -162,11 +163,11 @@ class TeamRosterViewModelProgressTest {
         
         coEvery { getTeamRosterUseCase(teamTla) } returns Result.success(teamRoster)
         viewModel.loadTeamRoster(teamTla)
-        
+        advanceUntilIdle() // Wait for async operations to complete        
         // Simulate an error afterwards
         coEvery { getTeamRosterUseCase("INVALID") } returns Result.failure(Exception("Error"))
         viewModel.loadTeamRoster("INVALID")
-        
+        advanceUntilIdle() // Wait for async operations to complete        
         // Verify there's an error
         assertThat(viewModel.uiState.value.error).isNotNull()
         

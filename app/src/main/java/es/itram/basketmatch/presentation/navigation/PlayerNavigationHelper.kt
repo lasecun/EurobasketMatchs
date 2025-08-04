@@ -8,7 +8,7 @@ import es.itram.basketmatch.domain.model.Player
  */
 object PlayerNavigationHelper {
     private var selectedPlayer: Player? = null
-    private var selectedTeamName: String = ""
+    private var selectedTeamName: String? = null
     
     fun setSelectedPlayer(player: Player, teamName: String) {
         selectedPlayer = player
@@ -17,10 +17,10 @@ object PlayerNavigationHelper {
     
     fun getSelectedPlayer(): Player? = selectedPlayer
     
-    fun getSelectedTeamName(): String = selectedTeamName
+    fun getSelectedTeamName(): String? = selectedTeamName
     
     fun clearSelection() {
         selectedPlayer = null
-        selectedTeamName = ""
+        selectedTeamName = null
     }
 }
