@@ -1,7 +1,6 @@
 package es.itram.basketmatch.data.repository
 
 import es.itram.basketmatch.data.datasource.local.dao.MatchDao
-import es.itram.basketmatch.data.datasource.local.dao.TeamDao
 import es.itram.basketmatch.data.datasource.remote.EuroLeagueRemoteDataSource
 import es.itram.basketmatch.data.network.NetworkManager
 import es.itram.basketmatch.domain.entity.MatchStatus
@@ -18,7 +17,6 @@ import org.junit.Test
 class MatchRepositoryImplTest {
 
     private lateinit var matchDao: MatchDao
-    private lateinit var teamDao: TeamDao
     private lateinit var remoteDataSource: EuroLeagueRemoteDataSource
     private lateinit var networkManager: NetworkManager
     private lateinit var repository: MatchRepositoryImpl
@@ -26,12 +24,10 @@ class MatchRepositoryImplTest {
     @Before
     fun setup() {
         matchDao = mockk()
-        teamDao = mockk()
         remoteDataSource = mockk()
         networkManager = mockk()
         repository = MatchRepositoryImpl(
             matchDao = matchDao,
-            teamDao = teamDao,
             remoteDataSource = remoteDataSource,
             networkManager = networkManager
         )

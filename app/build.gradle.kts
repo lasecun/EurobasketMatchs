@@ -18,7 +18,7 @@ android {
         applicationId = "es.itram.basketmatch"
         minSdk = 31
         targetSdk = 36
-        versionCode = 1
+        versionCode = 2
         versionName = "1.0"
 
         testInstrumentationRunner = "es.itram.basketmatch.HiltTestRunner"
@@ -67,7 +67,6 @@ android {
             isIncludeAndroidResources = true
         }
         unitTests.all {
-            it.useJUnitPlatform()
             it.testLogging {
                 events("passed", "failed", "skipped")
             }
