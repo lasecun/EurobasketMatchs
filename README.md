@@ -398,6 +398,27 @@ Toda la documentación técnica está organizada en [`docs/`](./docs/):
 ./gradlew connectedCheck   # Integration tests
 ```
 
+## 📚 Documentación Completa
+
+Para información técnica detallada, configuración y guías de desarrollo, consulta:
+
+### 📖 **[Índice de Documentación](docs/INDEX.md)**
+
+#### 🔧 **Setup Rápido:**
+- [🔐 Configuración de GitHub Secrets](docs/GITHUB_SECRETS_SETUP.md) - **¡REQUERIDO para CI/CD!**
+- [🚀 Resumen de Fixes del Pipeline](docs/PIPELINE_FIX_SUMMARY.md)
+
+#### 🛠️ **Documentación Técnica:**
+- [🏗️ Implementation Plans](docs/implementation/)
+- [🔥 Firebase Setup](docs/firebase/)
+- [🧪 Testing Strategy](docs/testing/)
+- [🔄 CI/CD Workflows](docs/ci-cd/)
+- [🛡️ Security & Privacy](docs/security/)
+
+> **⚠️ Importante**: Para desarrolladores nuevos, **revisar primero** [GitHub Secrets Setup](docs/GITHUB_SECRETS_SETUP.md) para configurar correctamente el entorno de CI/CD.
+
+---
+
 ### 📊 **Métricas del Proyecto**
 - **📈 Cobertura de Tests**: 194 tests implementados
 - **🏗️ Build System**: Gradle 9.0.0 (última versión)
