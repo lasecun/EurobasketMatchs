@@ -217,17 +217,73 @@ jobs:
         echo "=== END PRE-BUILD VERIFICATION ==="
 
     - name: 🧹 Clean Project
-      run: ./gradlew clean
+      env:
+        GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+      run: |
+        echo "=== CLEAN PROJECT WITH FIREBASE RECHECK ==="
+        
+        # Double-check Firebase files exist before cleaning
+        if [ -f "app/google-services.json" ]; then
+          echo "✅ Firebase file still exists before clean"
+        else
+          echo "⚠️  Firebase file missing before clean - recreating"
+          mkdir -p app app/src app/src/debug
+          echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+          echo "$GOOGLE_SERVICES_JSON" > app/src/google-services.json
+          echo "$GOOGLE_SERVICES_JSON" > app/src/debug/google-services.json
+        fi
+        
+        # Run clean
+        ./gradlew clean
+        
+        # Recreate Firebase files after clean (they might be deleted)
+        echo "Recreating Firebase files after clean..."
+        mkdir -p app app/src app/src/debug
+        echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/debug/google-services.json
+        
+        # Verify after clean
+        echo "Post-clean verification:"
+        for loc in "app/google-services.json" "app/src/google-services.json" "app/src/debug/google-services.json"; do
+          if [ -f "$loc" ]; then
+            echo "✅ $loc - EXISTS ($(wc -c < "$loc") bytes)"
+          else
+            echo "❌ $loc - MISSING"
+          fi
+        done
 
     - name: 🏗️ Build Debug APK
-      run: ./gradlew assembleDebug --stacktrace --scan
       env:
+        GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         CI: true
+      run: |
+        echo "=== PRE-BUILD DEBUG APK FIREBASE CHECK ==="
+        # Ensure Firebase files exist right before debug build
+        mkdir -p app app/src app/src/debug
+        echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/debug/google-services.json
+        echo "Firebase files recreated before debug build"
+        
+        # Run the actual build
+        ./gradlew assembleDebug --stacktrace --scan
 
     - name: 🏗️ Build Release APK
-      run: ./gradlew assembleRelease --stacktrace
       env:
+        GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         CI: true
+      run: |
+        echo "=== PRE-BUILD RELEASE APK FIREBASE CHECK ==="
+        # Ensure Firebase files exist right before release build
+        mkdir -p app app/src app/src/debug
+        echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/debug/google-services.json
+        echo "Firebase files recreated before release build"
+        
+        # Run the actual build
+        ./gradlew assembleRelease --stacktrace
 
     # ----------------------
     # COMPREHENSIVE TESTING
