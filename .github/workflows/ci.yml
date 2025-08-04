@@ -79,53 +79,142 @@ jobs:
       env:
         GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
       run: |
-        echo "=== Firebase Configuration Setup ==="
+        echo "=== EXTREME FIREBASE DEBUGGING ==="
         echo "Working directory: $(pwd)"
+        echo "User: $(whoami)"
+        echo "Date: $(date)"
         
-        # Check if secret exists
+        # Step 1: Check environment variables
+        echo "--- Step 1: Environment Analysis ---"
         if [ -z "$GOOGLE_SERVICES_JSON" ]; then
-          echo "❌ ERROR: GOOGLE_SERVICES_JSON secret is not set!"
-          echo "Please configure the secret in GitHub repository settings"
+          echo "❌ CRITICAL: GOOGLE_SERVICES_JSON environment variable is EMPTY or NOT SET!"
+          echo "Available environment variables containing 'GOOGLE':"
+          env | grep -i google || echo "No Google-related environment variables found"
+          echo ""
+          echo "This means either:"
+          echo "1. The secret 'GOOGLE_SERVICES_JSON' is not configured in GitHub"
+          echo "2. The secret exists but contains no content"
+          echo "3. There's a permission issue accessing the secret"
+          echo ""
+          echo "SOLUTION: Go to GitHub repo → Settings → Secrets and variables → Actions"
+          echo "Check that 'GOOGLE_SERVICES_JSON' exists and has content"
           exit 1
         fi
         
-        echo "✅ Secret is available via environment variable"
-        echo "📏 Secret length: ${#GOOGLE_SERVICES_JSON} characters"
+        echo "✅ Secret environment variable exists"
+        echo "📏 Content length: ${#GOOGLE_SERVICES_JSON} characters"
         
-        # Create directory if it doesn't exist
+        # Step 2: Analyze secret content
+        echo "--- Step 2: Content Analysis ---"
+        if [ ${#GOOGLE_SERVICES_JSON} -lt 50 ]; then
+          echo "⚠️  WARNING: Secret seems too short for a valid Firebase config"
+          echo "First 30 chars: '$(echo "$GOOGLE_SERVICES_JSON" | head -c 30)'"
+        fi
+        
+        # Check if it looks like JSON
+        if echo "$GOOGLE_SERVICES_JSON" | grep -q "^{"; then
+          echo "✅ Content starts with '{' (looks like JSON)"
+        else
+          echo "⚠️  Content doesn't start with '{' - may not be JSON"
+          echo "First 20 chars: '$(echo "$GOOGLE_SERVICES_JSON" | head -c 20)'"
+        fi
+        
+        # Step 3: Create directories
+        echo "--- Step 3: Directory Creation ---"
         mkdir -p app
-        
-        # Create the file using environment variable
-        echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
-        # Also create backup location for Google Services plugin
         mkdir -p app/src
-        echo "$GOOGLE_SERVICES_JSON" > app/src/google-services.json
+        mkdir -p app/src/debug
+        echo "✅ Created directories: app/, app/src/, app/src/debug/"
         
-        # Verify the file was created and has content
-        if [ -f app/google-services.json ] && [ -s app/google-services.json ]; then
-          echo "✅ File created successfully"
-          echo "📁 Backup location: $(pwd)/app/src/google-services.json"
-          echo "🔍 Both files exist: app/google-services.json=$(ls -la app/google-services.json 2>/dev/null | wc -l) app/src/google-services.json=$(ls -la app/src/google-services.json 2>/dev/null | wc -l)"
-          echo "📁 File location: $(pwd)/app/google-services.json"
-          echo "📏 File size: $(wc -c < app/google-services.json) bytes"
-          echo "🔍 File permissions: $(ls -la app/google-services.json)"
-          echo "🔍 First line: $(head -n 1 app/google-services.json)"
-          
-          # Basic JSON validation
-          if echo "$GOOGLE_SERVICES_JSON" | grep -q "project_id"; then
-            echo "✅ Appears to be valid Firebase config (contains project_id)"
+        # Step 4: Create files in ALL possible locations
+        echo "--- Step 4: File Creation ---"
+        echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/debug/google-services.json
+        
+        # Step 5: Verify ALL file locations
+        echo "--- Step 5: File Verification ---"
+        locations=(
+          "app/google-services.json"
+          "app/src/google-services.json" 
+          "app/src/debug/google-services.json"
+        )
+        
+        all_success=true
+        for location in "${locations[@]}"; do
+          if [ -f "$location" ] && [ -s "$location" ]; then
+            size=$(wc -c < "$location")
+            echo "✅ $location - EXISTS (${size} bytes)"
+            echo "   Permissions: $(ls -la "$location")"
+            echo "   First line: $(head -n 1 "$location" | head -c 50)..."
           else
-            echo "⚠️ Warning: May not be valid Firebase config"
+            echo "❌ $location - MISSING or EMPTY"
+            all_success=false
+          fi
+        done
+        
+        # Step 6: Final validation
+        echo "--- Step 6: Final Validation ---"
+        if [ "$all_success" = true ]; then
+          echo "✅ ALL FILES CREATED SUCCESSFULLY"
+          
+          # Try to validate JSON structure
+          if command -v python3 >/dev/null 2>&1; then
+            echo "--- JSON Validation ---"
+            if echo "$GOOGLE_SERVICES_JSON" | python3 -m json.tool >/dev/null 2>&1; then
+              echo "✅ Valid JSON structure"
+            else
+              echo "⚠️  Invalid JSON structure - but files exist"
+            fi
           fi
           
+          # Show absolute paths (what Google Services plugin will see)
+          echo "--- Absolute Paths ---"
+          for location in "${locations[@]}"; do
+            echo "📁 $(pwd)/$location"
+          done
+          
         else
-          echo "❌ CRITICAL ERROR: File creation failed!"
-          echo "Directory contents:"
-          ls -la app/ || echo "app directory doesn't exist"
+          echo "❌ CRITICAL ERROR: Not all files were created successfully"
+          echo "Directory structure:"
+          find app -name "*.json" -o -name "google-services*" 2>/dev/null || echo "No files found"
           exit 1
         fi
         
-        echo "=== End Firebase Configuration Setup ==="
+        echo "=== END FIREBASE DEBUGGING ==="
+
+    - name: 🔍 Pre-Build Firebase File Verification
+      run: |
+        echo "=== PRE-BUILD VERIFICATION ==="
+        echo "This runs just before Gradle build to ensure files are still there"
+        
+        # Check all expected locations
+        echo "Checking all Google Services file locations:"
+        find . -name "google-services.json" -exec echo "Found: {}" \; -exec ls -la {} \; -exec head -n 1 {} \; 2>/dev/null || echo "No google-services.json files found"
+        
+        # Specifically check the locations the error message mentions
+        error_locations=(
+          "app/src/debug/google-services.json"
+          "app/src/google-services.json" 
+          "app/src/Debug/google-services.json"
+          "app/google-services.json"
+        )
+        
+        echo ""
+        echo "Checking exact locations from error message:"
+        for loc in "${error_locations[@]}"; do
+          if [ -f "$loc" ]; then
+            echo "✅ $loc - EXISTS ($(wc -c < "$loc") bytes)"
+          else
+            echo "❌ $loc - MISSING"
+          fi
+        done
+        
+        echo ""
+        echo "Working directory: $(pwd)"
+        echo "Directory tree:"
+        find app -type f -name "*.json" 2>/dev/null | head -20
+        echo "=== END PRE-BUILD VERIFICATION ==="
 
     - name: 🧹 Clean Project
       run: ./gradlew clean
