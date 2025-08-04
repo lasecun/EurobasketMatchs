@@ -51,9 +51,26 @@ Después de configurar el secreto:
 
 - **Error**: `File google-services.json is missing`
   - **Solución**: Asegúrate de que el secreto `GOOGLE_SERVICES_JSON` esté configurado correctamente
+  - **Debug**: Los workflows ahora muestran información detallada sobre la creación del archivo
 
 - **Error**: `JSON syntax error`
   - **Solución**: Verifica que el contenido del secreto sea válido JSON
+
+- **Error**: `GOOGLE_SERVICES_JSON secret is not set!`
+  - **Solución**: El secreto no está configurado en GitHub. Sigue los pasos de configuración arriba
+
+- **Error**: `echo: write error: No space left on device`
+  - **Solución**: El contenido del secreto puede estar mal formateado o ser demasiado grande
+
+## 🔍 Debugging
+
+Los workflows ahora incluyen información de debug automática que mostrará:
+- Si el secreto está configurado
+- Ubicación del archivo creado
+- Tamaño del archivo generado
+- Listado del archivo para verificar permisos
+
+Revisa los logs del workflow en GitHub Actions para ver esta información de debug.
 
 ## 📁 Archivos Afectados
 
