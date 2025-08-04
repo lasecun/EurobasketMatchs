@@ -8,6 +8,7 @@ import es.itram.basketmatch.testutil.TestDataFactory
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
@@ -38,7 +39,7 @@ class TeamRosterViewModelProgressValidationTest {
 
         // When
         viewModel.loadTeamRoster("MAD")
-
+        advanceUntilIdle() // Wait for async operations to complete
         // Then
         assertThat(viewModel.uiState.value.loadingProgress).isNull()
         assertThat(viewModel.uiState.value.isLoading).isFalse()
@@ -52,7 +53,7 @@ class TeamRosterViewModelProgressValidationTest {
 
         // When
         viewModel.loadTeamRoster("ERR")
-
+        advanceUntilIdle() // Wait for async operations to complete
         // Then
         assertThat(viewModel.uiState.value.loadingProgress).isNull()
         assertThat(viewModel.uiState.value.isLoading).isFalse()
@@ -67,7 +68,7 @@ class TeamRosterViewModelProgressValidationTest {
 
         // When
         viewModel.refreshTeamRoster("MAD")
-
+        advanceUntilIdle() // Wait for async operations to complete
         // Then
         assertThat(viewModel.uiState.value.loadingProgress).isNull()
         assertThat(viewModel.uiState.value.isRefreshing).isFalse()
@@ -79,7 +80,7 @@ class TeamRosterViewModelProgressValidationTest {
         // Given - crear un estado con error
         coEvery { getTeamRosterUseCase("ERR") } returns Result.failure(Exception("Test error"))
         viewModel.loadTeamRoster("ERR")
-        assertThat(viewModel.uiState.value.error).isNotNull()
+        advanceUntilIdle() // Wait for async operations to complete        assertThat(viewModel.uiState.value.error).isNotNull()
 
         // When
         viewModel.resetMessages()

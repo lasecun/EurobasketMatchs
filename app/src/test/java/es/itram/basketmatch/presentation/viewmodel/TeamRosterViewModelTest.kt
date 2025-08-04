@@ -9,6 +9,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -59,6 +60,7 @@ class TeamRosterViewModelTest {
 
         // When
         viewModel.loadTeamRoster("MAD")
+        advanceUntilIdle() // Wait for all coroutines and delays to complete
 
         // Then
         assertFalse(viewModel.uiState.value.isLoading)
@@ -78,6 +80,7 @@ class TeamRosterViewModelTest {
 
         // When
         viewModel.loadTeamRoster("INVALID")
+        advanceUntilIdle() // Wait for all coroutines and delays to complete
 
         // Then
         assertFalse(viewModel.uiState.value.isLoading)
@@ -95,6 +98,7 @@ class TeamRosterViewModelTest {
 
         // When
         viewModel.refreshTeamRoster("MAD")
+        advanceUntilIdle() // Wait for all coroutines and delays to complete
 
         // Then
         assertFalse(viewModel.uiState.value.isRefreshing)
