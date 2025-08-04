@@ -1,11 +1,15 @@
 # 🚨 DIAGNÓSTICO URGENTE: Firebase Config Issue
 
-## 🔍 El Problema Persiste
+## 🔍 El Problema Persiste - ACTUALIZACIÓN
+
+**¡PROBLEMA IDENTIFICADO!** El workflow principal (`ci.yml`) no se estaba ejecutando en feature branches.
 
 A pesar de múltiples intentos, sigues viendo:
 ```
 File google-services.json is missing
 ```
+
+**CAUSA RAÍZ:** El workflow `ci.yml` solo se ejecutaba en `main` y `develop`, pero estás en `feature/manual_changes`.
 
 ## 🎯 ACCIONES INMEDIATAS REQUERIDAS
 
