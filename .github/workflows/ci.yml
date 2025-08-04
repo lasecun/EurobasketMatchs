@@ -76,17 +76,56 @@ jobs:
       uses: gradle/wrapper-validation-action@v1
 
     - name: 🔥 Setup Firebase Configuration
+      env:
+        GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
       run: |
-        echo "Creating google-services.json from environment variable"
-        echo "Setting up Firebase configuration..."
-        if [ -z "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
-          echo "ERROR: GOOGLE_SERVICES_JSON secret is not set!"
+        echo "=== Firebase Configuration Setup ==="
+        echo "Working directory: $(pwd)"
+        
+        # Check if secret exists
+        if [ -z "$GOOGLE_SERVICES_JSON" ]; then
+          echo "❌ ERROR: GOOGLE_SERVICES_JSON secret is not set!"
+          echo "Please configure the secret in GitHub repository settings"
           exit 1
         fi
-        echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
-        echo "Firebase config file created successfully"
-        ls -la app/google-services.json
-        echo "✅ Firebase configuration created"
+        
+        echo "✅ Secret is available via environment variable"
+        echo "📏 Secret length: ${#GOOGLE_SERVICES_JSON} characters"
+        
+        # Create directory if it doesn't exist
+        mkdir -p app
+        
+        # Create the file using environment variable
+        echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+        # Also create backup location for Google Services plugin
+        mkdir -p app/src
+        echo "$GOOGLE_SERVICES_JSON" > app/src/google-services.json
+        
+        # Verify the file was created and has content
+        if [ -f app/google-services.json ] && [ -s app/google-services.json ]; then
+          echo "✅ File created successfully"
+          echo "📁 Backup location: $(pwd)/app/src/google-services.json"
+          echo "🔍 Both files exist: app/google-services.json=$(ls -la app/google-services.json 2>/dev/null | wc -l) app/src/google-services.json=$(ls -la app/src/google-services.json 2>/dev/null | wc -l)"
+          echo "📁 File location: $(pwd)/app/google-services.json"
+          echo "📏 File size: $(wc -c < app/google-services.json) bytes"
+          echo "🔍 File permissions: $(ls -la app/google-services.json)"
+          echo "🔍 First line: $(head -n 1 app/google-services.json)"
+          
+          # Basic JSON validation
+          if echo "$GOOGLE_SERVICES_JSON" | grep -q "project_id"; then
+            echo "✅ Appears to be valid Firebase config (contains project_id)"
+          else
+            echo "⚠️ Warning: May not be valid Firebase config"
+          fi
+          
+        else
+          echo "❌ CRITICAL ERROR: File creation failed!"
+          echo "Directory contents:"
+          ls -la app/ || echo "app directory doesn't exist"
+          exit 1
+        fi
+        
+        echo "=== End Firebase Configuration Setup ==="
 
     - name: 🧹 Clean Project
       run: ./gradlew clean
