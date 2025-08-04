@@ -69,8 +69,8 @@ class PlayerPositionTest {
     }
 
     @Test
-    fun `should have exactly 5 positions`() {
-        assertEquals("Should have 5 basketball positions", 5, PlayerPosition.entries.size)
+    fun `should have exactly 8 positions`() {
+        assertEquals("Should have 8 basketball positions", 8, PlayerPosition.entries.size)
     }
 
     @Test

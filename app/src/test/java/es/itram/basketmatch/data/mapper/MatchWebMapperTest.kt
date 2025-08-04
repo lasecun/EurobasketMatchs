@@ -131,8 +131,8 @@ class MatchWebMapperTest {
         // Then - Sin fallback obsoleto, los logos deben ser null
         assertThat(result.homeTeamLogo).isNull()
         assertThat(result.awayTeamLogo).isNull()
-        assertThat(result.homeTeamName).isEqualTo("Zalgiris Kaunas") // Nombre generado desde TLA
-        assertThat(result.awayTeamName).isEqualTo("Anadolu Efes Istanbul") // Nombre generado desde TLA
+        assertThat(result.homeTeamName).isEqualTo("Zalgiris") // Usa el nombre del DTO
+        assertThat(result.awayTeamName).isEqualTo("Anadolu Efes") // Usa el nombre del DTO
     }
 
     @Test

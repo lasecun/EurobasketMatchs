@@ -19,10 +19,18 @@ object MatchWebMapper {
         return Match(
             id = dto.id ?: "",
             homeTeamId = dto.homeTeamId ?: "",
-            homeTeamName = getTeamFullName(dto.homeTeamId ?: "") ?: dto.homeTeamName ?: "",
+            homeTeamName = if (dto.homeTeamName.isNullOrBlank()) {
+                getTeamFullName(dto.homeTeamId ?: "") ?: ""
+            } else {
+                dto.homeTeamName
+            },
             homeTeamLogo = dto.homeTeamLogo, // Solo usar logo del DTO, sin fallback obsoleto
             awayTeamId = dto.awayTeamId ?: "",
-            awayTeamName = getTeamFullName(dto.awayTeamId ?: "") ?: dto.awayTeamName ?: "",
+            awayTeamName = if (dto.awayTeamName.isNullOrBlank()) {
+                getTeamFullName(dto.awayTeamId ?: "") ?: ""
+            } else {
+                dto.awayTeamName
+            },
             awayTeamLogo = dto.awayTeamLogo, // Solo usar logo del DTO, sin fallback obsoleto
             dateTime = dateTime,
             venue = dto.venue ?: "",
@@ -98,7 +106,11 @@ object MatchWebMapper {
     private fun extractTlaFromTeamId(teamId: String): String {
         return when {
             teamId.length == 3 -> teamId // Ya es TLA
-            teamId.contains("_") -> teamId.split("_").lastOrNull()?.take(3) ?: teamId.take(3)
+            teamId.contains("_") -> {
+                // Buscar TLA de 3 letras en los segmentos
+                val segments = teamId.split("_")
+                segments.find { it.length == 3 && it.all { char -> char.isLetter() } } ?: teamId.take(3)
+            }
             teamId.length > 3 -> teamId.take(3) // Tomar los primeros 3 caracteres
             else -> teamId
         }

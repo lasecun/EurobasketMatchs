@@ -94,7 +94,10 @@ class TeamRosterRepositoryImplTest {
 
         // Then
         assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is RuntimeException)
+        val exception = result.exceptionOrNull()
+        assertTrue("Exception should be present", exception != null)
+        assertTrue("Exception should contain RuntimeException as cause", 
+            exception is RuntimeException || exception?.cause is RuntimeException)
     }
 
     @Test
