@@ -75,6 +75,12 @@ jobs:
     - name: 🔍 Validate Gradle Wrapper
       uses: gradle/wrapper-validation-action@v1
 
+    - name: 🔥 Setup Firebase Configuration
+      run: |
+        echo "Creating google-services.json from environment variable"
+        echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
+        echo "✅ Firebase configuration created"
+
     - name: 🧹 Clean Project
       run: ./gradlew clean
 

@@ -30,7 +30,11 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    - name: 🔧 Make gradlew executable
+    - name: � Setup Firebase Configuration
+      run: |
+        echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
+
+    - name: �🔧 Make gradlew executable
       run: chmod +x ./gradlew
 
     - name: 📦 Cache Gradle Dependencies
