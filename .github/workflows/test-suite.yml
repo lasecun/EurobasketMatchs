@@ -30,7 +30,7 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    - name: � Setup Gradle
+    - name: 🐘 Setup Gradle
       uses: gradle/gradle-build-action@v2
       with:
         gradle-home-cache-cleanup: true
@@ -38,7 +38,20 @@ jobs:
     - name: 🔧 Make gradlew executable
       run: chmod +x ./gradlew
 
-    - name: �🔥 Setup Firebase Configuration
+    - name: 📦 Cache Gradle Dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          gradle-${{ runner.os }}-
+
+    - name: 🔍 Validate Gradle Wrapper
+      uses: gradle/wrapper-validation-action@v1
+
+    - name: 🔥 Setup Firebase Configuration
       env:
         GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
       run: |
@@ -146,19 +159,6 @@ jobs:
         
         echo "=== END EXTREME FIREBASE DEBUGGING ==="
 
-    - name: 📦 Cache Gradle Dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          gradle-${{ runner.os }}-
-
-    - name: 🔍 Validate Gradle Wrapper
-      uses: gradle/wrapper-validation-action@v1
-
     - name: 🧪 Run Unit Tests
       env:
         GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
@@ -191,7 +191,6 @@ jobs:
         path: |
           app/build/reports/tests/testDebugUnitTest/
           app/build/test-results/testDebugUnitTest/
-          app/build/test-results/testDebugUnitTest/
         retention-days: 5
 
   # ============================================================================
@@ -214,12 +213,84 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
+    - name: 🐘 Setup Gradle
+      uses: gradle/gradle-build-action@v2
+      with:
+        gradle-home-cache-cleanup: true
+
     - name: 🔧 Make gradlew executable
       run: chmod +x ./gradlew
 
-    - name: 📊 Generate Test Metrics
+    - name: 🔥 Setup Firebase Configuration
+      env:
+        GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
       run: |
+        echo "=== FIREBASE SETUP (Test Quality Job) ==="
+        
+        # Check if secret exists
+        if [ -z "$GOOGLE_SERVICES_JSON" ]; then
+          echo "❌ CRITICAL: GOOGLE_SERVICES_JSON environment variable is EMPTY!"
+          exit 1
+        fi
+        
+        echo "✅ Secret is available (length: ${#GOOGLE_SERVICES_JSON})"
+        
+        # Create directories for ALL possible locations
+        mkdir -p app
+        mkdir -p app/src
+        mkdir -p app/src/debug
+        
+        # Create files in ALL locations
+        echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/debug/google-services.json
+        
+        # Verify ALL file locations
+        locations=("app/google-services.json" "app/src/google-services.json" "app/src/debug/google-services.json")
+        
+        all_success=true
+        for location in "${locations[@]}"; do
+          if [ -f "$location" ] && [ -s "$location" ]; then
+            size=$(wc -c < "$location")
+            echo "✅ $location - EXISTS (${size} bytes)"
+          else
+            echo "❌ $location - MISSING or EMPTY"
+            all_success=false
+          fi
+        done
+        
+        if [ "$all_success" = true ]; then
+          echo "✅ ALL FIREBASE FILES CREATED SUCCESSFULLY"
+        else
+          echo "❌ CRITICAL ERROR: Not all files were created"
+          exit 1
+        fi
+        
+        echo "=== END FIREBASE SETUP ==="
+
+    - name: 📊 Generate Test Metrics
+      env:
+        GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+      run: |
+        # Ensure Firebase files exist right before test execution
+        mkdir -p app app/src app/src/debug
+        echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/google-services.json
+        echo "$GOOGLE_SERVICES_JSON" > app/src/debug/google-services.json
+        echo "Firebase files recreated before test metrics generation"
+        
+        # Verify files exist
+        for loc in "app/google-services.json" "app/src/google-services.json" "app/src/debug/google-services.json"; do
+          if [ -f "$loc" ]; then
+            echo "✅ $loc - OK ($(wc -c < "$loc") bytes)"
+          else
+            echo "❌ $loc - MISSING"
+          fi
+        done
+        
+        # Run the actual test command
         ./gradlew testDebugUnitTest --continue
+        
         echo "## 🎯 Test Quality Metrics" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
@@ -247,7 +318,7 @@ jobs:
         echo "- ✅ Utilities (PlayerImageUtil)" >> $GITHUB_STEP_SUMMARY
 
   # ============================================================================
-  # JOB 5: TEST RESULTS SUMMARY
+  # JOB 3: TEST RESULTS SUMMARY
   # ============================================================================
   test-summary:
     name: 📋 Test Results Summary
