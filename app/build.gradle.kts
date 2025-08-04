@@ -42,6 +42,9 @@ android {
             applicationIdSuffix = ".debug"
             enableUnitTestCoverage = true
             enableAndroidTestCoverage = true
+            
+            // Habilitar métricas de Compose para debug builds
+            buildConfigField("boolean", "COMPOSE_METRICS_ENABLED", "true")
         }
     }
     compileOptions {
@@ -54,6 +57,9 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion = libs.versions.composeBom.get()
     }
     packaging {
         resources {
