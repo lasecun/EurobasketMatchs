@@ -65,10 +65,17 @@ Después de configurar el secreto:
 ## 🔍 Debugging
 
 Los workflows ahora incluyen información de debug automática que mostrará:
-- Si el secreto está configurado
-- Ubicación del archivo creado
-- Tamaño del archivo generado
-- Listado del archivo para verificar permisos
+- ✅ **Verificación de secreto** con longitud de caracteres
+- 📁 **Múltiples ubicaciones** del archivo (`app/` y `app/src/`)
+- 📏 **Tamaño del archivo** generado
+- 🔍 **Permisos y contenido** básico
+- 📋 **Verificación de estructura** JSON
+
+### 🎯 **Mejoras Implementadas:**
+- **Variables de entorno**: Uso de `env:` en lugar de interpolación directa
+- **Múltiples ubicaciones**: Archivo creado en `app/google-services.json` Y `app/src/google-services.json`
+- **Verificación robusta**: Comprobación de existencia y contenido
+- **Debug detallado**: Información completa sobre el proceso de creación
 
 Revisa los logs del workflow en GitHub Actions para ver esta información de debug.
 
