@@ -35,10 +35,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import es.itram.basketmatch.R
 import es.itram.basketmatch.presentation.component.ErrorMessage
 import es.itram.basketmatch.presentation.component.LoadingIndicator
 import es.itram.basketmatch.presentation.component.MatchCard
@@ -76,10 +78,10 @@ fun TeamDetailScreen(
     ) {
         // Top App Bar
         TopAppBar(
-            title = { Text(team?.name ?: "Cargando...") },
+            title = { Text(team?.name ?: stringResource(R.string.loading)) },
             navigationIcon = {
                 IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                 }
             },
             actions = {
@@ -87,7 +89,7 @@ fun TeamDetailScreen(
                     IconButton(onClick = { viewModel.toggleFavorite() }) {
                         Icon(
                             if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = if (isFavorite) "Quitar de favoritos" else "Añadir a favoritos",
+                            contentDescription = if (isFavorite) stringResource(R.string.remove_from_favorites) else stringResource(R.string.add_to_favorites),
                             tint = if (isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -139,7 +141,7 @@ fun TeamDetailScreen(
                         val upcomingMatches = viewModel.getUpcomingMatches()
                         if (upcomingMatches.isNotEmpty()) {
                             MatchesSection(
-                                title = "Próximos partidos",
+                                title = stringResource(R.string.upcoming_matches),
                                 matches = upcomingMatches,
                                 onTeamClick = { /* No navegamos al mismo equipo */ }
                             )
@@ -151,7 +153,7 @@ fun TeamDetailScreen(
                         val recentMatches = viewModel.getRecentMatches()
                         if (recentMatches.isNotEmpty()) {
                             MatchesSection(
-                                title = "Partidos recientes",
+                                title = stringResource(R.string.recent_matches),
                                 matches = recentMatches,
                                 onTeamClick = { /* No navegamos al mismo equipo */ }
                             )
@@ -193,13 +195,13 @@ private fun TeamInfoCard(
             Spacer(modifier = Modifier.height(16.dp))
             
             // Información básica
-            InfoRow(label = "País", value = team.country)
-            InfoRow(label = "Ciudad", value = team.city)
+            InfoRow(label = stringResource(R.string.team_info_country), value = team.country)
+            InfoRow(label = stringResource(R.string.team_info_city), value = team.city)
             if (team.founded > 0) {
-                InfoRow(label = "Fundado", value = team.founded.toString())
+                InfoRow(label = stringResource(R.string.team_info_founded), value = team.founded.toString())
             }
             if (team.coach.isNotBlank()) {
-                InfoRow(label = "Entrenador", value = team.coach)
+                InfoRow(label = stringResource(R.string.team_info_coach), value = team.coach)
             }
             
             // Estadísticas de la temporada
@@ -211,7 +213,7 @@ private fun TeamInfoCard(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Text(
-                    text = "Estadísticas de la temporada",
+                    text = stringResource(R.string.team_season_stats),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -224,19 +226,19 @@ private fun TeamInfoCard(
                 ) {
                     StatItem(
                         icon = Icons.Default.Info,
-                        label = "Posición",
+                        label = stringResource(R.string.team_position),
                         value = "${standing.position}º"
                     )
                     
                     StatItem(
                         icon = Icons.Default.Star,
-                        label = "Jugados",
+                        label = stringResource(R.string.team_games_played),
                         value = standing.played.toString()
                     )
                     
                     StatItem(
                         icon = Icons.Default.Favorite,
-                        label = "% Victoria",
+                        label = stringResource(R.string.team_win_percentage),
                         value = "${winPercentage.toInt()}%"
                     )
                 }
@@ -257,7 +259,7 @@ private fun TeamInfoCard(
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "Ganados",
+                            text = stringResource(R.string.team_games_won),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -273,7 +275,7 @@ private fun TeamInfoCard(
                             color = MaterialTheme.colorScheme.error
                         )
                         Text(
-                            text = "Perdidos",
+                            text = stringResource(R.string.team_games_lost),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -292,7 +294,7 @@ private fun TeamInfoCard(
                                 MaterialTheme.colorScheme.error
                         )
                         Text(
-                            text = "Diferencia",
+                            text = stringResource(R.string.team_point_difference),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -321,7 +323,7 @@ private fun TeamInfoCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Ver Roster del Equipo")
+                    Text(stringResource(R.string.team_view_roster))
                 }
             }
         }

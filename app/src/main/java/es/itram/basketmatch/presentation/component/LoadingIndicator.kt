@@ -5,7 +5,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import es.itram.basketmatch.R
 
 /**
  * Componente para mostrar un indicador de carga
@@ -13,7 +15,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun LoadingIndicator(
     modifier: Modifier = Modifier,
-    message: String = "Cargando..."
+    message: String = stringResource(R.string.loading)
 ) {
     Column(
         modifier = modifier.padding(32.dp),
