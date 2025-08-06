@@ -22,7 +22,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import es.itram.basketmatch.R
 import java.time.LocalDate
 
 /**
@@ -52,7 +54,7 @@ fun HeaderDateSelector(
             IconButton(onClick = onPreviousDay) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                    contentDescription = "Día anterior"
+                    contentDescription = stringResource(R.string.previous_day)
                 )
             }
 
@@ -69,7 +71,7 @@ fun HeaderDateSelector(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = selectedDate?.toString() ?: "Seleccionar fecha",
+                    text = selectedDate?.toString() ?: stringResource(R.string.select_date),
                     style = MaterialTheme.typography.titleMedium
                 )
             }
@@ -77,7 +79,7 @@ fun HeaderDateSelector(
             IconButton(onClick = onNextDay) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Día siguiente"
+                    contentDescription = stringResource(R.string.next_day)
                 )
             }
         }

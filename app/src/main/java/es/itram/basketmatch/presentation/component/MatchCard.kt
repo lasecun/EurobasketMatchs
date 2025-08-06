@@ -15,12 +15,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import es.itram.basketmatch.R
 import es.itram.basketmatch.domain.entity.Match
 import es.itram.basketmatch.domain.entity.MatchStatus
 import java.time.format.DateTimeFormatter
@@ -101,7 +103,7 @@ fun MatchCard(
                         )
                     } else {
                         Text(
-                            text = "VS",
+                            text = stringResource(R.string.vs),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -188,7 +190,7 @@ private fun TeamLogo(
                 .data(logoUrl)
                 .crossfade(true)
                 .build(),
-            contentDescription = "Logo del equipo",
+            contentDescription = stringResource(R.string.team_logo_content_description),
             modifier = modifier
                 .size(40.dp)
                 .clip(CircleShape),
@@ -198,7 +200,7 @@ private fun TeamLogo(
         // Fallback icon cuando no hay logo
         Icon(
             Icons.Default.Person,
-            contentDescription = "Logo del equipo",
+            contentDescription = stringResource(R.string.team_logo_content_description),
             modifier = modifier.size(40.dp),
             tint = MaterialTheme.colorScheme.primary
         )
@@ -211,11 +213,11 @@ private fun MatchStatusChip(
     modifier: Modifier = Modifier
 ) {
     val (text, containerColor) = when (status) {
-        MatchStatus.SCHEDULED -> "Programado" to MaterialTheme.colorScheme.secondaryContainer
-        MatchStatus.LIVE -> "En vivo" to MaterialTheme.colorScheme.primaryContainer
-        MatchStatus.FINISHED -> "Finalizado" to MaterialTheme.colorScheme.tertiaryContainer
-        MatchStatus.POSTPONED -> "Aplazado" to MaterialTheme.colorScheme.errorContainer
-        MatchStatus.CANCELLED -> "Cancelado" to MaterialTheme.colorScheme.errorContainer
+        MatchStatus.SCHEDULED -> stringResource(R.string.match_status_scheduled) to MaterialTheme.colorScheme.secondaryContainer
+        MatchStatus.LIVE -> stringResource(R.string.match_status_live) to MaterialTheme.colorScheme.primaryContainer
+        MatchStatus.FINISHED -> stringResource(R.string.match_status_finished) to MaterialTheme.colorScheme.tertiaryContainer
+        MatchStatus.POSTPONED -> stringResource(R.string.match_status_postponed) to MaterialTheme.colorScheme.errorContainer
+        MatchStatus.CANCELLED -> stringResource(R.string.match_status_cancelled) to MaterialTheme.colorScheme.errorContainer
     }
     
     Surface(

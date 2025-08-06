@@ -14,8 +14,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import es.itram.basketmatch.R
 import es.itram.basketmatch.domain.service.DataSyncService
 
 /**
@@ -68,7 +70,7 @@ fun SyncProgressIndicator(
             
             // Texto de progreso
             Text(
-                text = "${syncProgress.currentRound} de ${syncProgress.totalRounds} jornadas",
+                text = stringResource(R.string.sync_progress, syncProgress.currentRound, syncProgress.totalRounds),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center

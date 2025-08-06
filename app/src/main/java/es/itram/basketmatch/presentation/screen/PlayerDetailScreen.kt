@@ -17,12 +17,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import es.itram.basketmatch.R
 import es.itram.basketmatch.domain.model.Player
 import es.itram.basketmatch.domain.model.PlayerPosition
 import es.itram.basketmatch.presentation.viewmodel.PlayerDetailViewModel
@@ -57,7 +59,7 @@ fun PlayerDetailScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver"
+                            contentDescription = stringResource(R.string.back)
                         )
                     }
                 },
@@ -141,7 +143,7 @@ private fun PlayerHeaderCard(
                             .data(player.profileImageUrl)
                             .crossfade(true)
                             .build(),
-                        contentDescription = "Foto de ${player.fullName}",
+                        contentDescription = stringResource(R.string.player_photo_description, player.fullName),
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(12.dp)),
@@ -227,7 +229,7 @@ private fun PlayerHeaderCard(
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "Capitán",
+                        text = stringResource(R.string.captain),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.primary
@@ -241,30 +243,30 @@ private fun PlayerHeaderCard(
 @Composable
 private fun PersonalInfoCard(player: Player) {
     InfoCard(
-        title = "Información Personal",
+        title = stringResource(R.string.personal_info),
         content = {
             InfoRow(
-                label = "Nombre completo",
+                label = stringResource(R.string.full_name),
                 value = player.fullName
             )
             
             player.dateOfBirth?.let { 
                 InfoRow(
-                    label = "Fecha de nacimiento",
+                    label = stringResource(R.string.birth_date),
                     value = it
                 )
             }
             
             player.placeOfBirth?.let { 
                 InfoRow(
-                    label = "Lugar de nacimiento",
+                    label = stringResource(R.string.birth_place),
                     value = it
                 )
             }
             
             player.nationality?.let { 
                 InfoRow(
-                    label = "Nacionalidad",
+                    label = stringResource(R.string.nationality),
                     value = it
                 )
             }
@@ -278,18 +280,18 @@ private fun PhysicalInfoCard(player: Player) {
     
     if (hasPhysicalInfo) {
         InfoCard(
-            title = "Información Física",
+            title = stringResource(R.string.physical_info),
             content = {
                 player.height?.let { 
                     InfoRow(
-                        label = "Altura",
+                        label = stringResource(R.string.height),
                         value = it
                     )
                 }
                 
                 player.weight?.let { 
                     InfoRow(
-                        label = "Peso",
+                        label = stringResource(R.string.weight),
                         value = it
                     )
                 }
@@ -301,38 +303,38 @@ private fun PhysicalInfoCard(player: Player) {
 @Composable
 private fun SportsInfoCard(player: Player) {
     InfoCard(
-        title = "Información Deportiva",
+        title = stringResource(R.string.sport_info),
         content = {
             player.position?.let { position ->
                 InfoRow(
-                    label = "Posición",
+                    label = stringResource(R.string.position),
                     value = position.displayName
                 )
             }
             
             player.jersey?.let { 
                 InfoRow(
-                    label = "Número de camiseta",
+                    label = stringResource(R.string.jersey_number),
                     value = it.toString()
                 )
             }
             
             player.experience?.let { 
                 InfoRow(
-                    label = "Experiencia",
-                    value = "$it años"
+                    label = stringResource(R.string.experience),
+                    value = stringResource(R.string.experience_years, it)
                 )
             }
             
             InfoRow(
-                label = "Estado",
-                value = if (player.isActive) "Activo" else "Inactivo"
+                label = stringResource(R.string.status),
+                value = if (player.isActive) stringResource(R.string.status_active) else stringResource(R.string.status_inactive)
             )
             
             if (player.isCaptain) {
                 InfoRow(
-                    label = "Capitán",
-                    value = "Sí"
+                    label = stringResource(R.string.captain),
+                    value = stringResource(R.string.yes)
                 )
             }
         }

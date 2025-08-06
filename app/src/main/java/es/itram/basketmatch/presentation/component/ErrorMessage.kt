@@ -8,8 +8,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import es.itram.basketmatch.R
 
 /**
  * Componente para mostrar mensajes de error
@@ -34,7 +36,7 @@ fun ErrorMessage(
         ) {
             Icon(
                 Icons.Default.Warning,
-                contentDescription = "Error",
+                contentDescription = stringResource(R.string.error_icon),
                 modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.onErrorContainer
             )
@@ -63,7 +65,7 @@ fun ErrorMessage(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Reintentar")
+                    Text(stringResource(R.string.retry))
                 }
             }
         }

@@ -13,10 +13,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import es.itram.basketmatch.R
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -32,6 +35,8 @@ fun NoMatchesTodayCard(
     onNavigateToNextMatchDay: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    
     Card(
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -55,7 +60,10 @@ fun NoMatchesTodayCard(
             
             // Mensaje principal
             Text(
-                text = if (isToday) "Hoy no hay partido" else "No hay partidos para la fecha seleccionada",
+                text = if (isToday) 
+                    stringResource(R.string.no_matches_today) 
+                else 
+                    stringResource(R.string.no_matches_selected_date),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
@@ -65,7 +73,7 @@ fun NoMatchesTodayCard(
             // Mensaje secundario si es para hoy
             if (isToday) {
                 Text(
-                    text = "No te preocupes, siempre hay más baloncesto por venir",
+                    text = stringResource(R.string.no_matches_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
@@ -85,12 +93,17 @@ fun NoMatchesTodayCard(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Ver próximo partido",
+                            text = stringResource(R.string.view_next_match),
                             fontWeight = FontWeight.Medium
                         )
                         Text(
                             text = nextMatchDay.format(
-                                DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.forLanguageTag("es"))
+                                DateTimeFormatter.ofPattern(
+                                    "EEEE, d MMMM", 
+                                    Locale.forLanguageTag(
+                                        if (context.resources.configuration.locales[0].language == "en") "en" else "es"
+                                    )
+                                )
                             ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)

@@ -1,3 +1,128 @@
 <resources>
+    <!-- App Name -->
     <string name="app_name">EuroLeague 2026</string>
+    
+    <!-- Navigation -->
+    <string name="back">Volver</string>
+    <string name="refresh">Actualizar</string>
+    <string name="retry">Reintentar</string>
+    <string name="close">Cerrar</string>
+    
+    <!-- Loading States -->
+    <string name="loading">Cargando...</string>
+    <string name="loading_roster">Cargando roster...</string>
+    <string name="updating_roster">Actualizando roster...</string>
+    
+    <!-- Error Messages -->
+    <string name="error_unknown">Error desconocido</string>
+    <string name="error_no_data">No hay datos disponibles</string>
+    <string name="error_match_not_found">Partido no encontrado</string>
+    <string name="error_loading_details">Error cargando detalles: %s</string>
+    <string name="error_updating_favorite">Error al actualizar favorito: %s</string>
+    
+    <!-- Match Status -->
+    <string name="match_status_scheduled">Programado</string>
+    <string name="match_status_live">En vivo</string>
+    <string name="match_status_finished">Finalizado</string>
+    <string name="match_status_postponed">Aplazado</string>
+    <string name="match_status_cancelled">Cancelado</string>
+    
+    <!-- Match Related -->
+    <string name="match_detail">Detalle del Partido</string>
+    <string name="match_info">Información del Partido</string>
+    <string name="match_status">Estado del Partido</string>
+    <string name="match_additional_info">Información Adicional</string>
+    <string name="match_id">ID del Partido</string>
+    <string name="vs">VS</string>
+    <string name="team_logo_content_description">Logo del equipo</string>
+    <string name="match_not_found">Partido no encontrado</string>
+    <string name="team_logo_with_name">Logo de %s</string>
+    
+    <!-- Match Status -->
+    <string name="status_scheduled">Programado</string>
+    <string name="status_live">En Vivo</string>
+    <string name="status_finished">Finalizado</string>
+    <string name="status_postponed">Aplazado</string>
+    <string name="status_cancelled">Cancelado</string>
+    
+    <!-- Date and Time -->
+    <string name="date">Fecha</string>
+    <string name="time">Hora</string>
+    <string name="round">Jornada</string>
+    <string name="round_number">Jornada %d</string>
+    <string name="venue">Pabellón</string>
+    <string name="season">Temporada</string>
+    <string name="type">Tipo</string>
+    
+    <!-- Season Types -->
+    <string name="season_regular">Temporada Regular</string>
+    <string name="season_playoffs">Playoffs</string>
+    <string name="season_final_four">Final Four</string>
+    <string name="current_season">2025-26</string>
+    
+    <!-- No Matches -->
+    <string name="no_matches_today">Hoy no hay partido</string>
+    <string name="no_matches_selected_date">No hay partidos para la fecha seleccionada</string>
+    <string name="no_matches_subtitle">No te preocupes, siempre hay más baloncesto por venir</string>
+    <string name="view_next_match">Ver próximo partido</string>
+    <string name="select_date">Seleccionar fecha</string>
+    <string name="previous_day">Día anterior</string>
+    <string name="next_day">Día siguiente</string>
+    
+    <!-- Team Related -->
+    <string name="team_roster">%d jugadores</string>
+    <string name="team_logo">Logo de %s</string>
+    <string name="team_info_country">País</string>
+    <string name="team_info_city">Ciudad</string>
+    <string name="team_info_founded">Fundado</string>
+    <string name="team_info_coach">Entrenador</string>
+    <string name="team_season_stats">Estadísticas de la temporada</string>
+    <string name="team_position">Posición</string>
+    <string name="team_games_played">Jugados</string>
+    <string name="team_win_percentage">% Victoria</string>
+    <string name="team_games_won">Ganados</string>
+    <string name="team_games_lost">Perdidos</string>
+    <string name="team_point_difference">Diferencia</string>
+    <string name="team_view_roster">Ver Roster del Equipo</string>
+    <string name="upcoming_matches">Próximos partidos</string>
+    <string name="recent_matches">Partidos recientes</string>
+    <string name="add_to_favorites">Añadir a favoritos</string>
+    <string name="remove_from_favorites">Quitar de favoritos</string>
+    
+    <!-- Roster Related -->
+    <string name="season_with_year">Temporada %s</string>
+    <string name="captain_short">C</string>
+    <string name="player_photo_description">Foto de %s</string>
+    
+    <!-- Player Related -->
+    <string name="player_photo">Foto de %s</string>
+    <string name="captain">Capitán</string>
+    <string name="captain_badge">C</string>
+    <string name="personal_info">Información Personal</string>
+    <string name="physical_info">Información Física</string>
+    <string name="sport_info">Información Deportiva</string>
+    <string name="full_name">Nombre completo</string>
+    <string name="birth_date">Fecha de nacimiento</string>
+    <string name="birth_place">Lugar de nacimiento</string>
+    <string name="nationality">Nacionalidad</string>
+    <string name="height">Altura</string>
+    <string name="weight">Peso</string>
+    <string name="position">Posición</string>
+    <string name="jersey_number">Número de camiseta</string>
+    <string name="experience">Experiencia</string>
+    <string name="experience_years">%d años</string>
+    <string name="status">Estado</string>
+    <string name="status_active">Activo</string>
+    <string name="status_inactive">Inactivo</string>
+    
+    <!-- General -->
+    <string name="yes">Sí</string>
+    <string name="no">No</string>
+    
+    <!-- Sync -->
+    <string name="sync_progress">%1$d de %2$d jornadas</string>
+    
+    <!-- Content Descriptions -->
+    <string name="error_icon">Error</string>
+    <string name="team_logo_generic">Logo del equipo</string>
 </resources>
