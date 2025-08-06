@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -43,6 +44,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import es.itram.basketmatch.R
 import es.itram.basketmatch.domain.entity.Match
 import es.itram.basketmatch.domain.entity.MatchStatus
 import es.itram.basketmatch.domain.entity.SeasonType
@@ -87,7 +89,7 @@ fun MatchDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = match?.let { "${it.homeTeamName} vs ${it.awayTeamName}" } ?: "Detalle del Partido",
+                        text = match?.let { "${it.homeTeamName} vs ${it.awayTeamName}" } ?: stringResource(R.string.match_detail),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -96,7 +98,7 @@ fun MatchDetailScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver"
+                            contentDescription = stringResource(R.string.back)
                         )
                     }
                 },
@@ -138,7 +140,7 @@ fun MatchDetailScreen(
                 
                 else -> {
                     Text(
-                        text = "Partido no encontrado",
+                        text = stringResource(R.string.match_not_found),
                         modifier = Modifier.align(Alignment.Center),
                         style = MaterialTheme.typography.bodyLarge
                     )
@@ -212,7 +214,7 @@ private fun MatchHeader(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "VS",
+                        text = stringResource(R.string.vs),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -269,7 +271,7 @@ private fun TeamSection(
                         .data(teamLogo)
                         .crossfade(true)
                         .build(),
-                    contentDescription = "Logo de $teamName",
+                    contentDescription = stringResource(R.string.team_logo_with_name, teamName),
                     modifier = Modifier.size(40.dp)
                 )
             }
@@ -303,6 +305,9 @@ private fun TeamSection(
 
 @Composable
 private fun MatchInfo(match: Match) {
+    val context = LocalContext.current
+    val locale = if (context.resources.configuration.locales[0].language == "en") "en" else "es"
+    
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -314,32 +319,32 @@ private fun MatchInfo(match: Match) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "Información del Partido",
+                text = stringResource(R.string.match_info),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
             
             InfoRow(
-                label = "Fecha",
+                label = stringResource(R.string.date),
                 value = match.dateTime.format(
-                    DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.forLanguageTag("es"))
+                    DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.forLanguageTag(locale))
                 )
             )
             
             InfoRow(
-                label = "Hora",
+                label = stringResource(R.string.time),
                 value = match.dateTime.format(DateTimeFormatter.ofPattern("HH:mm"))
             )
             
             InfoRow(
-                label = "Jornada",
-                value = "Jornada ${match.round}"
+                label = stringResource(R.string.round),
+                value = stringResource(R.string.round_number, match.round)
             )
             
             if (match.venue.isNotBlank()) {
                 InfoRow(
-                    label = "Pabellón",
+                    label = stringResource(R.string.venue),
                     value = match.venue
                 )
             }
@@ -360,7 +365,7 @@ private fun MatchStatusCard(match: Match) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Estado del Partido",
+                text = stringResource(R.string.match_status),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -369,11 +374,11 @@ private fun MatchStatusCard(match: Match) {
             Spacer(modifier = Modifier.height(8.dp))
             
             val (statusText, statusColor) = when (match.status) {
-                MatchStatus.SCHEDULED -> "Programado" to MaterialTheme.colorScheme.onSurfaceVariant
-                MatchStatus.LIVE -> "En Vivo" to Color(0xFF4CAF50)
-                MatchStatus.FINISHED -> "Finalizado" to MaterialTheme.colorScheme.primary
-                MatchStatus.POSTPONED -> "Aplazado" to Color(0xFFFF9800)
-                MatchStatus.CANCELLED -> "Cancelado" to Color(0xFFF44336)
+                MatchStatus.SCHEDULED -> stringResource(R.string.match_status_scheduled) to MaterialTheme.colorScheme.onSurfaceVariant
+                MatchStatus.LIVE -> stringResource(R.string.match_status_live) to Color(0xFF4CAF50)
+                MatchStatus.FINISHED -> stringResource(R.string.match_status_finished) to MaterialTheme.colorScheme.primary
+                MatchStatus.POSTPONED -> stringResource(R.string.match_status_postponed) to Color(0xFFFF9800)
+                MatchStatus.CANCELLED -> stringResource(R.string.match_status_cancelled) to Color(0xFFF44336)
             }
             
             Card(
@@ -406,28 +411,28 @@ private fun AdditionalInfo(match: Match) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "Información Adicional",
+                text = stringResource(R.string.match_additional_info),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
             
             InfoRow(
-                label = "Temporada",
-                value = "2025-26" // Valor fijo por ahora
+                label = stringResource(R.string.season),
+                value = stringResource(R.string.current_season)
             )
             
             InfoRow(
-                label = "Tipo",
+                label = stringResource(R.string.type),
                 value = when (match.seasonType) {
-                    SeasonType.REGULAR -> "Temporada Regular"
-                    SeasonType.PLAYOFFS -> "Playoffs"
-                    SeasonType.FINAL_FOUR -> "Final Four"
+                    SeasonType.REGULAR -> stringResource(R.string.season_regular)
+                    SeasonType.PLAYOFFS -> stringResource(R.string.season_playoffs)
+                    SeasonType.FINAL_FOUR -> stringResource(R.string.season_final_four)
                 }
             )
             
             InfoRow(
-                label = "ID del Partido",
+                label = stringResource(R.string.match_id),
                 value = match.id
             )
         }
@@ -477,7 +482,7 @@ private fun ErrorMessage(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = onRetry) {
-            Text("Reintentar")
+            Text(stringResource(R.string.retry))
         }
     }
 }

@@ -14,8 +14,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import es.itram.basketmatch.R
 import es.itram.basketmatch.presentation.component.ErrorMessage
 import es.itram.basketmatch.presentation.component.HeaderDateSelector
 import es.itram.basketmatch.presentation.component.LoadingIndicator
@@ -88,7 +90,7 @@ fun MainScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     ErrorMessage(
-                        message = error ?: "Error desconocido",
+                        message = error ?: stringResource(R.string.error_unknown),
                         onRetry = { /* viewModel.retryLoading() */ }
                     )
                 }

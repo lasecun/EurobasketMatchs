@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import es.itram.basketmatch.R
 import es.itram.basketmatch.analytics.AnalyticsManager
 import es.itram.basketmatch.domain.model.Player
 import es.itram.basketmatch.domain.model.PlayerPosition
@@ -75,7 +77,7 @@ fun TeamRosterScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver"
+                            contentDescription = stringResource(R.string.back)
                         )
                     }
                 },
@@ -92,7 +94,7 @@ fun TeamRosterScreen(
                         } else {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
-                                contentDescription = "Actualizar"
+                                contentDescription = stringResource(R.string.refresh)
                             )
                         }
                     }
@@ -140,7 +142,7 @@ private fun TeamRosterContent(
                         Spacer(modifier = Modifier.height(16.dp))
                         
                         // Mostrar progreso si está disponible
-                        val progressText = uiState.loadingProgress?.progressText ?: "Cargando roster..."
+                        val progressText = uiState.loadingProgress?.progressText ?: stringResource(R.string.loading_roster)
                         Text(
                             text = progressText,
                             style = MaterialTheme.typography.bodyMedium,
@@ -193,7 +195,7 @@ private fun TeamRosterContent(
                 
                 else -> {
                     Text(
-                        text = "No hay datos disponibles",
+                        text = stringResource(R.string.error_no_data),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -263,7 +265,7 @@ private fun TeamInfoHeader(teamRoster: TeamRoster) {
                             .data(teamRoster.logoUrl)
                             .crossfade(true)
                             .build(),
-                        contentDescription = "Logo de ${teamRoster.teamName}",
+                        contentDescription = stringResource(R.string.team_logo_with_name, teamRoster.teamName),
                         modifier = Modifier
                             .size(60.dp)
                             .clip(CircleShape),
@@ -289,13 +291,13 @@ private fun TeamInfoHeader(teamRoster: TeamRoster) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Temporada ${teamRoster.season}",
+                text = stringResource(R.string.season_with_year, teamRoster.season),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "${teamRoster.players.size} jugadores",
+                text = stringResource(R.string.team_roster, teamRoster.players.size),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium
             )
@@ -341,7 +343,7 @@ private fun PlayerCard(
                             .data(player.profileImageUrl)
                             .crossfade(true)
                             .build(),
-                        contentDescription = "Foto de ${player.fullName}",
+                        contentDescription = stringResource(R.string.player_photo_description, player.fullName),
                         modifier = Modifier
                             .size(60.dp)
                             .clip(CircleShape),
@@ -380,7 +382,7 @@ private fun PlayerCard(
                             color = MaterialTheme.colorScheme.primary
                         ) {
                             Text(
-                                text = "C",
+                                text = stringResource(R.string.captain_short),
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onPrimary,
@@ -462,7 +464,7 @@ private fun ErrorContent(
         modifier = Modifier.padding(32.dp)
     ) {
         Text(
-            text = "Error",
+            text = stringResource(R.string.error_icon),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.error
@@ -483,11 +485,11 @@ private fun ErrorContent(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedButton(onClick = onDismiss) {
-                Text("Cerrar")
+                Text(stringResource(R.string.close))
             }
             
             Button(onClick = onRetry) {
-                Text("Reintentar")
+                Text(stringResource(R.string.retry))
             }
         }
     }
@@ -516,7 +518,7 @@ private fun RefreshProgressOverlay(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val progressText = loadingProgress?.progressText ?: "Actualizando roster..."
+            val progressText = loadingProgress?.progressText ?: stringResource(R.string.updating_roster)
             Text(
                 text = progressText,
                 style = MaterialTheme.typography.bodyMedium,
