@@ -11,6 +11,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -64,6 +66,13 @@ fun TeamRosterScreen(
         }
     }
     
+    // Cargar estado de favoritos cuando hay un roster cargado para este equipo
+    LaunchedEffect(teamTla, uiState.teamRoster?.teamCode) {
+        if (uiState.teamRoster?.teamCode == teamTla) {
+            viewModel.loadFavoriteStatusForTeam(teamTla)
+        }
+    }
+    
     Scaffold(
         topBar = {
             TopAppBar(
@@ -110,6 +119,7 @@ fun TeamRosterScreen(
     ) { paddingValues ->
         TeamRosterContent(
             uiState = uiState,
+            viewModel = viewModel,
             modifier = Modifier.padding(paddingValues),
             onRetry = { viewModel.loadTeamRoster(teamTla) },
             onClearError = { viewModel.clearError() },
@@ -121,6 +131,7 @@ fun TeamRosterScreen(
 @Composable
 private fun TeamRosterContent(
     uiState: TeamRosterUiState,
+    viewModel: TeamRosterViewModel,
     modifier: Modifier = Modifier,
     onRetry: () -> Unit,
     onClearError: () -> Unit,
@@ -179,6 +190,8 @@ private fun TeamRosterContent(
                     Box(modifier = Modifier.fillMaxSize()) {
                         RosterList(
                             teamRoster = uiState.teamRoster,
+                            isFavorite = uiState.isFavorite,
+                            onFavoriteToggle = { viewModel.toggleFavorite() },
                             modifier = Modifier.fillMaxSize(),
                             onPlayerClick = onPlayerClick
                         )
@@ -208,6 +221,8 @@ private fun TeamRosterContent(
 @Composable
 private fun RosterList(
     teamRoster: TeamRoster,
+    isFavorite: Boolean,
+    onFavoriteToggle: () -> Unit,
     modifier: Modifier = Modifier,
     onPlayerClick: (Player) -> Unit = {}
 ) {
@@ -218,7 +233,11 @@ private fun RosterList(
     ) {
         // Header con información del equipo
         item {
-            TeamInfoHeader(teamRoster = teamRoster)
+            TeamInfoHeader(
+                teamRoster = teamRoster,
+                isFavorite = isFavorite,
+                onFavoriteToggle = onFavoriteToggle
+            )
         }
         
         // Lista de jugadores
@@ -237,70 +256,99 @@ private fun RosterList(
 }
 
 @Composable
-private fun TeamInfoHeader(teamRoster: TeamRoster) {
+private fun TeamInfoHeader(
+    teamRoster: TeamRoster,
+    isFavorite: Boolean,
+    onFavoriteToggle: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        Box(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            // Logo del equipo
-            Box(
+            // Botón de favorito en la esquina superior derecha
+            IconButton(
+                onClick = onFavoriteToggle,
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
             ) {
-                if (teamRoster.logoUrl != null) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(teamRoster.logoUrl)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = stringResource(R.string.team_logo_with_name, teamRoster.teamName),
-                        modifier = Modifier
-                            .size(60.dp)
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Fit
-                    )
-                } else {
-                    // Mostrar icono por defecto si no hay logo
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Icon(
+                    imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
+                    contentDescription = if (isFavorite) 
+                        stringResource(R.string.remove_from_favorites) 
+                    else 
+                        stringResource(R.string.add_to_favorites),
+                    tint = if (isFavorite) 
+                        Color(0xFFFFD700) // Color dorado para estrella llena
+                    else 
+                        MaterialTheme.colorScheme.onSurface
+                )
             }
-            Spacer(modifier = Modifier.height(12.dp))
             
-            Text(
-                text = teamRoster.teamName,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.season_with_year, teamRoster.season),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.team_roster, teamRoster.players.size),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
+            // Contenido principal del header
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // Logo del equipo
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (teamRoster.logoUrl != null) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(teamRoster.logoUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = stringResource(R.string.team_logo_with_name, teamRoster.teamName),
+                            modifier = Modifier
+                                .size(60.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        // Mostrar icono por defecto si no hay logo
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Text(
+                    text = teamRoster.teamName,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.season_with_year, teamRoster.season),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.team_roster, teamRoster.players.size),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }
