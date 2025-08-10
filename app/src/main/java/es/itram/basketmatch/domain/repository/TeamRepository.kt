@@ -29,6 +29,11 @@ interface TeamRepository {
     fun getFavoriteTeams(): Flow<List<Team>>
     
     /**
+     * Actualiza el estado de favorito de un equipo
+     */
+    suspend fun updateFavoriteStatus(teamId: String, isFavorite: Boolean)
+
+    /**
      * Inserta equipos en la base de datos
      */
     suspend fun insertTeams(teams: List<Team>)

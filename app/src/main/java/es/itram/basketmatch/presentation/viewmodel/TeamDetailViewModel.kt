@@ -1,6 +1,5 @@
 package es.itram.basketmatch.presentation.viewmodel
 
-import android.os.Bundle
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -15,8 +14,9 @@ import es.itram.basketmatch.domain.repository.TeamRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 /**
@@ -52,45 +52,40 @@ class TeamDetailViewModel @Inject constructor(
         Log.d("TeamDetailViewModel", "Cargando detalles del equipo: $teamId")
         viewModelScope.launch {
             _isLoading.value = true
+            _error.value = null
+
             try {
-                Log.d("TeamDetailViewModel", "Obteniendo datos del equipo...")
-                // Cargar datos del equipo de manera simple
-                val team = teamRepository.getTeamById(teamId).first()
-                Log.d("TeamDetailViewModel", "Equipo cargado: ${team?.name}")
-                
-                val matches = matchRepository.getMatchesByTeam(teamId).first()
-                Log.d("TeamDetailViewModel", "Partidos cargados: ${matches.size}")
-                
-                val standing = standingRepository.getStandingByTeam(teamId).first()
-                Log.d("TeamDetailViewModel", "Clasificación cargada: ${standing?.position}")
-                
-                _team.value = team
-                _matches.value = matches.sortedBy { it.dateTime }
-                _standing.value = standing
-                _isFavorite.value = team?.isFavorite ?: false
-                _error.value = null
-                
-                // 📊 Analytics: Track team viewed
-                team?.let { teamData ->
-                    analyticsManager.trackTeamViewed(
-                        teamCode = teamData.code,
-                        teamName = teamData.name,
-                        source = "team_detail_screen"
-                    )
+                // Cargar equipo
+                teamRepository.getTeamById(teamId)
+                    .catch { e ->
+                        _error.value = "Error cargando equipo: ${e.message}"
+                    }
+                    .collect { team ->
+                        _team.value = team
+                        _isFavorite.value = team?.isFavorite ?: false
+                    }
+
+                // Cargar partidos del equipo
+                _team.value?.let { team ->
+                    matchRepository.getMatchesByTeam(team.code)
+                        .catch { e ->
+                            // Error silencioso para partidos
+                        }
+                        .collect { matches ->
+                            _matches.value = matches
+                        }
+
+                    // Cargar clasificación
+                    standingRepository.getStandingByTeam(team.code)
+                        .catch { e ->
+                            // Error silencioso para clasificación
+                        }
+                        .collect { standing ->
+                            _standing.value = standing
+                        }
                 }
-                
-                Log.d("TeamDetailViewModel", "Carga de detalles completada")
             } catch (e: Exception) {
-                Log.e("TeamDetailViewModel", "Error cargando detalles: ${e.message}", e)
-                _error.value = e.message ?: "Error desconocido"
-                
-                // 📊 Analytics: Track team loading error
-                analyticsManager.logCustomEvent("team_load_error", android.os.Bundle().apply {
-                    putString("team_id", teamId)
-                    putString("error_message", e.message)
-                    putString("error_class", e.javaClass.simpleName)
-                })
-                
+                _error.value = "Error cargando datos: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
@@ -98,37 +93,17 @@ class TeamDetailViewModel @Inject constructor(
     }
 
     fun toggleFavorite() {
-        val currentTeam = _team.value ?: return
-        
         viewModelScope.launch {
-            try {
-                val updatedTeam = currentTeam.copy(isFavorite = !currentTeam.isFavorite)
-                teamRepository.updateTeam(updatedTeam)
-                _isFavorite.value = updatedTeam.isFavorite
-                _team.value = updatedTeam
-                
-                // 📊 Analytics: Track favorite toggle
-                analyticsManager.trackFavoriteAdded(
-                    contentType = "team",
-                    contentId = currentTeam.code
-                )
-                
-            } catch (e: Exception) {
-                _error.value = "Error al actualizar favorito: ${e.message}"
+            _team.value?.let { team ->
+                val newFavoriteStatus = !_isFavorite.value
+                try {
+                    teamRepository.updateFavoriteStatus(team.id, newFavoriteStatus)
+                    _isFavorite.value = newFavoriteStatus
+                } catch (e: Exception) {
+                    _error.value = "Error actualizando favorito: ${e.message}"
+                }
             }
         }
-    }
-
-    fun getUpcomingMatches(): List<Match> {
-        return _matches.value.filter { match ->
-            match.dateTime.isAfter(java.time.LocalDateTime.now())
-        }.take(5)
-    }
-
-    fun getRecentMatches(): List<Match> {
-        return _matches.value.filter { match ->
-            match.dateTime.isBefore(java.time.LocalDateTime.now())
-        }.sortedByDescending { it.dateTime }.take(5)
     }
 
     fun getWinPercentage(): Double {
@@ -140,10 +115,24 @@ class TeamDetailViewModel @Inject constructor(
         }
     }
 
+    fun getUpcomingMatches(): List<Match> {
+        val today = LocalDate.now()
+        return _matches.value.filter {
+            it.dateTime.toLocalDate().isAfter(today)
+        }.take(5)
+    }
+
+    fun getRecentMatches(): List<Match> {
+        val today = LocalDate.now()
+        return _matches.value.filter {
+            it.dateTime.toLocalDate().isBefore(today) || it.dateTime.toLocalDate().isEqual(today)
+        }.sortedByDescending { it.dateTime }.take(5)
+    }
+
     fun clearError() {
         _error.value = null
     }
-    
+
     /**
      * 📊 Analytics: Track team roster access from team detail
      */

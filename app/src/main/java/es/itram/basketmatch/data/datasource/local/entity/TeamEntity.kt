@@ -19,9 +19,6 @@ data class TeamEntity(
     val logoUrl: String,
     val founded: Int = 0,
     val coach: String = "",
-    val website: String = "",
-    val primaryColor: String = "",
-    val secondaryColor: String = "",
     @ColumnInfo(name = "is_favorite")
     val isFavorite: Boolean = false
 )

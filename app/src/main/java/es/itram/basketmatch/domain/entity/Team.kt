@@ -8,13 +8,10 @@ data class Team(
     val name: String,
     val shortName: String,
     val code: String,
-    val city: String,
     val country: String,
+    val city: String,
+    val founded: Int,
+    val coach: String,
     val logoUrl: String,
-    val founded: Int = 0,
-    val coach: String = "",
-    val website: String = "",
-    val primaryColor: String = "",
-    val secondaryColor: String = "",
     val isFavorite: Boolean = false
 )

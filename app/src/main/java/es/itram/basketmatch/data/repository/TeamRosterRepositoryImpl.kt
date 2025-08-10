@@ -238,18 +238,7 @@ class TeamRosterRepositoryImpl @Inject constructor(
             else -> PlayerPosition.UNKNOWN
         }
     }
-    
-    /**
-     * Genera un código único para jugadores que no tienen código en la API
-     */
-    private fun generatePlayerCode(name: String, surname: String?, jersey: String?): String {
-        val cleanName = name.take(3).uppercase().replace(" ", "")
-        val cleanSurname = surname?.take(3)?.uppercase()?.replace(" ", "") ?: ""
-        val jerseyPart = jersey?.take(2)?.padStart(2, '0') ?: "00"
-        
-        return "${cleanName}${cleanSurname}_$jerseyPart"
-    }
-    
+
     /**
      * Obtiene el logo del equipo desde el cache de partidos para evitar llamadas duplicadas a la API
      */

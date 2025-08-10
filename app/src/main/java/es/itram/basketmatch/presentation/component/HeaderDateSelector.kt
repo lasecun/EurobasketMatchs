@@ -28,7 +28,7 @@ import es.itram.basketmatch.R
 import java.time.LocalDate
 
 /**
- * Header con selector de fecha y navegación
+ * Header with date selector for navigating matches by date.
  */
 @Composable
 fun HeaderDateSelector(
