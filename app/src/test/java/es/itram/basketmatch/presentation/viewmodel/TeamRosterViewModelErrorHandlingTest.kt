@@ -5,6 +5,7 @@ import es.itram.basketmatch.analytics.AnalyticsManager
 import es.itram.basketmatch.domain.model.Player
 import es.itram.basketmatch.domain.model.PlayerPosition
 import es.itram.basketmatch.domain.model.TeamRoster
+import es.itram.basketmatch.domain.repository.TeamRepository
 import es.itram.basketmatch.domain.usecase.GetTeamRosterUseCase
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
@@ -38,6 +39,9 @@ class TeamRosterViewModelErrorHandlingTest {
     private lateinit var getTeamRosterUseCase: GetTeamRosterUseCase
 
     @MockK
+    private lateinit var teamRepository: TeamRepository
+
+    @MockK
     private lateinit var analyticsManager: AnalyticsManager
 
     private lateinit var viewModel: TeamRosterViewModel
@@ -50,7 +54,7 @@ class TeamRosterViewModelErrorHandlingTest {
         justRun { analyticsManager.trackScreenView(any(), any()) }
         justRun { analyticsManager.trackPlayerViewed(any(), any(), any()) }
         
-        viewModel = TeamRosterViewModel(getTeamRosterUseCase, analyticsManager)
+        viewModel = TeamRosterViewModel(getTeamRosterUseCase, teamRepository, analyticsManager)
     }
 
     @After

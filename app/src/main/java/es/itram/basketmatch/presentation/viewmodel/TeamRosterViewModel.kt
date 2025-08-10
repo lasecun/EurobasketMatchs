@@ -7,10 +7,12 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import es.itram.basketmatch.analytics.AnalyticsManager
 import es.itram.basketmatch.domain.model.TeamRoster
+import es.itram.basketmatch.domain.repository.TeamRepository
 import es.itram.basketmatch.domain.usecase.GetTeamRosterUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -20,6 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class TeamRosterViewModel @Inject constructor(
     private val getTeamRosterUseCase: GetTeamRosterUseCase,
+    private val teamRepository: TeamRepository,
     private val analyticsManager: AnalyticsManager
 ) : ViewModel() {
     
@@ -109,6 +112,9 @@ class TeamRosterViewModel @Inject constructor(
                             successMessage = null,
                             loadingProgress = null
                         )
+                        
+                        // Cargar estado de favorito después de cargar el roster
+                        loadFavoriteStatus(teamTla)
                     },
                     onFailure = { error ->
                         Log.e(TAG, "❌ Error cargando roster", error)
@@ -285,6 +291,67 @@ class TeamRosterViewModel @Inject constructor(
     }
     
     /**
+     * Carga el estado de favorito de un equipo
+     */
+    private suspend fun loadFavoriteStatus(teamCode: String) {
+        try {
+            val team = teamRepository.getTeamByCode(teamCode).first()
+            _uiState.value = _uiState.value.copy(
+                isFavorite = team?.isFavorite ?: false
+            )
+            Log.d(TAG, "✅ Estado de favorito cargado para $teamCode: ${team?.isFavorite ?: false}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error cargando estado de favorito para equipo $teamCode", e)
+            // En caso de error, establecer como no favorito por defecto
+            _uiState.value = _uiState.value.copy(isFavorite = false)
+        }
+    }
+    
+    /**
+     * Función pública para cargar el estado de favoritos desde la UI
+     */
+    fun loadFavoriteStatusForTeam(teamCode: String) {
+        viewModelScope.launch {
+            loadFavoriteStatus(teamCode)
+        }
+    }
+    
+    /**
+     * Alterna el estado de favorito del equipo actual
+     */
+    fun toggleFavorite() {
+        val currentRoster = _uiState.value.teamRoster ?: return
+        val currentFavoriteStatus = _uiState.value.isFavorite
+        val newFavoriteStatus = !currentFavoriteStatus
+        
+        viewModelScope.launch {
+            try {
+                // Actualizar en la base de datos usando el código del equipo
+                teamRepository.updateFavoriteStatusByCode(currentRoster.teamCode, newFavoriteStatus)
+                
+                // Actualizar el estado local
+                _uiState.value = _uiState.value.copy(
+                    isFavorite = newFavoriteStatus
+                )
+                
+                // 📊 Analytics: Track favorite action
+                analyticsManager.trackFavoriteAdded(
+                    contentType = "team",
+                    contentId = currentRoster.teamCode
+                )
+                
+                Log.d(TAG, "💖 Estado de favorito actualizado para ${currentRoster.teamName}: $newFavoriteStatus")
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "Error actualizando estado de favorito", e)
+                _uiState.value = _uiState.value.copy(
+                    error = "Error al actualizar favorito"
+                )
+            }
+        }
+    }
+    
+    /**
      * 📊 Track screen view for analytics
      */
     fun trackScreenView() {
@@ -304,7 +371,8 @@ data class TeamRosterUiState(
     val teamRoster: TeamRoster? = null,
     val error: String? = null,
     val successMessage: String? = null,
-    val loadingProgress: LoadingProgress? = null
+    val loadingProgress: LoadingProgress? = null,
+    val isFavorite: Boolean = false
 )
 
 /**

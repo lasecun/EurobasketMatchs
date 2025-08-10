@@ -2,6 +2,7 @@ package es.itram.basketmatch.presentation.viewmodel
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import es.itram.basketmatch.analytics.AnalyticsManager
+import es.itram.basketmatch.domain.repository.TeamRepository
 import es.itram.basketmatch.domain.usecase.GetTeamRosterUseCase
 import es.itram.basketmatch.testutil.TestDataFactory
 import io.mockk.coEvery
@@ -32,6 +33,7 @@ class TeamRosterViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
 
     private lateinit var getTeamRosterUseCase: GetTeamRosterUseCase
+    private lateinit var teamRepository: TeamRepository
     private lateinit var analyticsManager: AnalyticsManager
     private lateinit var viewModel: TeamRosterViewModel
 
@@ -39,8 +41,9 @@ class TeamRosterViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         getTeamRosterUseCase = mockk()
+        teamRepository = mockk(relaxed = true)
         analyticsManager = mockk(relaxed = true)
-        viewModel = TeamRosterViewModel(getTeamRosterUseCase, analyticsManager)
+        viewModel = TeamRosterViewModel(getTeamRosterUseCase, teamRepository, analyticsManager)
     }
 
     @After
