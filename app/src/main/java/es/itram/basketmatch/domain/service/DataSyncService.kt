@@ -1,6 +1,5 @@
 package es.itram.basketmatch.domain.service
 
-import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import es.itram.basketmatch.data.datasource.local.dao.MatchDao
@@ -28,7 +27,7 @@ class DataSyncService @Inject constructor(
     private val matchDao: MatchDao,
     private val teamMapper: TeamWebMapper,
     private val matchMapper: MatchWebMapper,
-    private val context: Context
+    private val prefs: SharedPreferences
 ) {
     
     companion object {
@@ -38,10 +37,6 @@ class DataSyncService @Inject constructor(
         private const val KEY_FIRST_LAUNCH = "is_first_launch"
         private const val KEY_DATA_POPULATED = "data_populated"
         private const val SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000L // 24 horas
-    }
-    
-    private val prefs: SharedPreferences by lazy {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
     
     // Estado del progreso de sincronización

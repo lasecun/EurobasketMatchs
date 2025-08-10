@@ -140,21 +140,16 @@ class TeamMapperTest {
             logoUrl = "https://img.euroleaguebasketball.net/design/ec/logos/clubs/olympiacos.png",
             founded = 1925,
             coach = "Georgios Bartzokas",
-            website = "https://www.olympiacos.org/",
-            primaryColor = "#DC143C",
-            secondaryColor = "#FFFFFF",
             isFavorite = true
         )
 
         // When
         val result = TeamMapper.toDomain(teamEntity)
 
-        // Then - verificar que todos los campos opcionales se mapean
-        assertThat(result.website).isEqualTo("https://www.olympiacos.org/")
-        assertThat(result.primaryColor).isEqualTo("#DC143C")
-        assertThat(result.secondaryColor).isEqualTo("#FFFFFF")
+        // Then - verificar que todos los campos se mapean correctamente
         assertThat(result.founded).isEqualTo(1925)
         assertThat(result.coach).isEqualTo("Georgios Bartzokas")
+        assertThat(result.isFavorite).isTrue()
     }
 
     @Test

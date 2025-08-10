@@ -126,27 +126,6 @@ class MatchRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Fuerza la sincronización de partidos desde la web
-     * Útil para implementar pull-to-refresh
-     */
-    suspend fun forceRefreshMatches(): Result<List<Match>> {
-        return try {
-            Log.d(TAG, "🔄 [NETWORK] Forzando actualización de partidos desde API...")
-            refreshMatchesIfNeeded()
-            
-            // Devolver los partidos actualizados desde BD local
-            Log.d(TAG, "📱 [LOCAL] Obteniendo partidos actualizados desde BD local...")
-            val entities = matchDao.getAllMatchesSync()
-            val matches = MatchMapper.toDomainList(entities)
-            Log.d(TAG, "📱 [LOCAL] ✅ Partidos actualizados obtenidos: ${matches.size}")
-            Result.success(matches)
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ [NETWORK] Error en actualización forzada de partidos", e)
-            Result.failure(e)
-        }
-    }
-    
-    /**
      * Sincroniza partidos desde la web si es necesario
      */
     private suspend fun refreshMatchesIfNeeded() {
@@ -182,49 +161,6 @@ class MatchRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "❌ [NETWORK] Error sincronizando partidos desde la API", e)
             // Continuar con datos locales en caso de error
-        }
-    }
-    
-    /**
-     * Reemplaza completamente todos los partidos con datos reales frescos
-     * Útil para migrar de datos mockeados a datos reales
-     */
-    suspend fun replaceAllWithRealData(): Result<List<Match>> {
-        return try {
-            Log.d(TAG, "🔄 [NETWORK] Reemplazando todos los partidos con datos reales...")
-            
-            // 1. Obtener datos reales
-            val remoteResult = remoteDataSource.getAllMatches()
-            
-            if (remoteResult.isSuccess) {
-                val remoteMatches = remoteResult.getOrNull() ?: emptyList()
-                
-                if (remoteMatches.isNotEmpty()) {
-                    Log.d(TAG, "🌐 [NETWORK] ✅ Obtenidos ${remoteMatches.size} partidos reales desde API")
-                    
-                    // 2. Borrar todos los datos existentes
-                    matchDao.deleteAllMatches()
-                    Log.d(TAG, "🗑️ [LOCAL] Partidos anteriores eliminados de BD local")
-                    
-                    // 3. Convertir y guardar datos reales
-                    val domainMatches = MatchWebMapper.toDomainList(remoteMatches)
-                    val entities = MatchMapper.fromDomainList(domainMatches)
-                    matchDao.insertMatches(entities)
-                    
-                    Log.d(TAG, "✅ ${domainMatches.size} partidos reales guardados")
-                    
-                    Result.success(domainMatches)
-                } else {
-                    Log.w(TAG, "⚠️ No se obtuvieron partidos reales")
-                    Result.failure(Exception("No se obtuvieron partidos reales"))
-                }
-            } else {
-                Log.e(TAG, "❌ Error obteniendo partidos remotos")
-                Result.failure(remoteResult.exceptionOrNull() ?: Exception("Error desconocido"))
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error en replaceAllWithRealData: ${e.message}", e)
-            Result.failure(e)
         }
     }
 }

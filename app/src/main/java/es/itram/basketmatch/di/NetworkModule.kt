@@ -1,6 +1,7 @@
 package es.itram.basketmatch.di
 
 import android.content.Context
+import android.content.SharedPreferences
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -69,8 +70,8 @@ object NetworkModule {
         matchDao: MatchDao,
         teamMapper: TeamWebMapper,
         matchMapper: MatchWebMapper,
-        @ApplicationContext context: Context
+        prefs: SharedPreferences,
     ): DataSyncService {
-        return DataSyncService(jsonApiScraper, teamDao, matchDao, teamMapper, matchMapper, context)
+        return DataSyncService(jsonApiScraper, teamDao, matchDao, teamMapper, matchMapper, prefs)
     }
 }

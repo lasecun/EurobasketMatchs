@@ -39,9 +39,6 @@ object TestDataFactory {
         logoUrl: String = "https://example.com/logo.png",
         founded: Int = 1902,
         coach: String = "Chus Mateo",
-        website: String = "https://realmadrid.com",
-        primaryColor: String = "#FFFFFF",
-        secondaryColor: String = "#000000",
         isFavorite: Boolean = false
     ): Team {
         return Team(
@@ -54,9 +51,6 @@ object TestDataFactory {
             logoUrl = logoUrl,
             founded = founded,
             coach = coach,
-            website = website,
-            primaryColor = primaryColor,
-            secondaryColor = secondaryColor,
             isFavorite = isFavorite
         )
     }
@@ -223,9 +217,6 @@ object TestDataFactory {
             logoUrl = logoUrl,
             founded = founded,
             coach = coach,
-            website = website,
-            primaryColor = primaryColor,
-            secondaryColor = secondaryColor,
             isFavorite = isFavorite
         )
     }
