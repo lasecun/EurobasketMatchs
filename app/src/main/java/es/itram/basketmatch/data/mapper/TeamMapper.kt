@@ -14,14 +14,11 @@ object TeamMapper {
             name = entity.name,
             shortName = entity.shortName,
             code = entity.code,
-            logoUrl = entity.logoUrl,
             country = entity.country,
             city = entity.city,
             founded = entity.founded,
             coach = entity.coach,
-            website = entity.website,
-            primaryColor = entity.primaryColor,
-            secondaryColor = entity.secondaryColor,
+            logoUrl = entity.logoUrl,
             isFavorite = entity.isFavorite
         )
     }
@@ -32,14 +29,11 @@ object TeamMapper {
             name = domain.name,
             shortName = domain.shortName,
             code = domain.code,
-            logoUrl = domain.logoUrl,
             country = domain.country,
             city = domain.city,
             founded = domain.founded,
             coach = domain.coach,
-            website = domain.website,
-            primaryColor = domain.primaryColor,
-            secondaryColor = domain.secondaryColor,
+            logoUrl = domain.logoUrl,
             isFavorite = domain.isFavorite
         )
     }

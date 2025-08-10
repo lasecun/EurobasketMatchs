@@ -38,9 +38,6 @@ class TeamWebMapperTest {
         // Campos con valores por defecto
         assertThat(result.founded).isEqualTo(0)
         assertThat(result.coach).isEmpty()
-        assertThat(result.website).isEmpty()
-        assertThat(result.primaryColor).isEmpty()
-        assertThat(result.secondaryColor).isEmpty()
         assertThat(result.isFavorite).isFalse()
     }
 

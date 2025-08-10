@@ -33,9 +33,9 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MatchCard(
+    modifier: Modifier = Modifier,
     match: Match,
-    onMatchClick: (String) -> Unit = {},
-    modifier: Modifier = Modifier
+    onMatchClick: (String) -> Unit = {}
 ) {
     Card(
         onClick = { onMatchClick(match.id) },
@@ -81,11 +81,8 @@ fun MatchCard(
             ) {
                 // Equipo local
                 TeamInfo(
-                    teamId = match.homeTeamId,
                     teamName = match.homeTeamName,
                     teamLogo = match.homeTeamLogo,
-                    score = match.homeScore,
-                    isHome = true,
                     modifier = Modifier.weight(1f)
                 )
                 
@@ -113,11 +110,8 @@ fun MatchCard(
                 
                 // Equipo visitante
                 TeamInfo(
-                    teamId = match.awayTeamId,
                     teamName = match.awayTeamName,
                     teamLogo = match.awayTeamLogo,
-                    score = match.awayScore,
-                    isHome = false,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -150,11 +144,8 @@ fun MatchCard(
 
 @Composable
 private fun TeamInfo(
-    teamId: String,
     teamName: String,
     teamLogo: String?,
-    score: Int?,
-    isHome: Boolean,
     modifier: Modifier = Modifier
 ) {
     Column(

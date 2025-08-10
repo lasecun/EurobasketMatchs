@@ -194,4 +194,10 @@ class TeamRepositoryImpl @Inject constructor(
             // Continuar con datos locales en caso de error
         }
     }
+
+    override suspend fun updateFavoriteStatus(teamId: String, isFavorite: Boolean) {
+        Log.d(TAG, "💖 [FAVORITE] Actualizando estado de favorito para equipo $teamId: $isFavorite")
+        teamDao.updateFavoriteStatus(teamId, isFavorite)
+        Log.d(TAG, "💖 [FAVORITE] ✅ Estado de favorito actualizado")
+    }
 }

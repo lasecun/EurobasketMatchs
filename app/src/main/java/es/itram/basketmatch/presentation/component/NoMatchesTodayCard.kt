@@ -30,10 +30,10 @@ import java.util.Locale
  */
 @Composable
 fun NoMatchesTodayCard(
+    modifier: Modifier = Modifier,
     isToday: Boolean,
     nextMatchDay: LocalDate?,
-    onNavigateToNextMatchDay: () -> Unit,
-    modifier: Modifier = Modifier
+    onNavigateToNextMatchDay: () -> Unit
 ) {
     val context = LocalContext.current
     

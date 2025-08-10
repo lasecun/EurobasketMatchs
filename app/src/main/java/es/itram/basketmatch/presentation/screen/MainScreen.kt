@@ -64,7 +64,6 @@ fun MainScreen(
             onNextDay = { viewModel.goToNextDay() }
         )
 
-        // Contenido principal
         when {
             syncProgress.isLoading -> {
                 Box(

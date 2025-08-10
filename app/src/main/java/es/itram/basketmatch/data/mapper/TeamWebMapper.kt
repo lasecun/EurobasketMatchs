@@ -16,6 +16,8 @@ object TeamWebMapper {
             code = dto.id ?: "", // Usar ID como código por ahora
             city = "", // No disponible en el DTO
             country = dto.country ?: "",
+            founded = 0, // No disponible en el DTO web
+            coach = "", // No disponible en el DTO web
             logoUrl = dto.logoUrl ?: ""
         )
     }
