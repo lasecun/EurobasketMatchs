@@ -5,6 +5,7 @@ import es.itram.basketmatch.domain.model.TeamRoster
 import es.itram.basketmatch.domain.model.Player
 import es.itram.basketmatch.domain.model.PlayerPosition
 import es.itram.basketmatch.domain.usecase.GetTeamRosterUseCase
+import es.itram.basketmatch.domain.repository.TeamRepository
 import es.itram.basketmatch.analytics.AnalyticsManager
 import es.itram.basketmatch.testutil.MainDispatcherRule
 import io.mockk.coEvery
@@ -26,11 +27,13 @@ class TeamRosterViewModelProgressTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val getTeamRosterUseCase = mockk<GetTeamRosterUseCase>()
+    private val teamRepository = mockk<TeamRepository>(relaxed = true)
+    private val analyticsManager = mockk<AnalyticsManager>(relaxed = true)
     private lateinit var viewModel: TeamRosterViewModel
 
     @Before
     fun setup() {
-        viewModel = TeamRosterViewModel(getTeamRosterUseCase, mockk(relaxed = true))
+        viewModel = TeamRosterViewModel(getTeamRosterUseCase, teamRepository, analyticsManager)
     }
 
     @Test

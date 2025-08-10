@@ -44,8 +44,14 @@ interface TeamDao {
     @Update
     suspend fun updateTeam(team: TeamEntity)
 
+    @Query("SELECT * FROM teams WHERE code = :teamCode")
+    fun getTeamByCode(teamCode: String): Flow<TeamEntity?>
+
     @Query("UPDATE teams SET is_favorite = :isFavorite WHERE id = :teamId")
     suspend fun updateFavoriteStatus(teamId: String, isFavorite: Boolean)
+
+    @Query("UPDATE teams SET is_favorite = :isFavorite WHERE code = :teamCode")
+    suspend fun updateFavoriteStatusByCode(teamCode: String, isFavorite: Boolean)
 
     @Query("DELETE FROM teams WHERE id = :teamId")
     suspend fun deleteTeam(teamId: String)

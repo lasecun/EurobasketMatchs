@@ -76,6 +76,18 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getTeamByCode(teamCode: String): Flow<Team?> {
+        Log.d(TAG, "📱 [LOCAL] Obteniendo equipo por código desde BD local: $teamCode")
+        return teamDao.getTeamByCode(teamCode).map { entity ->
+            if (entity != null) {
+                Log.d(TAG, "📱 [LOCAL] ✅ Equipo encontrado por código: ${entity.name}")
+            } else {
+                Log.d(TAG, "📱 [LOCAL] ⚠️ Equipo no encontrado por código: $teamCode")
+            }
+            entity?.let { TeamMapper.toDomain(it) }
+        }
+    }
+
     override fun getTeamsByCountry(country: String): Flow<List<Team>> {
         Log.d(TAG, "📱 [LOCAL] Obteniendo equipos por país desde BD local: $country")
         return teamDao.getTeamsByCountry(country).map { entities ->
@@ -199,5 +211,11 @@ class TeamRepositoryImpl @Inject constructor(
         Log.d(TAG, "💖 [FAVORITE] Actualizando estado de favorito para equipo $teamId: $isFavorite")
         teamDao.updateFavoriteStatus(teamId, isFavorite)
         Log.d(TAG, "💖 [FAVORITE] ✅ Estado de favorito actualizado")
+    }
+
+    override suspend fun updateFavoriteStatusByCode(teamCode: String, isFavorite: Boolean) {
+        Log.d(TAG, "💖 [FAVORITE] Actualizando estado de favorito para equipo con código $teamCode: $isFavorite")
+        teamDao.updateFavoriteStatusByCode(teamCode, isFavorite)
+        Log.d(TAG, "💖 [FAVORITE] ✅ Estado de favorito actualizado por código")
     }
 }

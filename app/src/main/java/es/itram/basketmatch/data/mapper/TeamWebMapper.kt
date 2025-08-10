@@ -13,7 +13,7 @@ object TeamWebMapper {
             id = dto.id ?: "",
             name = dto.name ?: "",
             shortName = dto.name?.take(3)?.uppercase() ?: "", // Generar nombre corto desde el nombre
-            code = dto.id ?: "", // Usar ID como código por ahora
+            code = dto.shortCode ?: dto.id ?: "", // Usar shortCode como código, fallback a id
             city = "", // No disponible en el DTO
             country = dto.country ?: "",
             founded = 0, // No disponible en el DTO web
