@@ -31,7 +31,7 @@ class TeamWebMapperTest {
         assertThat(result.id).isEqualTo("rea")
         assertThat(result.name).isEqualTo("Real Madrid")
         assertThat(result.shortName).isEqualTo("REA") // Generado desde el nombre (3 primeros caracteres)
-        assertThat(result.code).isEqualTo("rea") // Usa ID como código
+        assertThat(result.code).isEqualTo("RMD") // Usa shortCode como código
         assertThat(result.city).isEmpty() // No disponible en DTO
         assertThat(result.country).isEqualTo("Spain")
         assertThat(result.logoUrl).isEqualTo("https://img.euroleaguebasketball.net/design/ec/logos/clubs/real-madrid.png")
@@ -62,7 +62,7 @@ class TeamWebMapperTest {
         assertThat(result.id).isEqualTo("fcb")
         assertThat(result.name).isEqualTo("FC Barcelona")
         assertThat(result.shortName).isEqualTo("FC ") // 3 primeros caracteres del nombre
-        assertThat(result.code).isEqualTo("fcb")
+        assertThat(result.code).isEqualTo("BAR") // Usa shortCode como código
         assertThat(result.city).isEmpty()
         assertThat(result.country).isEmpty() // null se convierte a empty string
         assertThat(result.logoUrl).isEmpty() // null se convierte a empty string
@@ -334,7 +334,7 @@ class TeamWebMapperTest {
 
         // Then
         assertThat(result.id).isEqualTo("CaSeSeNsItIvE") // Preserva el case original
-        assertThat(result.code).isEqualTo("CaSeSeNsItIvE") // Preserva el case original
+        assertThat(result.code).isEqualTo("CST") // Usa shortCode como código
         assertThat(result.shortName).isEqualTo("CAS") // shortName se genera en mayúsculas
     }
 }

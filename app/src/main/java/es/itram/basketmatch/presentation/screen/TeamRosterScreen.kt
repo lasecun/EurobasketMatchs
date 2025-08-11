@@ -1,5 +1,8 @@
 package es.itram.basketmatch.presentation.screen
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,6 +21,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -261,6 +266,34 @@ private fun TeamInfoHeader(
     isFavorite: Boolean,
     onFavoriteToggle: () -> Unit
 ) {
+    // Estado para disparar la animación
+    var animationTrigger by remember { mutableStateOf(false) }
+    
+    // Animaciones con efecto rebote más pronunciado
+    val scale by animateFloatAsState(
+        targetValue = if (animationTrigger) 1.4f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        finishedListener = {
+            // Resetear la animación cuando termine
+            if (animationTrigger) {
+                animationTrigger = false
+            }
+        },
+        label = "star_scale"
+    )
+    
+    val rotation by animateFloatAsState(
+        targetValue = if (animationTrigger) 360f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "star_rotation"
+    )
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -270,9 +303,12 @@ private fun TeamInfoHeader(
         Box(
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Botón de favorito en la esquina superior derecha
+            // Botón de favorito en la esquina superior derecha con animación
             IconButton(
-                onClick = onFavoriteToggle,
+                onClick = {
+                    animationTrigger = true
+                    onFavoriteToggle()
+                },
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(8.dp)
@@ -286,7 +322,10 @@ private fun TeamInfoHeader(
                     tint = if (isFavorite) 
                         Color(0xFFFFD700) // Color dorado para estrella llena
                     else 
-                        MaterialTheme.colorScheme.onSurface
+                        MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .scale(scale)
+                        .rotate(rotation)
                 )
             }
             
