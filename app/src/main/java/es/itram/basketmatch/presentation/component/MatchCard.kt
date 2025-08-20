@@ -1,5 +1,6 @@
 package es.itram.basketmatch.presentation.component
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -8,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,8 +37,16 @@ import java.time.format.DateTimeFormatter
 fun MatchCard(
     modifier: Modifier = Modifier,
     match: Match,
+    isHomeTeamFavorite: Boolean = false,
+    isAwayTeamFavorite: Boolean = false,
     onMatchClick: (String) -> Unit = {}
 ) {
+    // Debug logs
+    android.util.Log.d("MatchCard", "=== MatchCard Debug ===")
+    android.util.Log.d("MatchCard", "homeTeam: ${match.homeTeamName}, isHomeTeamFavorite: $isHomeTeamFavorite")
+    android.util.Log.d("MatchCard", "awayTeam: ${match.awayTeamName}, isAwayTeamFavorite: $isAwayTeamFavorite")
+    android.util.Log.d("MatchCard", "======================")
+    
     Card(
         onClick = { onMatchClick(match.id) },
         modifier = modifier.fillMaxWidth(),
@@ -80,11 +90,18 @@ fun MatchCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Equipo local
-                TeamInfo(
-                    teamName = match.homeTeamName,
-                    teamLogo = match.homeTeamLogo,
+                Column(
                     modifier = Modifier.weight(1f)
-                )
+                ) {
+                    TeamInfo(
+                        teamName = match.homeTeamName,
+                        teamLogo = match.homeTeamLogo,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (isHomeTeamFavorite) {
+                        FavoriteTeamTag()
+                    }
+                }
                 
                 // VS o marcador
                 Column(
@@ -109,11 +126,18 @@ fun MatchCard(
                 }
                 
                 // Equipo visitante
-                TeamInfo(
-                    teamName = match.awayTeamName,
-                    teamLogo = match.awayTeamLogo,
+                Column(
                     modifier = Modifier.weight(1f)
-                )
+                ) {
+                    TeamInfo(
+                        teamName = match.awayTeamName,
+                        teamLogo = match.awayTeamLogo,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (isAwayTeamFavorite) {
+                        FavoriteTeamTag()
+                    }
+                }
             }
             
             // Información adicional
@@ -222,5 +246,36 @@ private fun MatchStatusChip(
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Medium
         )
+    }
+}
+
+@Composable
+private fun FavoriteTeamTag(
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.padding(top = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = androidx.compose.ui.graphics.Color(0xFFFFD700).copy(alpha = 0.2f),
+        border = BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFFFD700))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.Star,
+                contentDescription = null,
+                modifier = Modifier.size(12.dp),
+                tint = androidx.compose.ui.graphics.Color(0xFFB8860B) // Dorado más oscuro
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = stringResource(R.string.favorite_team),
+                style = MaterialTheme.typography.labelSmall,
+                color = androidx.compose.ui.graphics.Color(0xFFB8860B),
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
