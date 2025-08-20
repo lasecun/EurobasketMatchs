@@ -48,11 +48,47 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
     }
     
     /**
-     * Obtiene equipos directamente de la API JSON extrayéndolos de los partidos
+     * Obtiene equipos directamente desde el endpoint específico de la API
      */
     suspend fun getTeams(): List<TeamWebDto> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "🏀 [NETWORK] Obteniendo equipos desde API de feeds...")
+            Log.d(TAG, "🏀 [NETWORK] Obteniendo equipos desde endpoint específico de API...")
+            
+            val apiUrl = "$FEEDS_BASE_URL/competitions/E/seasons/E2025/clubs"
+            Log.d(TAG, "🌐 [NETWORK] Petición API equipos: $apiUrl")
+            
+            val jsonResponse = fetchJsonFromUrl(apiUrl)
+            val response = json.decodeFromString<EuroLeagueClubsResponse>(jsonResponse)
+            
+            val teams = response.data.map { club ->
+                TeamWebDto(
+                    id = generateTeamId(club.name),
+                    name = club.name,
+                    fullName = club.name,
+                    shortCode = club.code,
+                    logoUrl = club.images?.crest,
+                    country = club.country?.name,
+                    venue = null, // Se puede obtener del venueCode si es necesario
+                    profileUrl = generateTeamProfileUrl(club.code)
+                )
+            }
+            
+            Log.d(TAG, "🏀 [NETWORK] ✅ Equipos obtenidos desde endpoint específico: ${teams.size}")
+            teams
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ [NETWORK] Error obteniendo equipos desde endpoint específico, fallback a extracción de partidos", e)
+            // Fallback al método anterior
+            getTeamsFromMatches()
+        }
+    }
+    
+    /**
+     * Método fallback: Obtiene equipos extrayéndolos de los partidos
+     */
+    private suspend fun getTeamsFromMatches(): List<TeamWebDto> = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "🏀 [NETWORK] Obteniendo equipos desde API de feeds (fallback)...")
             
             // Obtenemos algunos partidos para extraer todos los equipos únicos
             val teams = mutableSetOf<TeamWebDto>()
@@ -101,7 +137,7 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
             }
             
             val teamsList = teams.toList()
-            Log.d(TAG, "� [NETWORK] ✅ Equipos extraídos exitosamente desde API de feeds: ${teamsList.size}")
+            Log.d(TAG, "🏀 [NETWORK] ✅ Equipos extraídos exitosamente desde API de feeds: ${teamsList.size}")
             teamsList
             
         } catch (e: Exception) {
@@ -147,7 +183,7 @@ class EuroLeagueJsonApiScraper @Inject constructor() {
                 }
             }
             
-            Log.d(TAG, "� [NETWORK] ✅ Total partidos obtenidos desde API: ${allMatches.size} de $totalRounds jornadas")
+            Log.d(TAG, "🏀 [NETWORK] ✅ Total partidos obtenidos desde API: ${allMatches.size} de $totalRounds jornadas")
             allMatches
             
         } catch (e: Exception) {
@@ -360,6 +396,51 @@ data class EuroLeagueFeedsResponse(
 )
 
 @Serializable
+data class EuroLeagueClubsResponse(
+    val status: String,
+    val data: List<FeedsClub>,
+    val metadata: FeedsMetadata? = null
+)
+
+@Serializable
+data class FeedsClub(
+    val code: String,
+    val name: String,
+    val abbreviatedName: String? = null,
+    val tvCode: String? = null,
+    val isVirtual: Boolean = false,
+    val images: FeedsClubImages? = null,
+    val editorialName: String? = null,
+    val sponsor: String? = null,
+    val clubPermanentName: String? = null,
+    val clubPermanentAlias: String? = null,
+    val country: FeedsCountry? = null,
+    val address: String? = null,
+    val website: String? = null,
+    val ticketsUrl: String? = null,
+    val twitterAccount: String? = null,
+    val venueCode: String? = null,
+    val city: String? = null,
+    val president: String? = null,
+    val phone: String? = null,
+    val primaryColor: String? = null,
+    val secondaryColor: String? = null
+)
+
+@Serializable
+data class FeedsClubImages(
+    val crest: String? = null,
+    val onDarkCrest: String? = null,
+    val onLightCrest: String? = null
+)
+
+@Serializable
+data class FeedsCountry(
+    val code: String,
+    val name: String
+)
+
+@Serializable
 data class FeedsGame(
     val id: String,
     val identifier: String? = null,
@@ -383,7 +464,7 @@ data class FeedsGame(
     val confirmedTime: Boolean = true,
     val audience: Int = 0,
     val audienceConfirmed: Boolean = false,
-    val broadcasters: List<String> = emptyList()
+    val broadcasters: List<FeedsBroadcaster> = emptyList()
 )
 
 @Serializable
@@ -467,6 +548,14 @@ data class FeedsVenue(
     val capacity: Int = 0,
     val address: String? = null,
     val notes: String? = null
+)
+
+@Serializable
+data class FeedsBroadcaster(
+    val name: String,
+    val countryCode: String? = null,
+    val linkUrl: String? = null,
+    val imageUrl: String? = null
 )
 
 @Serializable

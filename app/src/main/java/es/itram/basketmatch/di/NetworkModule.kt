@@ -64,6 +64,15 @@ object NetworkModule {
     
     @Provides
     @Singleton
+    fun provideStaticDataGenerator(
+        euroLeagueApiScraper: EuroLeagueJsonApiScraper,
+        @ApplicationContext context: Context
+    ): es.itram.basketmatch.data.generator.StaticDataGenerator {
+        return es.itram.basketmatch.data.generator.StaticDataGenerator(euroLeagueApiScraper, context)
+    }
+    
+    @Provides
+    @Singleton
     fun provideDataSyncService(
         jsonApiScraper: EuroLeagueJsonApiScraper,
         teamDao: TeamDao,
