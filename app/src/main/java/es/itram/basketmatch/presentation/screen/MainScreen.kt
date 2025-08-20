@@ -23,6 +23,7 @@ import es.itram.basketmatch.presentation.component.HeaderDateSelector
 import es.itram.basketmatch.presentation.component.LoadingIndicator
 import es.itram.basketmatch.presentation.component.MatchCard
 import es.itram.basketmatch.presentation.component.NoMatchesTodayCard
+import es.itram.basketmatch.presentation.component.SmartSyncCard
 import es.itram.basketmatch.presentation.component.SyncProgressIndicator
 import es.itram.basketmatch.presentation.viewmodel.MainViewModel
 
@@ -40,6 +41,8 @@ fun MainScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val syncProgress by viewModel.syncProgress.collectAsStateWithLifecycle()
+    val smartSyncState by viewModel.smartSyncState.collectAsStateWithLifecycle()
+    val lastSyncTime by viewModel.lastSyncTime.collectAsStateWithLifecycle()
 
     // 📊 Analytics: Track screen view
     LaunchedEffect(Unit) {
@@ -62,6 +65,15 @@ fun MainScreen(
             },
             onPreviousDay = { viewModel.goToPreviousDay() },
             onNextDay = { viewModel.goToNextDay() }
+        )
+
+        // Smart Sync Card para control manual de sincronización
+        SmartSyncCard(
+            syncState = smartSyncState,
+            lastSyncTime = lastSyncTime,
+            onManualSync = { viewModel.refreshData() }, // Usar refreshData para obtener datos desde API
+            onCheckUpdates = { viewModel.checkForUpdates() },
+            modifier = Modifier.padding(vertical = 8.dp)
         )
 
         when {

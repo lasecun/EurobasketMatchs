@@ -1,0 +1,20 @@
+{
+  "version": "2025-26-v1.0",
+  "lastUpdated": "2025-08-20T16:06:53.465160",
+  "description": "Datos estáticos precargados para EuroLeague 2025-26",
+  "staticDataVersions": {
+    "teams": "2025-26-v1.0",
+    "matches": "2025-26-v1.0"
+  },
+  "lastStaticDataUpdate": "2025-08-20T16:06:53.465164",
+  "dynamicDataVersions": {
+    "teams": "",
+    "matches": ""
+  },
+  "syncConfig": {
+    "manualSyncOnly": true,
+    "autoSyncInterval": 0,
+    "lastAutoSync": "",
+    "syncOnStartup": false
+  }
+}

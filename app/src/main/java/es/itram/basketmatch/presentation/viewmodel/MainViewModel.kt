@@ -11,6 +11,7 @@ import es.itram.basketmatch.domain.entity.Match
 import es.itram.basketmatch.domain.entity.Team
 import es.itram.basketmatch.domain.usecase.GetAllMatchesUseCase
 import es.itram.basketmatch.domain.usecase.GetAllTeamsUseCase
+import es.itram.basketmatch.domain.usecase.ManageStaticDataUseCase
 import es.itram.basketmatch.domain.service.DataSyncService
 import es.itram.basketmatch.domain.service.SyncResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +32,7 @@ class MainViewModel @Inject constructor(
     private val getAllMatchesUseCase: GetAllMatchesUseCase,
     private val getAllTeamsUseCase: GetAllTeamsUseCase,
     private val dataSyncService: DataSyncService,
+    private val manageStaticDataUseCase: ManageStaticDataUseCase,
     private val analyticsManager: AnalyticsManager,
     val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -62,9 +64,13 @@ class MainViewModel @Inject constructor(
     private val _syncMessage = MutableStateFlow<String?>(null)
     val syncMessage: StateFlow<String?> = _syncMessage.asStateFlow()
 
+    // 📊 Smart Sync - Datos estáticos y sincronización inteligente
+    val smartSyncState = manageStaticDataUseCase.syncState
+    val lastSyncTime = manageStaticDataUseCase.lastSyncTime
+
     init {
-        Log.d("MainViewModel", "🚀 Inicializando MainViewModel con sincronización automática...")
-        checkAndSyncData()
+        Log.d("MainViewModel", "🚀 Inicializando MainViewModel con sistema híbrido de datos...")
+        initializeApp()
     }
     
     /**
@@ -180,41 +186,45 @@ class MainViewModel @Inject constructor(
     }
     
     /**
-     * Fuerza la sincronización de datos (llamado desde el botón de refresh)
+     * Fuerza la sincronización de datos (regenera desde API real)
      */
     fun refreshData() {
         viewModelScope.launch {
             _isSyncing.value = true
             _error.value = null
-            _syncMessage.value = "Actualizando datos..."
+            _syncMessage.value = "Obteniendo datos actualizados desde API EuroLeague..."
             
             try {
-                val syncResult = dataSyncService.forceSyncData()
+                Log.d("MainViewModel", "🔄 Iniciando regeneración de datos desde API real...")
                 
-                if (syncResult.isSuccess) {
-                    val result = syncResult.getOrNull()!!
-                    Log.d("MainViewModel", "🔄 Sincronización manual exitosa: ${result.teamsCount} equipos, ${result.matchesCount} partidos")
-                    _syncMessage.value = "Datos actualizados: ${result.teamsCount} equipos, ${result.matchesCount} partidos"
+                // Usar el sistema híbrido para regenerar datos desde API
+                val result = manageStaticDataUseCase.refreshStaticDataFromApi()
+                
+                if (result.isSuccess) {
+                    val generationResult = result.getOrNull()!!
+                    Log.d("MainViewModel", "✅ Datos regenerados desde API: ${generationResult.teamsGenerated} equipos, ${generationResult.matchesGenerated} partidos")
+                    _syncMessage.value = "Datos actualizados desde API: ${generationResult.teamsGenerated} equipos, ${generationResult.matchesGenerated} partidos"
                     
-                    // 📊 Analytics: Track successful data refresh
-                    analyticsManager.logCustomEvent("data_refreshed", android.os.Bundle().apply {
-                        putString("refresh_type", "manual_refresh")
+                    // 📊 Analytics: Track successful API data refresh
+                    analyticsManager.logCustomEvent("api_data_refreshed", android.os.Bundle().apply {
+                        putString("refresh_type", "manual_api_refresh")
                         putString("screen", "home")
-                        putInt("teams_count", result.teamsCount)
-                        putInt("matches_count", result.matchesCount)
+                        putInt("teams_generated", generationResult.teamsGenerated)
+                        putInt("matches_generated", generationResult.matchesGenerated)
+                        putLong("generation_timestamp", generationResult.generationTimestamp)
                     })
                     
                     // Recargar datos locales
                     loadLocalData()
                     
                 } else {
-                    Log.e("MainViewModel", "❌ Error en sincronización manual: ${syncResult.exceptionOrNull()?.message}")
-                    _error.value = "Error al actualizar datos: ${syncResult.exceptionOrNull()?.message}"
+                    Log.e("MainViewModel", "❌ Error regenerando datos desde API: ${result.exceptionOrNull()?.message}")
+                    _error.value = "Error obteniendo datos desde API: ${result.exceptionOrNull()?.message}"
                 }
                 
             } catch (e: Exception) {
-                Log.e("MainViewModel", "❌ Error en refresh manual", e)
-                _error.value = "Error al actualizar: ${e.message}"
+                Log.e("MainViewModel", "❌ Error en refresh desde API", e)
+                _error.value = "Error al actualizar desde API: ${e.message}"
             } finally {
                 _isSyncing.value = false
             }
@@ -426,5 +436,82 @@ class MainViewModel @Inject constructor(
      */
     fun clearError() {
         _error.value = null
+    }
+    
+    // ===== 📊 SMART SYNC - NUEVOS MÉTODOS =====
+    
+    /**
+     * Inicialización de la app con sistema de datos estáticos
+     */
+    private fun initializeApp() {
+        viewModelScope.launch {
+            try {
+                Log.d("MainViewModel", "🏗️ Inicializando datos estáticos...")
+                
+                // Inicializar datos estáticos primero
+                val staticResult = manageStaticDataUseCase.initializeStaticData()
+                if (staticResult.isFailure) {
+                    Log.w("MainViewModel", "⚠️ Falló inicialización estática, usando método tradicional")
+                    checkAndSyncData()
+                    return@launch
+                }
+                
+                Log.d("MainViewModel", "✅ Datos estáticos inicializados, cargando datos...")
+                loadLocalData()
+                
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "❌ Error en inicialización, fallback a método tradicional", e)
+                checkAndSyncData()
+            }
+        }
+    }
+    
+    /**
+     * Sincronización manual de datos dinámicos
+     */
+    fun performManualSync() {
+        viewModelScope.launch {
+            try {
+                Log.d("MainViewModel", "🔄 Iniciando sincronización manual...")
+                val result = manageStaticDataUseCase.syncDynamicData(forceSync = true)
+                
+                if (result.isSuccess) {
+                    Log.d("MainViewModel", "✅ Sincronización manual exitosa")
+                    loadLocalData() // Recargar datos después de sincronizar
+                } else {
+                    Log.e("MainViewModel", "❌ Error en sincronización manual: ${result.exceptionOrNull()}")
+                }
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "❌ Error en sincronización manual", e)
+            }
+        }
+    }
+    
+    /**
+     * Verificar actualizaciones disponibles
+     */
+    fun checkForUpdates() {
+        viewModelScope.launch {
+            try {
+                Log.d("MainViewModel", "🔍 Verificando actualizaciones...")
+                val result = manageStaticDataUseCase.checkForUpdates()
+                
+                if (result.isSuccess) {
+                    val updateResult = result.getOrNull()!!
+                    Log.d("MainViewModel", "✅ Verificación completada: ${updateResult.message}")
+                } else {
+                    Log.e("MainViewModel", "❌ Error verificando actualizaciones: ${result.exceptionOrNull()}")
+                }
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "❌ Error verificando actualizaciones", e)
+            }
+        }
+    }
+    
+    /**
+     * Verifica si hay sincronización en progreso
+     */
+    fun isSyncInProgress(): Boolean {
+        return manageStaticDataUseCase.isSyncInProgress() || _isSyncing.value
     }
 }
