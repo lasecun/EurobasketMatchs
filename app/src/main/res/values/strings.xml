@@ -86,10 +86,10 @@
     <string name="team_view_roster">Ver Roster del Equipo</string>
     <string name="upcoming_matches">Próximos partidos</string>
     <string name="recent_matches">Partidos recientes</string>
+    <!-- Favorites -->
     <string name="add_to_favorites">Añadir a favoritos</string>
     <string name="remove_from_favorites">Quitar de favoritos</string>
-    
-    <!-- Roster Related -->
+    <string name="favorite_team">Favorito</string>    <!-- Roster Related -->
     <string name="season_with_year">Temporada %s</string>
     <string name="captain_short">C</string>
     <string name="player_photo_description">Foto de %s</string>

@@ -146,7 +146,8 @@ fun CalendarScreen(
                             onDateSelected(date)
                             Log.d("CalendarScreen", "📅 ✅ Callback ejecutado - navegación manejada por NavigationRoutes")
                         },
-                        hasMatchesOnDate = { viewModel.hasMatchesOnDate(it) }
+                        hasMatchesOnDate = { viewModel.hasMatchesOnDate(it) },
+                        hasFavoriteTeamMatchesOnDate = { viewModel.hasFavoriteTeamMatchesOnDate(it) }
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -194,8 +195,19 @@ fun CalendarScreen(
                                         modifier = Modifier.heightIn(max = 300.dp)
                                     ) {
                                         items(dayMatches) { match ->
+                                            val isHomeTeamFavorite = viewModel.isTeamFavorite(match.homeTeamName)
+                                            val isAwayTeamFavorite = viewModel.isTeamFavorite(match.awayTeamName)
+                                            
+                                            // Debug log
+                                            android.util.Log.d("CalendarScreen", "=== CalendarScreen Debug ===")
+                                            android.util.Log.d("CalendarScreen", "homeTeam: ${match.homeTeamName}, checking favorite...")
+                                            android.util.Log.d("CalendarScreen", "awayTeam: ${match.awayTeamName}, checking favorite...")
+                                            android.util.Log.d("CalendarScreen", "============================")
+                                            
                                             MatchCard(
                                                 match = match,
+                                                isHomeTeamFavorite = isHomeTeamFavorite,
+                                                isAwayTeamFavorite = isAwayTeamFavorite,
                                                 onMatchClick = onNavigateToMatchDetail
                                             )
                                         }
@@ -215,7 +227,8 @@ private fun CalendarGrid(
     yearMonth: YearMonth,
     selectedDate: LocalDate?,
     onDateSelected: (LocalDate) -> Unit,
-    hasMatchesOnDate: (LocalDate) -> Boolean
+    hasMatchesOnDate: (LocalDate) -> Boolean,
+    hasFavoriteTeamMatchesOnDate: (LocalDate) -> Boolean
 ) {
     val daysInMonth = yearMonth.lengthOfMonth()
     val firstDayOfMonth = yearMonth.atDay(1)
@@ -267,12 +280,14 @@ private fun CalendarGrid(
                     val isSelected = date == selectedDate
                     val isToday = date == today
                     val hasMatches = hasMatchesOnDate(date)
+                    val hasFavoriteMatches = hasFavoriteTeamMatchesOnDate(date)
                     
                     DayItem(
                         day = day + 1,
                         isSelected = isSelected,
                         isToday = isToday,
                         hasMatches = hasMatches,
+                        hasFavoriteMatches = hasFavoriteMatches,
                         onClick = { onDateSelected(date) }
                     )
                 }
@@ -287,6 +302,7 @@ private fun DayItem(
     isSelected: Boolean,
     isToday: Boolean,
     hasMatches: Boolean,
+    hasFavoriteMatches: Boolean,
     onClick: () -> Unit
 ) {
     Box(
@@ -322,8 +338,11 @@ private fun DayItem(
                     modifier = Modifier
                         .size(4.dp)
                         .background(
-                            if (isSelected) MaterialTheme.colorScheme.onPrimary 
-                            else MaterialTheme.colorScheme.primary,
+                            when {
+                                isSelected -> MaterialTheme.colorScheme.onPrimary
+                                hasFavoriteMatches -> androidx.compose.ui.graphics.Color(0xFFFFD700) // Dorado para favoritos
+                                else -> MaterialTheme.colorScheme.primary
+                            },
                             CircleShape
                         )
                 )
