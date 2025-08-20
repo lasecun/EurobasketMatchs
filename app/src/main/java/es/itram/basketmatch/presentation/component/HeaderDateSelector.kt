@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import es.itram.basketmatch.R
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 /**
  * Header with date selector for navigating matches by date.
@@ -71,7 +72,8 @@ fun HeaderDateSelector(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = selectedDate?.toString() ?: stringResource(R.string.select_date),
+                    text = selectedDate?.format(DateTimeFormatter.ofPattern("dd-MM-yyyy")) 
+                        ?: stringResource(R.string.select_date),
                     style = MaterialTheme.typography.titleMedium
                 )
             }

@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import es.itram.basketmatch.analytics.AnalyticsManager
 import es.itram.basketmatch.domain.entity.Match
 import es.itram.basketmatch.domain.entity.Team
+import es.itram.basketmatch.domain.repository.TeamRepository
 import es.itram.basketmatch.domain.usecase.GetAllMatchesUseCase
 import es.itram.basketmatch.domain.usecase.GetAllTeamsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,7 @@ import javax.inject.Inject
 class CalendarViewModel @Inject constructor(
     private val getAllMatchesUseCase: GetAllMatchesUseCase,
     private val getAllTeamsUseCase: GetAllTeamsUseCase,
+    private val teamRepository: TeamRepository,
     private val analyticsManager: AnalyticsManager
 ) : ViewModel() {
 
@@ -36,6 +38,9 @@ class CalendarViewModel @Inject constructor(
 
     private val _teams = MutableStateFlow<Map<String, Team>>(emptyMap())
     val teams: StateFlow<Map<String, Team>> = _teams.asStateFlow()
+
+    private val _favoriteTeams = MutableStateFlow<Set<String>>(emptySet())
+    val favoriteTeams: StateFlow<Set<String>> = _favoriteTeams.asStateFlow()
 
     private val _selectedDate = MutableStateFlow<LocalDate?>(null)
     val selectedDate: StateFlow<LocalDate?> = _selectedDate.asStateFlow()
@@ -73,12 +78,18 @@ class CalendarViewModel @Inject constructor(
                 
                 _teams.value = teams.associateBy { it.id }
                 _matches.value = matches
+                
+                // Cargar equipos favoritos
+                val favoriteTeams = teamRepository.getFavoriteTeams().first()
+                _favoriteTeams.value = favoriteTeams.map { it.code }.toSet() // Volver a usar code
+                
                 _error.value = null
                 
                 // 📊 Analytics: Track successful calendar data load
                 analyticsManager.logCustomEvent("calendar_data_loaded", Bundle().apply {
                     putInt("teams_count", teams.size)
                     putInt("matches_count", matches.size)
+                    putInt("favorite_teams_count", favoriteTeams.size)
                     putString("current_month", _currentMonth.value.toString())
                 })
                 
@@ -167,6 +178,50 @@ class CalendarViewModel @Inject constructor(
         return _matches.value.any { match ->
             match.dateTime.toLocalDate() == date
         }
+    }
+
+    fun hasFavoriteTeamMatchesOnDate(date: LocalDate): Boolean {
+        val favoriteTeamCodes = _favoriteTeams.value
+        return _matches.value.any { match ->
+            match.dateTime.toLocalDate() == date && 
+            (favoriteTeamCodes.contains(getTeamCodeByName(match.homeTeamName)) || 
+             favoriteTeamCodes.contains(getTeamCodeByName(match.awayTeamName)))
+        }
+    }
+
+    fun isTeamFavorite(teamName: String): Boolean {
+        val favoriteTeamCodes = _favoriteTeams.value
+        val teamCode = getTeamCodeByName(teamName)
+        
+        // Debug logs
+        android.util.Log.d("CalendarViewModel", "=== isTeamFavorite Debug ===")
+        android.util.Log.d("CalendarViewModel", "teamName: $teamName")
+        android.util.Log.d("CalendarViewModel", "teamCode: $teamCode")
+        android.util.Log.d("CalendarViewModel", "favoriteTeamCodes: $favoriteTeamCodes")
+        
+        val result = favoriteTeamCodes.contains(teamCode)
+        
+        android.util.Log.d("CalendarViewModel", "isTeamFavorite result: $result")
+        android.util.Log.d("CalendarViewModel", "=========================")
+        
+        return result
+    }
+
+    private fun getTeamCodeByName(teamName: String): String {
+        // Primero intentamos encontrar por nombre exacto
+        _teams.value.values.find { it.name == teamName }?.let { return it.code }
+        
+        // Si no encontramos, intentamos por shortName
+        _teams.value.values.find { it.shortName == teamName }?.let { return it.code }
+        
+        // Si aún no encontramos, intentamos una búsqueda más flexible
+        _teams.value.values.find { 
+            it.name.equals(teamName, ignoreCase = true) || 
+            it.shortName.equals(teamName, ignoreCase = true) 
+        }?.let { return it.code }
+        
+        // Como último recurso, devolvemos el teamName original
+        return teamName
     }
 
     fun getTeamById(teamId: String): Team? {
