@@ -155,7 +155,8 @@ class MainViewModel @Inject constructor(
      */
     private suspend fun loadLocalData() {
         try {
-            Log.d("MainViewModel", "📱 Cargando datos desde base de datos local...")
+            Log.d("MainViewModel", "📱 Cargando datos completos desde base de datos local...")
+            _isLoading.value = true
             
             // Cargar equipos
             val teams = getAllTeamsUseCase().first()
@@ -166,17 +167,26 @@ class MainViewModel @Inject constructor(
             val matches = getAllMatchesUseCase().first()
             Log.d("MainViewModel", "✅ Partidos cargados: ${matches.size}")
             
-            // Guardar todos los partidos en cache
+            // Guardar todos los partidos en cache para uso del calendario y próximos partidos
             _allMatches.value = matches
+            
+            // Verificar que tenemos datos
+            if (matches.isNotEmpty()) {
+                Log.d("MainViewModel", "🏀 Datos disponibles - próximo partido funcionará correctamente")
+                val nextMatchDay = findNextMatchDay()
+                if (nextMatchDay != null) {
+                    Log.d("MainViewModel", "📅 Próximo día con partidos: $nextMatchDay")
+                } else {
+                    Log.d("MainViewModel", "📅 No hay partidos futuros disponibles")
+                }
+            } else {
+                Log.w("MainViewModel", "⚠️ No hay partidos en la base de datos local")
+            }
             
             // Filtrar partidos por la fecha seleccionada (inicialmente es hoy)
             filterMatchesByDate(matches)
             
             _isLoading.value = false
-            
-            // Limpiar mensaje después de un tiempo
-            kotlinx.coroutines.delay(3000)
-            _syncMessage.value = null
             
         } catch (e: Exception) {
             Log.e("MainViewModel", "❌ Error cargando datos locales", e)
@@ -446,7 +456,7 @@ class MainViewModel @Inject constructor(
     private fun initializeApp() {
         viewModelScope.launch {
             try {
-                Log.d("MainViewModel", "🏗️ Inicializando datos estáticos...")
+                Log.d("MainViewModel", "🏗️ Inicializando aplicación con carga completa de datos...")
                 
                 // Inicializar datos estáticos primero
                 val staticResult = manageStaticDataUseCase.initializeStaticData()
@@ -456,12 +466,59 @@ class MainViewModel @Inject constructor(
                     return@launch
                 }
                 
-                Log.d("MainViewModel", "✅ Datos estáticos inicializados, cargando datos...")
+                Log.d("MainViewModel", "✅ Datos estáticos inicializados")
+                
+                // CAMBIO: Siempre cargar datos locales completos al inicio
+                // Esto asegura que el calendario y "próximo partido" funcionen desde el primer momento
                 loadLocalData()
+                
+                // Verificar si necesitamos sincronizar en segundo plano
+                checkForBackgroundSync()
                 
             } catch (e: Exception) {
                 Log.e("MainViewModel", "❌ Error en inicialización, fallback a método tradicional", e)
                 checkAndSyncData()
+            }
+        }
+    }
+    
+    /**
+     * Verifica si es necesario sincronizar en segundo plano (sin bloquear la UI)
+     */
+    private fun checkForBackgroundSync() {
+        viewModelScope.launch {
+            try {
+                if (dataSyncService.isSyncNeeded()) {
+                    Log.d("MainViewModel", "🔄 Sincronización en segundo plano necesaria...")
+                    _isSyncing.value = true
+                    _syncMessage.value = "Verificando actualizaciones..."
+                    
+                    val syncResult = dataSyncService.syncAllData()
+                    
+                    if (syncResult.isSuccess) {
+                        val result = syncResult.getOrNull()!!
+                        Log.d("MainViewModel", "✅ Sincronización en segundo plano exitosa: ${result.teamsCount} equipos, ${result.matchesCount} partidos")
+                        _syncMessage.value = "Datos actualizados: ${result.teamsCount} equipos, ${result.matchesCount} partidos"
+                        
+                        // Recargar datos después de la sincronización
+                        loadLocalData()
+                    } else {
+                        Log.w("MainViewModel", "⚠️ Error en sincronización de segundo plano: ${syncResult.exceptionOrNull()?.message}")
+                        // No mostrar error, los datos locales ya están cargados
+                    }
+                    
+                    _isSyncing.value = false
+                    
+                    // Limpiar mensaje después de un tiempo
+                    kotlinx.coroutines.delay(3000)
+                    _syncMessage.value = null
+                } else {
+                    Log.d("MainViewModel", "✅ No es necesaria sincronización - datos actuales")
+                }
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "❌ Error en verificación de sincronización de segundo plano", e)
+                _isSyncing.value = false
+                // No mostrar error, los datos locales ya están disponibles
             }
         }
     }
