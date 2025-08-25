@@ -81,18 +81,18 @@ fun EnhancedMatchCard(
         modifier = modifier
             .fillMaxWidth()
             .shadow(
-                elevation = if (isLive) 12.dp else 6.dp,
-                shape = RoundedCornerShape(16.dp),
+                elevation = if (isLive) 8.dp else 4.dp,
+                shape = RoundedCornerShape(20.dp),
                 ambientColor = if (isLive) MaterialTheme.colorScheme.error else Color.Gray
             )
             .clickable { onMatchClick(match.id) },
         colors = CardDefaults.cardColors(containerColor = cardBackgroundColor),
         border = BorderStroke(
-            width = if (isLive) 2.dp else 1.dp,
+            width = if (isLive) 2.dp else 0.5.dp,
             color = borderColor
         ),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Column(
             modifier = Modifier
@@ -111,7 +111,7 @@ fun EnhancedMatchCard(
                         )
                     }
                 )
-                .padding(16.dp)
+                .padding(20.dp)
         ) {
             // Header con estado del partido y fecha
             Row(
@@ -141,12 +141,12 @@ fun EnhancedMatchCard(
                 }
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             
             // Equipos y resultado
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Equipo local
@@ -164,7 +164,8 @@ fun EnhancedMatchCard(
                     homeScore = match.homeScore,
                     awayScore = match.awayScore,
                     status = match.status,
-                    isLive = isLive
+                    isLive = isLive,
+                    modifier = Modifier.weight(0.6f)
                 )
                 
                 // Equipo visitante
@@ -240,11 +241,11 @@ private fun StatusChip(
     
     Surface(
         color = backgroundColor,
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(12.dp),
         modifier = Modifier
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (isLive) {
@@ -256,11 +257,11 @@ private fun StatusChip(
                             shape = CircleShape
                         )
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(6.dp))
             }
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelSmall.copy(
+                style = MaterialTheme.typography.labelMedium.copy(
                     fontWeight = if (isLive) FontWeight.Bold else FontWeight.Medium
                 ),
                 color = contentColor
@@ -283,64 +284,50 @@ private fun TeamSection(
         modifier = modifier,
         horizontalAlignment = if (isAway) Alignment.End else Alignment.Start
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = if (isAway) Arrangement.End else Arrangement.Start
+        // Logo del equipo centrado
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            if (!isAway) {
-                TeamLogo(logoUrl = logoUrl, teamCode = teamCode)
-                Spacer(modifier = Modifier.width(8.dp))
-            }
+            TeamLogo(logoUrl = logoUrl, teamCode = teamCode)
             
-            Column(
-                horizontalAlignment = if (isAway) Alignment.End else Alignment.Start
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Nombre del equipo con indicador de favorito
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = if (isAway) Arrangement.End else Arrangement.Start
-                ) {
-                    if (isFavorite && !isAway) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "Favorito",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                    }
-                    
-                    Text(
-                        text = teamName,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = if (isAway) TextAlign.End else TextAlign.Start
+                if (isFavorite && !isAway) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "Favorito",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
                     )
-                    
-                    if (isFavorite && isAway) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "Favorito",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
+                    Spacer(modifier = Modifier.width(4.dp))
                 }
                 
                 Text(
-                    text = teamCode,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = if (isAway) TextAlign.End else TextAlign.Start
+                    text = teamName,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-            }
-            
-            if (isAway) {
-                Spacer(modifier = Modifier.width(8.dp))
-                TeamLogo(logoUrl = logoUrl, teamCode = teamCode)
+                
+                if (isFavorite && isAway) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "Favorito",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
     }
@@ -353,8 +340,8 @@ private fun TeamLogo(
 ) {
     Box(
         modifier = Modifier
-            .size(40.dp)
-            .clip(CircleShape)
+            .size(48.dp)
+            .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
     ) {
@@ -365,17 +352,17 @@ private fun TeamLogo(
                     .crossfade(true)
                     .build(),
                 contentDescription = "Logo de $teamCode",
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(CircleShape)
+                    .padding(4.dp)
             )
         } else {
             Icon(
                 imageVector = Icons.Default.Info,
                 contentDescription = "Logo por defecto",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(28.dp)
             )
         }
     }
@@ -386,11 +373,12 @@ private fun ScoreSection(
     homeScore: Int?,
     awayScore: Int?,
     status: MatchStatus,
-    isLive: Boolean
+    isLive: Boolean,
+    modifier: Modifier = Modifier
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(horizontal = 16.dp)
+        modifier = modifier.padding(horizontal = 8.dp)
     ) {
         if (homeScore != null && awayScore != null) {
             Text(
@@ -403,19 +391,28 @@ private fun ScoreSection(
         } else {
             Text(
                 text = "vs",
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Medium
+                ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         
         if (isLive) {
-            Text(
-                text = "EN VIVO",
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.error
-            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Surface(
+                color = MaterialTheme.colorScheme.error,
+                shape = RoundedCornerShape(4.dp)
+            ) {
+                Text(
+                    text = "EN VIVO",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = MaterialTheme.colorScheme.onError,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
         }
     }
 }
