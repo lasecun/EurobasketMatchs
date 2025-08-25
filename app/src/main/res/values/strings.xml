@@ -130,4 +130,19 @@
     <string name="today">Hoy</string>
     <string name="no_matches_today_title">No hay partidos hoy</string>
     <string name="no_matches_today_subtitle">Revisa otros días para ver próximos partidos</string>
+    
+    <!-- Settings -->
+    <string name="settings">Configuración</string>
+    <string name="general">General</string>
+    <string name="sync_settings">Configuración de sincronización</string>
+    <string name="sync_settings_subtitle">Gestiona la sincronización de datos</string>
+    <string name="data_synchronization">Sincronización de datos</string>
+    <string name="synchronize_data">Sincronizar datos</string>
+    <string name="sync_data_subtitle">Actualizar equipos y partidos desde el servidor</string>
+    <string name="verify_data">Verificar datos</string>
+    <string name="verify_data_subtitle">Comprobar la integridad de los datos locales</string>
+    <string name="last_sync">Última sincronización</string>
+    <string name="never_synced">Nunca sincronizado</string>
+    <string name="version_format">Versión %s</string>
+    <string name="build_format">Build %d</string>
 </resources>
