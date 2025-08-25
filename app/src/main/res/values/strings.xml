@@ -125,4 +125,9 @@
     <!-- Content Descriptions -->
     <string name="error_icon">Error</string>
     <string name="team_logo_generic">Logo del equipo</string>
+    
+    <!-- UI Elements -->
+    <string name="today">Hoy</string>
+    <string name="no_matches_today_title">No hay partidos hoy</string>
+    <string name="no_matches_today_subtitle">Revisa otros días para ver próximos partidos</string>
 </resources>
