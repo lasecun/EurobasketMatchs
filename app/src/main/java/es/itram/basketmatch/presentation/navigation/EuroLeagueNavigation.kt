@@ -182,6 +182,28 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                 },
                 onSyncSettingsClick = {
                     navController.navigate(NavigationRoutes.SYNC_SETTINGS)
+                },
+                onFavoritesClick = {
+                    navController.navigate(NavigationRoutes.FAVORITES)
+                }
+            )
+        }
+        
+        composable(NavigationRoutes.FAVORITES) {
+            es.itram.basketmatch.presentation.screen.settings.FavoritesScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onTeamClick = { teamId ->
+                    // Navegar directamente al roster del equipo en lugar de team detail
+                    // Primero necesitamos obtener el equipo para tener su TLA y nombre
+                    val team = mainViewModel.getTeamById(teamId)
+                    if (team != null) {
+                        navController.navigate(NavigationRoutes.teamRoster(team.code, team.name))
+                    } else {
+                        // Fallback a team detail si no encontramos el equipo
+                        navController.navigate(NavigationRoutes.teamDetail(teamId))
+                    }
                 }
             )
         }
