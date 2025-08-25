@@ -37,12 +37,9 @@ import kotlinx.coroutines.delay
 import es.itram.basketmatch.R
 import es.itram.basketmatch.presentation.component.ErrorMessage
 import es.itram.basketmatch.presentation.component.HeaderDateSelector
-import es.itram.basketmatch.presentation.component.LoadingIndicator
 import es.itram.basketmatch.presentation.component.EnhancedLoadingIndicator
-import es.itram.basketmatch.presentation.component.MatchCard
 import es.itram.basketmatch.presentation.component.EnhancedMatchCard
 import es.itram.basketmatch.presentation.component.NoMatchesTodayCard
-import es.itram.basketmatch.presentation.component.SmartSyncCard
 import es.itram.basketmatch.presentation.component.EnhancedSmartSyncCard
 import es.itram.basketmatch.presentation.component.SyncProgressIndicator
 import es.itram.basketmatch.presentation.viewmodel.MainViewModel
