@@ -39,6 +39,8 @@ class AnalyticsManager @Inject constructor(
         const val SCREEN_PLAYER_DETAIL = "player_detail"
         const val SCREEN_STANDINGS = "standings"
         const val SCREEN_CALENDAR = "calendar"
+        const val SCREEN_SETTINGS = "settings"
+        const val SCREEN_SYNC_SETTINGS = "sync_settings"
         
         // 🎯 CUSTOM EVENTS - Dominio específico
         const val EVENT_MATCH_VIEWED = "match_viewed"

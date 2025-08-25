@@ -40,7 +40,7 @@ import es.itram.basketmatch.presentation.component.HeaderDateSelector
 import es.itram.basketmatch.presentation.component.EnhancedLoadingIndicator
 import es.itram.basketmatch.presentation.component.EnhancedMatchCard
 import es.itram.basketmatch.presentation.component.NoMatchesTodayCard
-import es.itram.basketmatch.presentation.component.EnhancedSmartSyncCard
+import es.itram.basketmatch.presentation.component.AppTopBar
 import es.itram.basketmatch.presentation.component.SyncProgressIndicator
 import es.itram.basketmatch.presentation.viewmodel.MainViewModel
 
@@ -52,7 +52,8 @@ import es.itram.basketmatch.presentation.viewmodel.MainViewModel
 fun MainScreen(
     viewModel: MainViewModel,
     onNavigateToCalendar: () -> Unit,
-    onNavigateToMatchDetail: (String) -> Unit
+    onNavigateToMatchDetail: (String) -> Unit,
+    onNavigateToSettings: () -> Unit
 ) {
     val matches by viewModel.matches.collectAsStateWithLifecycle()
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
@@ -88,9 +89,18 @@ fun MainScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp)
         ) {
+            // Top Bar con settings
+            AppTopBar(
+                title = stringResource(R.string.app_name),
+                onSettingsClick = onNavigateToSettings
+            )
+            
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp)
+            ) {
             // Header con navegación de fechas - Con animación suave
             AnimatedVisibility(
                 visible = true,
@@ -111,27 +121,6 @@ fun MainScreen(
                     },
                     onPreviousDay = { viewModel.goToPreviousDay() },
                     onNextDay = { viewModel.goToNextDay() }
-                )
-            }
-
-            // Smart Sync Card para control manual de sincronización - Con animación
-            AnimatedVisibility(
-                visible = true,
-                enter = slideInVertically(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessLow
-                    ),
-                    initialOffsetY = { it }
-                ) + fadeIn(),
-                exit = slideOutVertically() + fadeOut()
-            ) {
-                EnhancedSmartSyncCard(
-                    syncState = smartSyncState,
-                    lastSyncTime = lastSyncTime,
-                    onManualSync = { viewModel.refreshData() }, // Usar refreshData para obtener datos desde API
-                    onCheckUpdates = { viewModel.checkForUpdates() },
-                    modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
 
@@ -233,6 +222,7 @@ fun MainScreen(
                     }
                 }
             }
-        }
+            } // Cierre del Column interno
+        } // Cierre del Column principal
     }
 }

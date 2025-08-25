@@ -6,6 +6,8 @@ package es.itram.basketmatch.presentation.navigation
 object NavigationRoutes {
     const val MAIN = "main"
     const val CALENDAR = "calendar"
+    const val SETTINGS = "settings"
+    const val SYNC_SETTINGS = "sync_settings"
     const val TEAM_DETAIL = "team_detail/{teamId}"
     const val MATCH_DETAIL = "match_detail/{matchId}"
     const val TEAM_ROSTER = "team_roster/{teamTla}/{teamName}"

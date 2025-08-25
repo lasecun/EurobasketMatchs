@@ -125,4 +125,16 @@ object TestDataFactory {
             )
         }
     }
+
+    fun createMockGenerationResult(
+        teamsGenerated: Int = 18,
+        matchesGenerated: Int = 306,
+        generationTimestamp: Long = System.currentTimeMillis()
+    ): es.itram.basketmatch.data.generator.GenerationResult {
+        return es.itram.basketmatch.data.generator.GenerationResult(
+            teamsGenerated = teamsGenerated,
+            matchesGenerated = matchesGenerated,
+            generationTimestamp = generationTimestamp
+        )
+    }
 }

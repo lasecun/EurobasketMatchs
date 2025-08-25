@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,7 +19,10 @@ import es.itram.basketmatch.presentation.screen.TeamDetailScreen
 import es.itram.basketmatch.presentation.screen.MatchDetailScreen
 import es.itram.basketmatch.presentation.screen.TeamRosterScreen
 import es.itram.basketmatch.presentation.screen.PlayerDetailScreen
+import es.itram.basketmatch.presentation.screen.settings.SettingsScreen
+import es.itram.basketmatch.presentation.screen.settings.SyncSettingsScreen
 import es.itram.basketmatch.presentation.viewmodel.MainViewModel
+import es.itram.basketmatch.presentation.viewmodel.SettingsViewModel
 
 /**
  * Configuración de navegación de la aplicación
@@ -40,6 +44,9 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                 },
                 onNavigateToMatchDetail = { matchId ->
                     navController.navigate(NavigationRoutes.matchDetail(matchId))
+                },
+                onNavigateToSettings = {
+                    navController.navigate(NavigationRoutes.SETTINGS)
                 }
             )
         }
@@ -166,6 +173,45 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                     navController.popBackStack()
                 }
             }
+        }
+        
+        composable(NavigationRoutes.SETTINGS) {
+            SettingsScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onSyncSettingsClick = {
+                    navController.navigate(NavigationRoutes.SYNC_SETTINGS)
+                }
+            )
+        }
+        
+        composable(NavigationRoutes.SYNC_SETTINGS) {
+            val settingsViewModel: SettingsViewModel = hiltViewModel()
+            val lastSyncTime by settingsViewModel.lastSyncTime.collectAsStateWithLifecycle()
+            val isSyncing by settingsViewModel.isSyncing.collectAsStateWithLifecycle()
+            val isVerifying by settingsViewModel.isVerifying.collectAsStateWithLifecycle()
+            
+            // Track sync settings access
+            LaunchedEffect(Unit) {
+                settingsViewModel.trackSyncSettingsAccess()
+            }
+            
+            SyncSettingsScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onSyncClick = {
+                    settingsViewModel.performManualSync()
+                },
+                onVerifyClick = {
+                    settingsViewModel.performVerification()
+                },
+                lastSyncTime = lastSyncTime?.atZone(java.time.ZoneId.systemDefault())?.toInstant()?.toEpochMilli(),
+                isLoading = isSyncing || isVerifying,
+                isSyncing = isSyncing,
+                isVerifying = isVerifying
+            )
         }
     }
 }
