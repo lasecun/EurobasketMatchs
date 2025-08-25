@@ -42,8 +42,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.itram.basketmatch.R
 import es.itram.basketmatch.presentation.component.ErrorMessage
-import es.itram.basketmatch.presentation.component.LoadingIndicator
-import es.itram.basketmatch.presentation.component.MatchCard
+import es.itram.basketmatch.presentation.component.EnhancedLoadingIndicator
+import es.itram.basketmatch.presentation.component.EnhancedMatchCard
 import es.itram.basketmatch.presentation.viewmodel.TeamDetailViewModel
 
 /**
@@ -99,7 +99,7 @@ fun TeamDetailScreen(
 
         when {
             isLoading -> {
-                LoadingIndicator(
+                EnhancedLoadingIndicator(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -405,7 +405,7 @@ private fun MatchesSection(
             Spacer(modifier = Modifier.height(12.dp))
             
             matches.forEach { match ->
-                MatchCard(
+                EnhancedMatchCard(
                     match = match
                 )
                 
