@@ -100,6 +100,15 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                 },
                 onTeamClick = { teamTla, teamName ->
                     android.util.Log.d("Navigation", "🏀 MatchDetailScreen: navigating to team roster $teamTla")
+                    
+                    // 📊 Analytics: Track team click from match detail
+                    mainViewModel.trackTeamClickedFromMatch(
+                        teamId = teamTla,
+                        teamName = teamName, 
+                        matchId = matchId,
+                        source = "match_detail_screen"
+                    )
+                    
                     navController.navigate(NavigationRoutes.teamRoster(teamTla, teamName))
                 }
             )
@@ -199,6 +208,14 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                     // Primero necesitamos obtener el equipo para tener su TLA y nombre
                     val team = mainViewModel.getTeamById(teamId)
                     if (team != null) {
+                        // 📊 Analytics: Track team click from favorites
+                        mainViewModel.trackTeamClickedFromMatch(
+                            teamId = team.code,
+                            teamName = team.name,
+                            matchId = "favorites_screen",
+                            source = "favorites_screen"
+                        )
+                        
                         navController.navigate(NavigationRoutes.teamRoster(team.code, team.name))
                     } else {
                         // Fallback a team detail si no encontramos el equipo
