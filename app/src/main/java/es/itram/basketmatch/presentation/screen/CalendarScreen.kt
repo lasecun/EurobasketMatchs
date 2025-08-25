@@ -45,8 +45,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.itram.basketmatch.presentation.component.ErrorMessage
-import es.itram.basketmatch.presentation.component.LoadingIndicator
-import es.itram.basketmatch.presentation.component.MatchCard
+import es.itram.basketmatch.presentation.component.EnhancedLoadingIndicator
+import es.itram.basketmatch.presentation.component.EnhancedMatchCard
 import es.itram.basketmatch.presentation.viewmodel.CalendarViewModel
 import java.time.LocalDate
 import java.time.YearMonth
@@ -88,7 +88,7 @@ fun CalendarScreen(
         )
 
         if (isLoading) {
-            LoadingIndicator(
+            EnhancedLoadingIndicator(
                 modifier = Modifier.fillMaxWidth()
             )
         } else {
@@ -204,7 +204,7 @@ fun CalendarScreen(
                                             android.util.Log.d("CalendarScreen", "awayTeam: ${match.awayTeamName}, checking favorite...")
                                             android.util.Log.d("CalendarScreen", "============================")
                                             
-                                            MatchCard(
+                                            EnhancedMatchCard(
                                                 match = match,
                                                 isHomeTeamFavorite = isHomeTeamFavorite,
                                                 isAwayTeamFavorite = isAwayTeamFavorite,
