@@ -435,6 +435,25 @@ class MainViewModel @Inject constructor(
     }
     
     /**
+     * 📊 Analytics: Track team click from match cards
+     */
+    fun trackTeamClickedFromMatch(teamId: String, teamName: String, matchId: String, source: String = "match_card") {
+        analyticsManager.trackTeamViewed(
+            teamCode = teamId,
+            teamName = teamName,
+            source = source
+        )
+        
+        analyticsManager.logCustomEvent("team_clicked_from_match", android.os.Bundle().apply {
+            putString("team_code", teamId)
+            putString("team_name", teamName)
+            putString("match_id", matchId)
+            putString("source", source)
+            putString("selected_date", _selectedDate.value.toString())
+        })
+    }
+    
+    /**
      * Verifica si la fecha seleccionada es hoy
      */
     fun isSelectedDateToday(): Boolean {

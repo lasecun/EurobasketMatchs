@@ -63,6 +63,15 @@ class TeamDetailViewModel @Inject constructor(
                     .collect { team ->
                         _team.value = team
                         _isFavorite.value = team?.isFavorite ?: false
+                        
+                        // 📊 Analytics: Track team viewed
+                        team?.let {
+                            analyticsManager.trackTeamViewed(
+                                teamCode = it.code,
+                                teamName = it.name,
+                                source = "team_detail_screen"
+                            )
+                        }
                     }
 
                 // Cargar partidos del equipo
