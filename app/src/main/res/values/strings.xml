@@ -87,9 +87,13 @@
     <string name="upcoming_matches">Próximos partidos</string>
     <string name="recent_matches">Partidos recientes</string>
     <!-- Favorites -->
+    <string name="favorites">Favoritos</string>
+    <string name="favorites_subtitle">Gestiona tus equipos favoritos</string>
     <string name="add_to_favorites">Añadir a favoritos</string>
     <string name="remove_from_favorites">Quitar de favoritos</string>
-    <string name="favorite_team">Favorito</string>    <!-- Roster Related -->
+    <string name="favorite_team">Favorito</string>
+    <string name="no_favorite_teams">No tienes equipos favoritos</string>
+    <string name="no_favorite_teams_subtitle">Añade equipos a favoritos desde sus páginas de detalle para verlos aquí</string>    <!-- Roster Related -->
     <string name="season_with_year">Temporada %s</string>
     <string name="captain_short">C</string>
     <string name="player_photo_description">Foto de %s</string>

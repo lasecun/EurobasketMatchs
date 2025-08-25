@@ -1,5 +1,11 @@
 package es.itram.basketmatch.presentation.screen
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -86,13 +92,11 @@ fun TeamDetailScreen(
             },
             actions = {
                 if (team != null) {
-                    IconButton(onClick = { viewModel.toggleFavorite() }) {
-                        Icon(
-                            if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = if (isFavorite) stringResource(R.string.remove_from_favorites) else stringResource(R.string.add_to_favorites),
-                            tint = if (isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    // Botón de favorito con animación mejorada
+                    EnhancedFavoriteButton(
+                        isFavorite = isFavorite,
+                        onToggle = { viewModel.toggleFavorite() }
+                    )
                 }
             }
         )
@@ -413,6 +417,51 @@ private fun MatchesSection(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
+        }
+    }
+}
+
+/**
+ * Botón de favorito mejorado con animación suave
+ */
+@Composable
+private fun EnhancedFavoriteButton(
+    isFavorite: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    IconButton(
+        onClick = onToggle,
+        modifier = modifier
+    ) {
+        AnimatedContent(
+            targetState = isFavorite,
+            transitionSpec = {
+                fadeIn(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMedium
+                    )
+                ) togetherWith fadeOut(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMedium
+                    )
+                )
+            },
+            label = "favorite_animation"
+        ) { favorite ->
+            Icon(
+                imageVector = if (favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = if (favorite) 
+                    stringResource(R.string.remove_from_favorites) 
+                else 
+                    stringResource(R.string.add_to_favorites),
+                tint = if (favorite) 
+                    MaterialTheme.colorScheme.error 
+                else 
+                    MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }
