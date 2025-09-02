@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -26,6 +27,7 @@ fun SettingsScreen(
     onBackClick: () -> Unit,
     onSyncSettingsClick: () -> Unit,
     onFavoritesClick: () -> Unit,
+    onNotificationsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -99,6 +101,37 @@ fun SettingsScreen(
                         )
                     },
                     modifier = Modifier.clickable { onFavoritesClick() },
+                    colors = ListItemDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
+                )
+            }
+            
+            item {
+                // Configuración de notificaciones
+                ListItem(
+                    headlineContent = {
+                        Text(
+                            text = "Notificaciones",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                    },
+                    supportingContent = {
+                        Text(
+                            text = "Configura las notificaciones de partidos y equipos",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    modifier = Modifier.clickable { onNotificationsClick() },
                     colors = ListItemDefaults.colors(
                         containerColor = MaterialTheme.colorScheme.surface
                     )
@@ -206,7 +239,8 @@ private fun SettingsScreenPreview() {
         SettingsScreen(
             onBackClick = {},
             onSyncSettingsClick = {},
-            onFavoritesClick = {}
+            onFavoritesClick = {},
+            onNotificationsClick = {}
         )
     }
 }

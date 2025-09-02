@@ -182,4 +182,24 @@ class NotificationSettingsViewModel @Inject constructor(
     fun refreshSettings() {
         loadNotificationSettings()
     }
+    
+    // Funciones DEBUG para testing
+    fun debugPrintFCMToken() {
+        viewModelScope.launch {
+            try {
+                val token = notificationManager.getCurrentFCMToken()
+                Log.d(TAG, "🔥 FCM Token actual: ${token ?: "NULL"}")
+                if (token.isNullOrEmpty()) {
+                    Log.w(TAG, "⚠️ FCM Token está vacío")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error al obtener FCM token: $e")
+            }
+        }
+    }
+    
+    fun debugTestNotification() {
+        Log.d(TAG, "🧪 Test de notificación - En implementación")
+        // Aquí podríamos enviar una notificación local de prueba
+    }
 }
