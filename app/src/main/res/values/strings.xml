@@ -53,7 +53,7 @@
     <string name="venue">Pabellón</string>
     <string name="season">Temporada</string>
     <string name="type">Tipo</string>
-    
+
     <!-- Season Types -->
     <string name="season_regular">Temporada Regular</string>
     <string name="season_playoffs">Playoffs</string>
@@ -149,4 +149,14 @@
     <string name="never_synced">Nunca sincronizado</string>
     <string name="version_format">Versión %s</string>
     <string name="build_format">Build %d</string>
+    
+    <!-- Widget Strings -->
+    <string name="widget_today_matches">Partidos de Hoy</string>
+    <string name="widget_description">Muestra los partidos de EuroLeague de hoy, priorizando tus equipos favoritos</string>
+    <string name="widget_no_matches">No hay partidos hoy</string>
+    <string name="widget_loading">Cargando...</string>
+    <string name="widget_error">Error al cargar</string>
+    <string name="widget_update">Actualizar</string>
+    <string name="widget_favorites">favoritos</string>
+    <string name="widget_matches">partidos</string>
 </resources>

@@ -25,6 +25,24 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Widget de Partidos de Hoy -->
+        <receiver
+            android:name=".widget.TodayMatchesWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="es.itram.basketmatch.widget.UPDATE_WIDGET" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_today_matches_info" />
+        </receiver>
+
+        <!-- WorkManager para actualizaciones automáticas del widget -->
+        <service
+            android:name=".widget.WidgetUpdateService"
+            android:exported="false" />
     </application>
 
 </manifest>

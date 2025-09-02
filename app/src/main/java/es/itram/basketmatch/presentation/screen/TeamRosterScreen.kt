@@ -96,6 +96,26 @@ fun TeamRosterScreen(
                     }
                 },
                 actions = {
+                    // Botón de favoritos
+                    uiState.teamRoster?.let { roster ->
+                        IconButton(
+                            onClick = { viewModel.toggleFavorite() }
+                        ) {
+                            Icon(
+                                imageVector = if (uiState.isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
+                                contentDescription = if (uiState.isFavorite)
+                                    stringResource(R.string.remove_from_favorites)
+                                else
+                                    stringResource(R.string.add_to_favorites),
+                                tint = if (uiState.isFavorite)
+                                    Color(0xFFFFD700) // Dorado para favorito
+                                else
+                                    MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+
+                    // Botón de refresh (existente)
                     IconButton(
                         onClick = { viewModel.refreshTeamRoster(teamTla) },
                         enabled = !uiState.isRefreshing

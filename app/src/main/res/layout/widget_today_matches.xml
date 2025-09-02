@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="8dp"
+    android:background="@drawable/widget_background"
+    android:clickable="true">
+
+    <!-- Header del widget -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="8dp">
+
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Partidos Hoy"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:textColor="#FFFFFF" />
+
+        <TextView
+            android:id="@+id/widget_match_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 partidos"
+            android:textSize="12sp"
+            android:textColor="#B3FFFFFF"
+            android:layout_marginEnd="8dp" />
+
+        <ImageButton
+            android:id="@+id/widget_refresh_button"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_refresh_white"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Actualizar"
+            android:scaleType="centerInside" />
+
+    </LinearLayout>
+
+    <!-- Contenedor del partido principal -->
+    <LinearLayout
+        android:id="@+id/widget_match_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="visible">
+
+        <!-- Indicador de favorito -->
+        <ImageView
+            android:id="@+id/widget_favorite_indicator"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_star_filled"
+            android:layout_marginBottom="4dp"
+            android:visibility="gone"
+            android:contentDescription="Equipo favorito" />
+
+        <!-- Equipos -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="4dp">
+
+            <TextView
+                android:id="@+id/widget_home_team"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Local"
+                android:textSize="12sp"
+                android:textColor="#FFFFFF"
+                android:textAlignment="textEnd"
+                android:layout_marginEnd="8dp"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="vs"
+                android:textSize="10sp"
+                android:textColor="#B3FFFFFF"
+                android:layout_marginHorizontal="4dp" />
+
+            <TextView
+                android:id="@+id/widget_away_team"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Visitante"
+                android:textSize="12sp"
+                android:textColor="#FFFFFF"
+                android:textAlignment="textStart"
+                android:layout_marginStart="8dp"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+        </LinearLayout>
+
+        <!-- Hora del partido -->
+        <TextView
+            android:id="@+id/widget_match_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="20:30"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/widget_time_background"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp" />
+
+    </LinearLayout>
+
+    <!-- Vista cuando no hay partidos -->
+    <LinearLayout
+        android:id="@+id/widget_no_matches"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_basketball"
+            android:layout_marginBottom="8dp"
+            android:alpha="0.6"
+            android:contentDescription="Basketball" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No hay partidos hoy"
+            android:textSize="12sp"
+            android:textColor="#B3FFFFFF"
+            android:textAlignment="center" />
+
+    </LinearLayout>
+
+</LinearLayout>
