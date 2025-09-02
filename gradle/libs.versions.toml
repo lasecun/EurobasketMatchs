@@ -43,6 +43,9 @@ ksp = "2.0.21-1.0.25"
 firebase-bom = "33.1.2"
 google-services = "4.4.2"
 
+# WorkManager for scheduling
+workmanager = "2.9.1"
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -101,6 +104,11 @@ hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testi
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebase-bom" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
+
+# WorkManager
+androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workmanager" }
+androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version = "1.2.0" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

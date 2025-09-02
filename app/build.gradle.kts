@@ -130,6 +130,11 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.messaging)
+    
+    // WorkManager for push notifications scheduling
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
     
     // Testing - Unit Tests
     testImplementation(libs.junit)
