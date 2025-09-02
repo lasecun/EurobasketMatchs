@@ -157,14 +157,14 @@ class TodayMatchesWidgetProvider : AppWidgetProvider() {
             )
 
             // Ocultar vista vacía
-            views.setViewVisibility(R.id.widget_no_matches, android.view.View.GONE)
+            views.setViewVisibility(R.id.widget_no_matches_container, android.view.View.GONE)
             views.setViewVisibility(R.id.widget_match_container, android.view.View.VISIBLE)
 
         } else {
             // No hay partidos
             views.setViewVisibility(R.id.widget_match_container, android.view.View.GONE)
-            views.setViewVisibility(R.id.widget_no_matches, android.view.View.VISIBLE)
-            views.setTextViewText(R.id.widget_no_matches, "No hay partidos hoy")
+            views.setViewVisibility(R.id.widget_no_matches_container, android.view.View.VISIBLE)
+            views.setTextViewText(R.id.widget_no_matches_text, "No hay partidos hoy")
         }
 
         // Configurar click para abrir la app
@@ -196,8 +196,8 @@ class TodayMatchesWidgetProvider : AppWidgetProvider() {
         views.setTextViewText(R.id.widget_title, "EuroLeague")
         views.setTextViewText(R.id.widget_match_count, "Error")
         views.setViewVisibility(R.id.widget_match_container, android.view.View.GONE)
-        views.setViewVisibility(R.id.widget_no_matches, android.view.View.VISIBLE)
-        views.setTextViewText(R.id.widget_no_matches, "Error al cargar")
+        views.setViewVisibility(R.id.widget_no_matches_container, android.view.View.VISIBLE)
+        views.setTextViewText(R.id.widget_no_matches_text, "Error al cargar")
 
         return views
     }

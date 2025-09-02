@@ -127,7 +127,7 @@
 
     <!-- Vista cuando no hay partidos -->
     <LinearLayout
-        android:id="@+id/widget_no_matches"
+        android:id="@+id/widget_no_matches_container"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -144,6 +144,7 @@
             android:contentDescription="Basketball" />
 
         <TextView
+            android:id="@+id/widget_no_matches_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="No hay partidos hoy"
