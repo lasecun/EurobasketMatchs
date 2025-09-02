@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Colores utilizados en la aplicación -->
+    
+    <!-- Color principal para notificaciones -->
+    <color name="primary">#FF6200EE</color>
+    
+    <!-- Colores adicionales para el sistema de notificaciones -->
+    <color name="notification_accent">#FF03DAC5</color>
+    <color name="notification_background">#FFFFFF</color>
 </resources>
