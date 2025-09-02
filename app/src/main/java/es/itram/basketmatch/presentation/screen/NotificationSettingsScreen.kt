@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,6 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import es.itram.basketmatch.BuildConfig
 import es.itram.basketmatch.presentation.viewmodel.NotificationSettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,7 +32,7 @@ fun NotificationSettingsScreen(
                 title = { Text("Configuración de Notificaciones") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                     }
                 }
             )
@@ -44,6 +46,56 @@ fun NotificationSettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            
+            // Sección de DEBUG para testing
+            if (BuildConfig.DEBUG) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            "🔧 MODO DEBUG", 
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Button(
+                                onClick = {
+                                    // Solo mostrará logs en Debug
+                                    viewModel.debugPrintFCMToken()
+                                }
+                            ) {
+                                Text("Ver FCM Token")
+                            }
+                            
+                            Button(
+                                onClick = {
+                                    // Solo mostrará logs en Debug
+                                    viewModel.debugTestNotification()
+                                }
+                            ) {
+                                Text("Test Notificación")
+                            }
+                        }
+                        
+                        Text(
+                            "Revisa los logs de Android Studio para ver el token FCM",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
             
             // Configuración general
             NotificationSectionCard(
@@ -63,14 +115,14 @@ fun NotificationSettingsScreen(
             if (settings.notificationsEnabled) {
                 NotificationSectionCard(
                     title = "Partidos",
-                    icon = Icons.Default.SportsBasketball
+                    icon = Icons.Default.Notifications
                 ) {
                     NotificationSwitchSetting(
                         title = "Recordatorios de Partidos",
                         description = "Notificaciones antes de que empiecen los partidos de tus equipos favoritos",
                         checked = settings.matchRemindersEnabled,
                         onCheckedChange = { viewModel.setMatchRemindersEnabled(it) },
-                        icon = Icons.Default.Schedule
+                        icon = Icons.Default.DateRange
                     )
                     
                     if (settings.matchRemindersEnabled) {
@@ -89,21 +141,21 @@ fun NotificationSettingsScreen(
                         description = "Notificaciones cuando terminen los partidos de tus equipos favoritos",
                         checked = settings.resultNotificationsEnabled,
                         onCheckedChange = { viewModel.setResultNotificationsEnabled(it) },
-                        icon = Icons.Default.ScoreBoard
+                        icon = Icons.Default.CheckCircle
                     )
                 }
                 
                 // Configuración de equipos
                 NotificationSectionCard(
                     title = "Equipos",
-                    icon = Icons.Default.Groups
+                    icon = Icons.Default.Person
                 ) {
                     NotificationSwitchSetting(
                         title = "Noticias de Equipos",
                         description = "Recibir noticias y actualizaciones de tus equipos favoritos",
                         checked = settings.teamNewsEnabled,
                         onCheckedChange = { viewModel.setTeamNewsEnabled(it) },
-                        icon = Icons.Default.Article
+                        icon = Icons.Default.Info
                     )
                 }
                 
@@ -192,6 +244,7 @@ private fun NotificationSwitchSetting(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ReminderTimeSetting(
     currentTime: Int,
@@ -280,10 +333,4 @@ private fun NotificationInfoCard() {
             }
         }
     }
-}
-
-// Extensión para usar en íconos personalizados
-object CustomIcons {
-    val ScoreBoard = Icons.Default.Sports
-    val SportsBasketball = Icons.Default.Sports
 }

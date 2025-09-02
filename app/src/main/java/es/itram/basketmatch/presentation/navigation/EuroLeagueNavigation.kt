@@ -23,6 +23,7 @@ import es.itram.basketmatch.presentation.screen.settings.SettingsScreen
 import es.itram.basketmatch.presentation.screen.settings.SyncSettingsScreen
 import es.itram.basketmatch.presentation.viewmodel.MainViewModel
 import es.itram.basketmatch.presentation.viewmodel.SettingsViewModel
+import es.itram.basketmatch.presentation.screen.NotificationSettingsScreen
 
 /**
  * Configuración de navegación de la aplicación
@@ -194,6 +195,9 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                 },
                 onFavoritesClick = {
                     navController.navigate(NavigationRoutes.FAVORITES)
+                },
+                onNotificationsClick = {
+                    navController.navigate(NavigationRoutes.NOTIFICATIONS)
                 }
             )
         }
@@ -250,6 +254,14 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                 isLoading = isSyncing || isVerifying,
                 isSyncing = isSyncing,
                 isVerifying = isVerifying
+            )
+        }
+        
+        composable(NavigationRoutes.NOTIFICATIONS) {
+            NotificationSettingsScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                }
             )
         }
     }

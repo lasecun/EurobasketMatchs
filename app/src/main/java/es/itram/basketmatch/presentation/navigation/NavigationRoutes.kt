@@ -9,6 +9,7 @@ object NavigationRoutes {
     const val SETTINGS = "settings"
     const val SYNC_SETTINGS = "sync_settings"
     const val FAVORITES = "favorites"
+    const val NOTIFICATIONS = "notifications"
     const val TEAM_DETAIL = "team_detail/{teamId}"
     const val MATCH_DETAIL = "match_detail/{matchId}"
     const val TEAM_ROSTER = "team_roster/{teamTla}/{teamName}"
