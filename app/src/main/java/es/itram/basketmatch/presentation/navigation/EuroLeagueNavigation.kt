@@ -19,6 +19,7 @@ import es.itram.basketmatch.presentation.screen.TeamDetailScreen
 import es.itram.basketmatch.presentation.screen.MatchDetailScreen
 import es.itram.basketmatch.presentation.screen.TeamRosterScreen
 import es.itram.basketmatch.presentation.screen.PlayerDetailScreen
+import es.itram.basketmatch.presentation.screen.ContactScreen
 import es.itram.basketmatch.presentation.screen.settings.SettingsScreen
 import es.itram.basketmatch.presentation.screen.settings.SyncSettingsScreen
 import es.itram.basketmatch.presentation.viewmodel.MainViewModel
@@ -198,6 +199,18 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                 },
                 onNotificationsClick = {
                     navController.navigate(NavigationRoutes.NOTIFICATIONS)
+                },
+                onContactClick = {
+                    navController.navigate(NavigationRoutes.CONTACT)
+                }
+            )
+        }
+
+        // 📧 Contact Screen
+        composable(NavigationRoutes.CONTACT) {
+            ContactScreen(
+                onBackClick = {
+                    navController.popBackStack()
                 }
             )
         }
