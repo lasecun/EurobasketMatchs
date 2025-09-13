@@ -226,8 +226,8 @@ View (Composable) ←→ ViewModel ←→ Use Case ←→ Repository
 
 ---
 
-**📱 Versión**: 1.1 (versionCode: 3)  
-**📅 Última actualización**: Septiembre 2025  
+**📱 Versión**: 1.1 (versionCode: 3)
+**📅 Última actualización**: Septiembre 2025
 **🏗️ Build**: Gradle 9.0.0 + AGP 8.12.0  
 **🔧 Kotlin**: 2.0.21 (K2 Compiler)  
 **🛡️ Crashlytics**: ✅ Activo y monitoreando  
@@ -238,6 +238,53 @@ View (Composable) ←→ ViewModel ←→ Use Case ←→ Repository
 ## 🏆 **Destacados del Proyecto**
 
 > **🚀 Proyecto en estado de producción** con arquitectura sólida, tests completos y monitoreo en tiempo real.
+
+## 🆕 **Novedades en Versión 1.2**
+
+### ✨ **Nuevas Características**
+
+#### 📧 **Sistema de Contacto Completo**
+- **Pantalla de Contacto**: Nueva pantalla accesible desde Configuración
+- **Integración Email**: Apertura directa del cliente de email nativo con asunto pre-configurado
+- **GitHub Issues**: Enlace directo para reportar bugs y solicitar características
+- **Material Design 3**: Interfaz moderna con iconos y componentes actualizados
+- **Analytics Integrado**: Seguimiento de interacciones de soporte para métricas de usuario
+
+#### 🏗️ **Mejoras Técnicas**
+- **Clean Architecture**: Implementación completa con Repository pattern
+- **ContactRepository**: Gestión de información de contacto con inyección de dependencias
+- **ContactViewModel**: Estado reactivo con StateFlow y manejo de eventos
+- **Enhanced Analytics**: Método `trackError` añadido al AnalyticsManager para mejor seguimiento de errores
+- **Navegación Optimizada**: Eliminación de conflictos de navegación y archivos duplicados
+
+#### 🔧 **Mejoras de Desarrollo**
+- **Error Handling**: Sistema mejorado de manejo y tracking de errores
+- **Material Icons**: Corrección de iconos faltantes (Help, Code, ArrowForward)
+- **Testing Coverage**: Todos los tests unitarios siguen pasando (51/51)
+- **Code Quality**: Sin regresiones en funcionalidad existente
+
+### 📊 **Información de Contacto**
+- **Email**: itramgames@gmail.com
+- **GitHub Issues**: https://github.com/lasecun/EurobasketMatchs/issues
+- **Tiempo de Respuesta**: 24-48 horas
+- **Soporte**: Consultas generales, reportes de bugs, solicitudes de características
+
+### 🎯 **Experiencia de Usuario Mejorada**
+- **Acceso Fácil**: Contacto disponible desde el menú de configuración
+- **Flujo Intuitivo**: Navegación clara con indicadores de carga
+- **Integración Nativa**: Uso del cliente de email del dispositivo
+- **Feedback Visual**: Estados de carga y confirmaciones de acciones
+
+---
+
+**📱 Versión**: 1.2 (versionCode: 4)  
+**📅 Última actualización**: Septiembre 2025  
+**🏗️ Build**: Gradle 9.0.0 + AGP 8.12.0  
+**🔧 Kotlin**: 2.0.21 (K2 Compiler)  
+**🛡️ Crashlytics**: ✅ Activo y monitoreando  
+**📊 Analytics**: ✅ Firebase implementado
+
+---
 
 ### 🔧 **Para Desarrolladores**
 ```bash
