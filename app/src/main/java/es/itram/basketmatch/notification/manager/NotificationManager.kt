@@ -1,6 +1,5 @@
 package es.itram.basketmatch.notification.manager
 
-import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessaging
@@ -14,7 +13,6 @@ import javax.inject.Singleton
  */
 @Singleton
 class NotificationManager @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val sharedPreferences: SharedPreferences
 ) {
 

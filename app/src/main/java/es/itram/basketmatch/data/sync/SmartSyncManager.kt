@@ -7,7 +7,6 @@ import es.itram.basketmatch.analytics.AnalyticsManager
 import es.itram.basketmatch.data.datasource.local.assets.StaticDataManager
 import es.itram.basketmatch.data.datasource.local.assets.StaticMatch
 import es.itram.basketmatch.data.datasource.local.assets.StaticTeam
-import es.itram.basketmatch.data.datasource.remote.EuroLeagueRemoteDataSource
 import es.itram.basketmatch.domain.entity.Match
 import es.itram.basketmatch.domain.entity.MatchStatus
 import es.itram.basketmatch.domain.entity.SeasonType
@@ -48,7 +47,6 @@ import javax.inject.Singleton
 @Singleton
 class SmartSyncManager @Inject constructor(
     private val staticDataManager: StaticDataManager,
-    private val remoteDataSource: EuroLeagueRemoteDataSource,
     private val teamRepository: TeamRepository,
     private val matchRepository: MatchRepository,
     private val analyticsManager: AnalyticsManager
@@ -409,5 +407,3 @@ private fun StaticMatch.toMatch(teams: List<StaticTeam>): Match {
         seasonType = SeasonType.REGULAR // Asumimos temporada regular
     )
 }
-
-

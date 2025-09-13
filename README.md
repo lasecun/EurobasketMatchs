@@ -13,23 +13,28 @@ Esta aplicación permite a los usuarios seguir el calendario completo de partido
 - **👥 Roster de Equipos**: Información detallada de jugadores con posiciones y estadísticas
 - **📊 Clasificación**: Tabla de posiciones actualizada en tiempo real
 - **🔍 Detalles de Partidos**: Información completa de cada encuentro
-- **⭐ Favoritos**: Marca tus equipos y jugadores favoritos (EN DESARROLLO)
+- **⭐ Favoritos**: Sistema completo de equipos y jugadores favoritos con persistencia local
+- **📱 Widget Nativo**: Widget para pantalla de inicio con partidos del día y equipos favoritos
+- **🔔 Notificaciones Push**: Sistema completo con Firebase Cloud Messaging
 
 ### 🎯 **Experiencia de Usuario**
 - **🌙 Tema Oscuro/Claro**: Interfaz adaptable a las preferencias del usuario
 - **📱 Material Design 3**: Diseño moderno siguiendo las guías de Google
 - **🔄 Pull-to-Refresh**: Actualización manual de datos
-- **📊 Analytics**: Seguimiento de uso con Firebase Analytics
+- **📊 Analytics**: Seguimiento completo de uso con Firebase Analytics
 - **🛡️ Crashlytics**: Monitoreo automático de errores en tiempo real
 - **📱 Offline Mode**: Funcionalidad completa sin conexión
+- **🎨 Animaciones Fluidas**: Transiciones suaves entre pantallas
+- **⚡ Performance Optimizada**: Cache inteligente y sincronización eficiente
 
 ### 🏗️ **Arquitectura y Tecnología**
 - **🏛️ Clean Architecture**: Separación clara de responsabilidades
 - **🎭 MVVM Pattern**: ViewModels reactivos con StateFlow
 - **💉 Dependency Injection**: Hilt para gestión de dependencias
 - **🗄️ Base de Datos Local**: Room para cache offline
-- **🌐 Web Scraping**: Datos reales desde la API oficial de EuroLeague
+- **🌐 API Integration**: Datos reales desde la API oficial de EuroLeague
 - **🔧 Testing**: Suite completa de tests unitarios e integración
+- **🔥 Firebase**: Analytics, Crashlytics y Cloud Messaging integrados
 
 ## 🏗️ Arquitectura de la Aplicación
 

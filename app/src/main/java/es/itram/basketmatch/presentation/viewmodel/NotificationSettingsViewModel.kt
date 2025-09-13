@@ -9,6 +9,8 @@ import es.itram.basketmatch.notification.manager.NotificationSettings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -20,6 +22,10 @@ class NotificationSettingsViewModel @Inject constructor(
     companion object {
         private const val TAG = "NotificationSettingsVM"
     }
+
+    // Eventos para solicitar permisos
+    private val _requestPermissionEvent = MutableSharedFlow<Unit>()
+    val requestPermissionEvent: SharedFlow<Unit> = _requestPermissionEvent
 
     private val _notificationSettings = MutableStateFlow(
         NotificationSettings(
@@ -55,6 +61,12 @@ class NotificationSettingsViewModel @Inject constructor(
     fun setNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             try {
+                // Si se están habilitando las notificaciones, solicitar permisos primero
+                if (enabled) {
+                    Log.d(TAG, "🔔 Solicitando permisos de notificación...")
+                    _requestPermissionEvent.emit(Unit)
+                }
+                
                 notificationManager.setNotificationsEnabled(enabled)
                 _notificationSettings.value = _notificationSettings.value.copy(
                     notificationsEnabled = enabled

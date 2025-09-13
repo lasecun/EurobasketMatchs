@@ -39,14 +39,12 @@ object StaticDataModule {
     @Singleton
     fun provideSmartSyncManager(
         staticDataManager: StaticDataManager,
-        remoteDataSource: es.itram.basketmatch.data.datasource.remote.EuroLeagueRemoteDataSource,
         teamRepository: es.itram.basketmatch.domain.repository.TeamRepository,
         matchRepository: es.itram.basketmatch.domain.repository.MatchRepository,
         analyticsManager: es.itram.basketmatch.analytics.AnalyticsManager
     ): SmartSyncManager {
         return SmartSyncManager(
             staticDataManager,
-            remoteDataSource,
             teamRepository,
             matchRepository,
             analyticsManager
