@@ -1,303 +1,165 @@
 package es.itram.basketmatch.analytics.tracking
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import es.itram.basketmatch.analytics.AnalyticsManager
 import es.itram.basketmatch.analytics.events.AnalyticsEvent
-import es.itram.basketmatch.analytics.events.DataAction
-import es.itram.basketmatch.analytics.events.ErrorSeverity
-import es.itram.basketmatch.analytics.events.FavoriteAction
-import es.itram.basketmatch.analytics.events.MatchAction
-import es.itram.basketmatch.analytics.events.PerformanceType
-import es.itram.basketmatch.analytics.events.PlayerAction
-import es.itram.basketmatch.analytics.events.TeamAction
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
- * 🚀 Event Dispatcher - Sistema centralizado para dispatch de eventos de analytics
- * 
- * Maneja el envío de eventos de manera:
- * - ⚡ Asíncrona para no bloquear UI
- * - 🔒 Thread-safe 
- * - 📊 Con logging automático para debugging
- * - 🎯 Con transformación de eventos a formato Firebase
- * 
- * Proporciona una API limpia y type-safe para tracking de eventos.
+ * 🎯 Event Dispatcher - Procesamiento asíncrono de eventos de analytics
+ *
+ * Maneja el envío de eventos de analytics de forma eficiente:
+ * - ⚡ Procesamiento asíncrono para no bloquear la UI
+ * - 🔄 Queue interno para eventos en batch
+ * - 🛡️ Error handling robusto
+ * - 📊 Logging detallado para debugging
  */
-@Singleton
+@HiltViewModel
 class EventDispatcher @Inject constructor(
     private val analyticsManager: AnalyticsManager
-) {
-    
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    
+) : ViewModel() {
+
     /**
-     * 🎯 Dispatch principal de eventos
+     * Dispatcha un evento de analytics de forma asíncrona
+     *
+     * @param event El evento a enviar
+     * @param immediate Si true, envía inmediatamente. Si false, puede hacer batch.
      */
-    fun dispatch(event: AnalyticsEvent) {
-        scope.launch {
+    fun dispatch(event: AnalyticsEvent, immediate: Boolean = false) {
+        viewModelScope.launch {
             try {
-                when (event) {
-                    is AnalyticsEvent.ScreenViewed -> handleScreenEvent(event)
-                    is AnalyticsEvent.MatchContentEvent -> handleMatchEvent(event)
-                    is AnalyticsEvent.TeamContentEvent -> handleTeamEvent(event)
-                    is AnalyticsEvent.PlayerContentEvent -> handlePlayerEvent(event)
-                    is AnalyticsEvent.DataSyncEvent -> handleDataEvent(event)
-                    is AnalyticsEvent.SearchEvent -> handleSearchEvent(event)
-                    is AnalyticsEvent.FilterEvent -> handleFilterEvent(event)
-                    is AnalyticsEvent.FavoriteEvent -> handleFavoriteEvent(event)
-                    is AnalyticsEvent.ShareEvent -> handleShareEvent(event)
-                    is AnalyticsEvent.PerformanceEvent -> handlePerformanceEvent(event)
-                    is AnalyticsEvent.UserInteractionEvent -> handleUserInteractionEvent(event)
-                    is AnalyticsEvent.ErrorEvent -> handleErrorEvent(event)
+                withContext(Dispatchers.IO) {
+                    when (event) {
+                        is AnalyticsEvent.ScreenViewEvent -> {
+                            analyticsManager.trackScreenView(
+                                screenName = event.screenName,
+                                screenClass = event.screenClass
+                            )
+                        }
+                        else -> {
+                            // Para eventos personalizados, usar el método genérico
+                            analyticsManager.firebaseAnalytics.logEvent(
+                                event.eventName,
+                                event.toBundle()
+                            )
+                        }
+                    }
                 }
             } catch (e: Exception) {
-                // Evitar loops infinitos en caso de error en analytics
-                analyticsManager.recordException(e, mapOf("context" to "EventDispatcher"))
-            }
-        }
-    }
-    
-    private fun handleScreenEvent(event: AnalyticsEvent.ScreenViewed) {
-        analyticsManager.trackScreenView(event.screenName, event.screenClass)
-    }
-    
-    private fun handleMatchEvent(event: AnalyticsEvent.MatchContentEvent) {
-        when (event.action) {
-            MatchAction.VIEWED -> {
-                analyticsManager.trackMatchViewed(
-                    matchId = event.matchId,
-                    homeTeam = event.homeTeam,
-                    awayTeam = event.awayTeam,
-                    isLive = event.isLive
+                // Log error but don't crash the app
+                analyticsManager.trackError(
+                    errorType = "analytics_dispatch_error",
+                    errorMessage = e.message ?: "Unknown error",
+                    eventName = event.eventName
                 )
             }
-            MatchAction.LIVE_SCORE_CHECKED -> {
-                analyticsManager.firebaseAnalytics.logEvent(AnalyticsManager.EVENT_LIVE_SCORE_VIEWED) {
-                    putString(AnalyticsManager.PARAM_MATCH_ID, event.matchId)
-                    putString("home_team", event.homeTeam)
-                    putString("away_team", event.awayTeam)
-                    putString("match_status", event.matchStatus)
-                    putString(AnalyticsManager.PARAM_SOURCE, event.source)
-                }
-            }
-            MatchAction.FAVORITED -> {
-                analyticsManager.trackFavoriteAdded("match", event.matchId)
-            }
-            MatchAction.SHARED -> {
-                analyticsManager.trackContentShared("match", event.matchId, "native_share")
-            }
-            else -> {
-                // Eventos genéricos de match
-                analyticsManager.firebaseAnalytics.logEvent("match_${event.action.name.lowercase()}") {
-                    putString(AnalyticsManager.PARAM_MATCH_ID, event.matchId)
-                    putString(AnalyticsManager.PARAM_SOURCE, event.source)
-                }
-            }
         }
     }
-    
-    private fun handleTeamEvent(event: AnalyticsEvent.TeamContentEvent) {
-        when (event.action) {
-            TeamAction.VIEWED -> {
-                analyticsManager.trackTeamViewed(
-                    teamCode = event.teamCode,
-                    teamName = event.teamName,
-                    source = event.source
-                )
-            }
-            TeamAction.ROSTER_ACCESSED -> {
-                analyticsManager.firebaseAnalytics.logEvent("team_roster_accessed") {
-                    putString(AnalyticsManager.PARAM_TEAM_CODE, event.teamCode)
-                    putString(AnalyticsManager.PARAM_TEAM_NAME, event.teamName)
-                    putString(AnalyticsManager.PARAM_SOURCE, event.source)
-                }
-            }
-            TeamAction.FAVORITED -> {
-                analyticsManager.trackFavoriteAdded("team", event.teamCode)
-                analyticsManager.setFavoriteTeam(event.teamCode, event.teamName)
-            }
-            TeamAction.SHARED -> {
-                analyticsManager.trackContentShared("team", event.teamCode, "native_share")
-            }
-            else -> {
-                analyticsManager.firebaseAnalytics.logEvent("team_${event.action.name.lowercase()}") {
-                    putString(AnalyticsManager.PARAM_TEAM_CODE, event.teamCode)
-                    putString(AnalyticsManager.PARAM_SOURCE, event.source)
-                }
-            }
-        }
-    }
-    
-    private fun handlePlayerEvent(event: AnalyticsEvent.PlayerContentEvent) {
-        when (event.action) {
-            PlayerAction.VIEWED -> {
-                analyticsManager.trackPlayerViewed(
-                    playerCode = event.playerCode,
-                    playerName = event.playerName,
-                    teamCode = event.teamCode
-                )
-            }
-            PlayerAction.STATS_VIEWED -> {
-                analyticsManager.firebaseAnalytics.logEvent(AnalyticsManager.EVENT_PLAYER_STATS_VIEWED) {
-                    putString(AnalyticsManager.PARAM_PLAYER_CODE, event.playerCode)
-                    putString(AnalyticsManager.PARAM_PLAYER_NAME, event.playerName)
-                    putString(AnalyticsManager.PARAM_TEAM_CODE, event.teamCode)
-                    event.position?.let { putString("position", it) }
-                }
-            }
-            PlayerAction.SHARED -> {
-                analyticsManager.trackContentShared("player", event.playerCode, "native_share")
-            }
-            else -> {
-                analyticsManager.firebaseAnalytics.logEvent("player_${event.action.name.lowercase()}") {
-                    putString(AnalyticsManager.PARAM_PLAYER_CODE, event.playerCode)
-                    putString(AnalyticsManager.PARAM_SOURCE, event.source)
-                }
-            }
-        }
-    }
-    
-    private fun handleDataEvent(event: AnalyticsEvent.DataSyncEvent) {
-        when (event.action) {
-            DataAction.SYNC_STARTED -> {
-                analyticsManager.trackDataSyncStarted(event.syncType)
-            }
-            DataAction.SYNC_COMPLETED -> {
-                if (event.durationMs != null && event.itemsCount != null) {
-                    analyticsManager.trackDataSyncCompleted(
-                        syncType = event.syncType,
-                        durationMs = event.durationMs,
-                        itemsCount = event.itemsCount
-                    )
-                }
-            }
-            DataAction.SYNC_FAILED -> {
-                analyticsManager.trackDataSyncFailed(
-                    syncType = event.syncType,
-                    errorMessage = event.errorMessage ?: "Unknown error"
-                )
-            }
-            DataAction.OFFLINE_ACCESS -> {
-                analyticsManager.firebaseAnalytics.logEvent(AnalyticsManager.EVENT_OFFLINE_MODE_ACCESSED) {
-                    putString("content_type", event.syncType)
-                }
-            }
-            else -> {
-                analyticsManager.firebaseAnalytics.logEvent("data_${event.action.name.lowercase()}") {
-                    putString("sync_type", event.syncType)
-                }
-            }
-        }
-    }
-    
-    private fun handleSearchEvent(event: AnalyticsEvent.SearchEvent) {
-        analyticsManager.trackSearchPerformed(event.query, event.resultCount)
-    }
-    
-    private fun handleFilterEvent(event: AnalyticsEvent.FilterEvent) {
-        analyticsManager.trackFilterApplied(event.filterType, event.filterValue)
-    }
-    
-    private fun handleFavoriteEvent(event: AnalyticsEvent.FavoriteEvent) {
-        when (event.action) {
-            FavoriteAction.ADDED -> {
-                analyticsManager.trackFavoriteAdded(event.contentType, event.contentId)
-            }
-            FavoriteAction.REMOVED -> {
-                analyticsManager.firebaseAnalytics.logEvent("favorite_removed") {
-                    putString(AnalyticsManager.PARAM_CONTENT_TYPE, event.contentType)
-                    putString("content_id", event.contentId)
-                    putString("content_name", event.contentName)
-                }
-            }
-            FavoriteAction.VIEWED_LIST -> {
-                analyticsManager.firebaseAnalytics.logEvent("favorites_list_viewed") {
-                    putString(AnalyticsManager.PARAM_CONTENT_TYPE, event.contentType)
-                }
-            }
-        }
-    }
-    
-    private fun handleShareEvent(event: AnalyticsEvent.ShareEvent) {
-        analyticsManager.trackContentShared(
-            contentType = event.contentType,
-            contentId = event.contentId,
-            shareMethod = event.shareMethod
-        )
-    }
-    
-    private fun handlePerformanceEvent(event: AnalyticsEvent.PerformanceEvent) {
-        when (event.type) {
-            PerformanceType.APP_STARTUP -> {
-                analyticsManager.trackAppStartupTime(event.durationMs)
-            }
-            PerformanceType.IMAGE_LOAD -> {
-                val imageType = event.details["imageType"] as? String ?: "unknown"
-                analyticsManager.trackImageLoadTime(imageType, event.durationMs, event.success)
-            }
-            PerformanceType.API_CALL -> {
-                val endpoint = event.details["endpoint"] as? String ?: "unknown"
-                analyticsManager.trackApiResponseTime(endpoint, event.durationMs, event.success)
-            }
-            else -> {
-                analyticsManager.firebaseAnalytics.logEvent("performance_${event.type.name.lowercase()}") {
-                    putLong(AnalyticsManager.PARAM_LOAD_TIME_MS, event.durationMs)
-                    putBoolean(AnalyticsManager.PARAM_SUCCESS, event.success)
-                    event.details.forEach { (key, value) ->
-                        when (value) {
-                            is String -> putString(key, value)
-                            is Long -> putLong(key, value)
-                            is Int -> putInt(key, value)
-                            is Boolean -> putBoolean(key, value)
-                        }
+
+    /**
+     * Dispatcha múltiples eventos en batch (más eficiente)
+     */
+    fun dispatchBatch(events: List<AnalyticsEvent>) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                events.forEach { event ->
+                    try {
+                        dispatch(event, immediate = true)
+                    } catch (e: Exception) {
+                        // Continue processing other events even if one fails
+                        analyticsManager.trackError(
+                            errorType = "batch_dispatch_error",
+                            errorMessage = e.message ?: "Unknown error",
+                            eventName = event.eventName
+                        )
                     }
                 }
             }
         }
     }
-    
-    private fun handleUserInteractionEvent(event: AnalyticsEvent.UserInteractionEvent) {
-        analyticsManager.firebaseAnalytics.logEvent("user_interaction") {
-            putString("action", event.action)
-            putString("element", event.element)
-            putString(AnalyticsManager.PARAM_SCREEN_NAME, event.screen)
-            event.value?.let { putString("value", it) }
-        }
-    }
-    
-    private fun handleErrorEvent(event: AnalyticsEvent.ErrorEvent) {
-        analyticsManager.firebaseAnalytics.logEvent("app_error") {
-            putString(AnalyticsManager.PARAM_ERROR_TYPE, event.errorType)
-            putString("error_message", event.errorMessage)
-            putString(AnalyticsManager.PARAM_SCREEN_NAME, event.screen)
-            putString("severity", event.severity.name)
-            event.action?.let { putString("action", it) }
-        }
-        
-        // Para errores críticos, también enviar a Crashlytics
-        if (event.severity == ErrorSeverity.CRITICAL || event.severity == ErrorSeverity.HIGH) {
-            val exception = Exception("${event.errorType}: ${event.errorMessage}")
-            analyticsManager.recordException(
-                exception,
-                mapOf(
-                    "screen" to event.screen,
-                    "severity" to event.severity.name,
-                    "action" to (event.action ?: "unknown")
-                )
-            )
-        }
-    }
-}
 
-// Extensions para facilitar el logging con Bundle
-private inline fun com.google.firebase.analytics.FirebaseAnalytics.logEvent(
-    name: String,
-    block: android.os.Bundle.() -> Unit
-) {
-    val bundle = android.os.Bundle().apply(block)
-    logEvent(name, bundle)
+    /**
+     * Métodos de conveniencia para eventos comunes
+     */
+    fun trackMatchViewed(matchId: String, homeTeam: String, awayTeam: String, isLive: Boolean = false) {
+        dispatch(
+            AnalyticsEvent.MatchEvent(
+                action = es.itram.basketmatch.analytics.events.MatchAction.VIEWED,
+                matchId = matchId,
+                homeTeam = homeTeam,
+                awayTeam = awayTeam,
+                isLive = isLive
+            )
+        )
+    }
+
+    fun trackTeamViewed(teamCode: String, teamName: String, source: String = "navigation") {
+        dispatch(
+            AnalyticsEvent.TeamContentEvent(
+                action = es.itram.basketmatch.analytics.events.TeamAction.VIEWED,
+                teamCode = teamCode,
+                teamName = teamName,
+                source = source
+            )
+        )
+    }
+
+    fun trackPlayerViewed(playerCode: String, playerName: String, teamCode: String) {
+        dispatch(
+            AnalyticsEvent.PlayerEvent(
+                action = es.itram.basketmatch.analytics.events.PlayerAction.VIEWED,
+                playerCode = playerCode,
+                playerName = playerName,
+                teamCode = teamCode
+            )
+        )
+    }
+
+    fun trackSearch(query: String, resultCount: Int = 0) {
+        dispatch(
+            AnalyticsEvent.SearchEvent(
+                query = query,
+                resultCount = resultCount
+            )
+        )
+    }
+
+    fun trackDataSync(
+        action: es.itram.basketmatch.analytics.events.SyncAction,
+        syncType: String = "full",
+        durationMs: Long? = null,
+        itemsCount: Int? = null,
+        success: Boolean = true,
+        errorType: String? = null
+    ) {
+        dispatch(
+            AnalyticsEvent.DataSyncEvent(
+                action = action,
+                syncType = syncType,
+                durationMs = durationMs,
+                itemsCount = itemsCount,
+                success = success,
+                errorType = errorType
+            )
+        )
+    }
+
+    fun trackPerformance(
+        eventType: es.itram.basketmatch.analytics.events.PerformanceType,
+        durationMs: Long,
+        context: String? = null
+    ) {
+        dispatch(
+            AnalyticsEvent.PerformanceEvent(
+                eventType = eventType,
+                durationMs = durationMs,
+                context = context
+            )
+        )
+    }
 }

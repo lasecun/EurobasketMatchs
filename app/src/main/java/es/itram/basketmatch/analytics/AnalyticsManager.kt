@@ -257,7 +257,7 @@ class AnalyticsManager @Inject constructor(
             "match" -> EVENT_MATCH_FAVORITE_ADDED
             else -> "favorite_added"
         }
-        
+
         val bundle = Bundle().apply {
             putString(PARAM_CONTENT_TYPE, contentType)
             putString("content_id", contentId)
@@ -291,13 +291,31 @@ class AnalyticsManager @Inject constructor(
         }
         crashlytics.recordException(exception)
     }
-    
+
     fun logMessage(message: String, priority: Int = android.util.Log.INFO) {
-        crashlytics.log("Priority: $priority - $message")
+        crashlytics.log("$priority: $message")
     }
     
     /**
-     * 🎯 Log custom events with bundle
+     * 🛡️ Error tracking - esencial para app stability
+     */
+    fun trackError(errorType: String, errorMessage: String, eventName: String? = null) {
+        val bundle = Bundle().apply {
+            putString(PARAM_ERROR_TYPE, errorType)
+            putString("error_message", errorMessage)
+            eventName?.let { putString("failed_event", it) }
+            putLong("timestamp", System.currentTimeMillis())
+        }
+        firebaseAnalytics.logEvent("app_error", bundle)
+
+        // También reportar a Crashlytics
+        crashlytics.recordException(Exception("App Error: $errorType - $errorMessage"))
+        crashlytics.setCustomKey("error_type", errorType)
+        crashlytics.setCustomKey("error_context", eventName ?: "unknown")
+    }
+
+    /**
+     * 📊 Generic event logging para casos específicos
      */
     fun logCustomEvent(eventName: String, bundle: Bundle) {
         firebaseAnalytics.logEvent(eventName, bundle)

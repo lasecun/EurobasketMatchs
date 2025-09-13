@@ -84,7 +84,7 @@ class NotificationManager @Inject constructor(
      * Verifica si las notificaciones están habilitadas
      */
     fun areNotificationsEnabled(): Boolean {
-        return sharedPreferences.getBoolean(NOTIFICATIONS_ENABLED_KEY, true)
+        return sharedPreferences.getBoolean(NOTIFICATIONS_ENABLED_KEY, false) // Cambiado a false por defecto
     }
 
     /**
@@ -97,7 +97,7 @@ class NotificationManager @Inject constructor(
     }
 
     fun areMatchRemindersEnabled(): Boolean {
-        return sharedPreferences.getBoolean(MATCH_REMINDERS_ENABLED_KEY, true)
+        return sharedPreferences.getBoolean(MATCH_REMINDERS_ENABLED_KEY, true) // Mantiene true pero solo si las notificaciones generales están habilitadas
     }
 
     /**

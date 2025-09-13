@@ -10,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -18,7 +17,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.Manifest
 import android.os.Build
-import androidx.annotation.RequiresApi
 import es.itram.basketmatch.BuildConfig
 import es.itram.basketmatch.presentation.viewmodel.NotificationSettingsViewModel
 
@@ -28,7 +26,6 @@ fun NotificationSettingsScreen(
     onBackClick: () -> Unit,
     viewModel: NotificationSettingsViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
     val settings by viewModel.notificationSettings.collectAsState()
     
     // Launcher para solicitar permisos de notificación
@@ -36,9 +33,11 @@ fun NotificationSettingsScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            // Permiso concedido, continuar con la configuración
+            // Permiso concedido - las notificaciones ya están habilitadas en el ViewModel
+            // No necesitamos hacer nada adicional aquí
         } else {
-            // Permiso denegado, mostrar mensaje o desactivar configuración
+            // Permiso denegado - desactivar las notificaciones
+            viewModel.setNotificationsEnabled(false)
         }
     }
     

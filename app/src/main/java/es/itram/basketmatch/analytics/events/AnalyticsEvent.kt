@@ -1,180 +1,171 @@
 package es.itram.basketmatch.analytics.events
 
+import android.os.Bundle
+import es.itram.basketmatch.analytics.AnalyticsManager
+
 /**
- * 📊 Analytics Events - Eventos específicos para tracking de comportamiento de usuario
- * 
- * Esta clase define eventos customizados que proporcionan insights valiosos sobre:
- * - User engagement patterns
- * - Feature adoption rates  
- * - Content consumption metrics
- * - Performance bottlenecks
- * - Error patterns
- * 
- * Optimizado para SEO móvil y analytics de aplicaciones deportivas.
+ * 📊 Analytics Events - Sistema de eventos tipados para tracking
+ *
+ * Define todos los eventos de analytics de forma estructurada y type-safe
+ * para garantizar consistency y facilitar el mantenimiento.
  */
 sealed class AnalyticsEvent {
-    
-    // 📱 SCREEN NAVIGATION EVENTS
-    data class ScreenViewed(
-        val screenName: String,
-        val screenClass: String? = null,
-        val previousScreen: String? = null,
-        val sessionDuration: Long? = null
-    ) : AnalyticsEvent()
-    
-    // 🏀 BASKETBALL CONTENT EVENTS
-    data class MatchContentEvent(
+    abstract fun toBundle(): Bundle
+    abstract val eventName: String
+
+    // 🏀 Basketball Content Events
+    data class MatchEvent(
         val action: MatchAction,
         val matchId: String,
-        val homeTeam: String,
-        val awayTeam: String,
-        val matchStatus: String,
+        val homeTeam: String? = null,
+        val awayTeam: String? = null,
         val isLive: Boolean = false,
         val source: String = "navigation"
-    ) : AnalyticsEvent()
-    
+    ) : AnalyticsEvent() {
+        override val eventName = when (action) {
+            MatchAction.VIEWED -> AnalyticsManager.EVENT_MATCH_VIEWED
+            MatchAction.FAVORITED -> AnalyticsManager.EVENT_MATCH_FAVORITE_ADDED
+            MatchAction.LIVE_SCORE_VIEWED -> AnalyticsManager.EVENT_LIVE_SCORE_VIEWED
+        }
+
+        override fun toBundle() = Bundle().apply {
+            putString(AnalyticsManager.PARAM_MATCH_ID, matchId)
+            homeTeam?.let { putString("home_team", it) }
+            awayTeam?.let { putString("away_team", it) }
+            putBoolean("is_live", isLive)
+            putString(AnalyticsManager.PARAM_SOURCE, source)
+            putString(AnalyticsManager.PARAM_CONTENT_TYPE, "match")
+        }
+    }
+
     data class TeamContentEvent(
         val action: TeamAction,
         val teamCode: String,
-        val teamName: String,
-        val source: String = "navigation",
-        val context: String? = null
-    ) : AnalyticsEvent()
-    
-    data class PlayerContentEvent(
+        val teamName: String? = null,
+        val source: String = "navigation"
+    ) : AnalyticsEvent() {
+        override val eventName = when (action) {
+            TeamAction.VIEWED -> AnalyticsManager.EVENT_TEAM_VIEWED
+            TeamAction.FAVORITED -> AnalyticsManager.EVENT_TEAM_FAVORITE_ADDED
+            TeamAction.ROSTER_VIEWED -> AnalyticsManager.EVENT_ROSTER_VIEWED
+        }
+
+        override fun toBundle() = Bundle().apply {
+            putString(AnalyticsManager.PARAM_TEAM_CODE, teamCode)
+            teamName?.let { putString(AnalyticsManager.PARAM_TEAM_NAME, it) }
+            putString(AnalyticsManager.PARAM_SOURCE, source)
+            putString(AnalyticsManager.PARAM_CONTENT_TYPE, "team")
+        }
+    }
+
+    data class PlayerEvent(
         val action: PlayerAction,
         val playerCode: String,
-        val playerName: String,
-        val teamCode: String,
-        val position: String? = null,
-        val source: String = "navigation"
-    ) : AnalyticsEvent()
-    
-    // 📊 DATA INTERACTION EVENTS
-    data class DataSyncEvent(
-        val action: DataAction,
-        val syncType: String,
-        val durationMs: Long? = null,
-        val itemsCount: Int? = null,
-        val errorMessage: String? = null
-    ) : AnalyticsEvent()
-    
-    // 🔍 SEARCH & DISCOVERY EVENTS
+        val playerName: String? = null,
+        val teamCode: String? = null
+    ) : AnalyticsEvent() {
+        override val eventName = when (action) {
+            PlayerAction.VIEWED -> AnalyticsManager.EVENT_PLAYER_VIEWED
+            PlayerAction.STATS_VIEWED -> AnalyticsManager.EVENT_PLAYER_STATS_VIEWED
+        }
+
+        override fun toBundle() = Bundle().apply {
+            putString(AnalyticsManager.PARAM_PLAYER_CODE, playerCode)
+            playerName?.let { putString(AnalyticsManager.PARAM_PLAYER_NAME, it) }
+            teamCode?.let { putString(AnalyticsManager.PARAM_TEAM_CODE, it) }
+            putString(AnalyticsManager.PARAM_CONTENT_TYPE, "player")
+        }
+    }
+
+    // 🔍 Discovery & Navigation Events
     data class SearchEvent(
         val query: String,
-        val category: String? = null,
         val resultCount: Int = 0,
-        val selectedResultIndex: Int? = null
-    ) : AnalyticsEvent()
-    
+        val category: String? = null
+    ) : AnalyticsEvent() {
+        override val eventName = AnalyticsManager.EVENT_SEARCH_PERFORMED
+
+        override fun toBundle() = Bundle().apply {
+            putString(AnalyticsManager.PARAM_SEARCH_TERM, query)
+            putInt("result_count", resultCount)
+            category?.let { putString("category", it) }
+        }
+    }
+
     data class FilterEvent(
         val filterType: String,
         val filterValue: String,
-        val resultCount: Int = 0,
         val screen: String
-    ) : AnalyticsEvent()
-    
-    // 💝 ENGAGEMENT EVENTS
-    data class FavoriteEvent(
-        val action: FavoriteAction,
-        val contentType: String,
-        val contentId: String,
-        val contentName: String
-    ) : AnalyticsEvent()
-    
-    data class ShareEvent(
-        val contentType: String,
-        val contentId: String,
-        val shareMethod: String,
-        val contentTitle: String? = null
-    ) : AnalyticsEvent()
-    
-    // ⚡ PERFORMANCE EVENTS
+    ) : AnalyticsEvent() {
+        override val eventName = AnalyticsManager.EVENT_FILTER_APPLIED
+
+        override fun toBundle() = Bundle().apply {
+            putString(AnalyticsManager.PARAM_FILTER_TYPE, filterType)
+            putString("filter_value", filterValue)
+            putString("screen", screen)
+        }
+    }
+
+    // 💾 Data & Sync Events
+    data class DataSyncEvent(
+        val action: SyncAction,
+        val syncType: String = "full",
+        val durationMs: Long? = null,
+        val itemsCount: Int? = null,
+        val success: Boolean = true,
+        val errorType: String? = null
+    ) : AnalyticsEvent() {
+        override val eventName = when (action) {
+            SyncAction.STARTED -> AnalyticsManager.EVENT_DATA_SYNC_STARTED
+            SyncAction.COMPLETED -> AnalyticsManager.EVENT_DATA_SYNC_COMPLETED
+            SyncAction.FAILED -> AnalyticsManager.EVENT_DATA_SYNC_FAILED
+        }
+
+        override fun toBundle() = Bundle().apply {
+            putString("sync_type", syncType)
+            putBoolean(AnalyticsManager.PARAM_SUCCESS, success)
+            durationMs?.let { putLong("duration_ms", it) }
+            itemsCount?.let { putInt("items_synced", it) }
+            errorType?.let { putString(AnalyticsManager.PARAM_ERROR_TYPE, it) }
+            putLong("timestamp", System.currentTimeMillis())
+        }
+    }
+
+    // ⚡ Performance Events
     data class PerformanceEvent(
-        val type: PerformanceType,
+        val eventType: PerformanceType,
         val durationMs: Long,
-        val success: Boolean,
-        val details: Map<String, Any> = emptyMap()
-    ) : AnalyticsEvent()
-    
-    // 📱 USER BEHAVIOR EVENTS
-    data class UserInteractionEvent(
-        val action: String,
-        val element: String,
-        val screen: String,
-        val value: String? = null
-    ) : AnalyticsEvent()
-    
-    // 🔥 ERROR EVENTS
-    data class ErrorEvent(
-        val errorType: String,
-        val errorMessage: String,
-        val screen: String,
-        val action: String? = null,
-        val severity: ErrorSeverity = ErrorSeverity.MEDIUM
-    ) : AnalyticsEvent()
+        val context: String? = null
+    ) : AnalyticsEvent() {
+        override val eventName = when (eventType) {
+            PerformanceType.APP_STARTUP -> AnalyticsManager.EVENT_APP_STARTUP_TIME
+            PerformanceType.IMAGE_LOAD -> AnalyticsManager.EVENT_IMAGE_LOAD_TIME
+            PerformanceType.API_RESPONSE -> AnalyticsManager.EVENT_API_RESPONSE_TIME
+        }
+
+        override fun toBundle() = Bundle().apply {
+            putLong(AnalyticsManager.PARAM_LOAD_TIME_MS, durationMs)
+            context?.let { putString("context", it) }
+        }
+    }
+
+    // 📱 Screen View Event
+    data class ScreenViewEvent(
+        val screenName: String,
+        val screenClass: String? = null
+    ) : AnalyticsEvent() {
+        override val eventName = "screen_view"
+
+        override fun toBundle() = Bundle().apply {
+            putString("screen_name", screenName)
+            putString("screen_class", screenClass ?: screenName)
+        }
+    }
 }
 
-// 🏀 MATCH ACTIONS
-enum class MatchAction {
-    VIEWED,
-    LIVE_SCORE_CHECKED,
-    DETAILS_EXPANDED,
-    STATS_VIEWED,
-    FAVORITED,
-    SHARED
-}
-
-// 👥 TEAM ACTIONS  
-enum class TeamAction {
-    VIEWED,
-    ROSTER_ACCESSED,
-    STATS_VIEWED,
-    MATCHES_VIEWED,
-    FAVORITED,
-    SHARED
-}
-
-// 🏃 PLAYER ACTIONS
-enum class PlayerAction {
-    VIEWED,
-    STATS_VIEWED,
-    IMAGE_VIEWED,
-    PROFILE_ACCESSED,
-    SHARED
-}
-
-// 💾 DATA ACTIONS
-enum class DataAction {
-    SYNC_STARTED,
-    SYNC_COMPLETED,
-    SYNC_FAILED,
-    CACHE_HIT,
-    CACHE_MISS,
-    OFFLINE_ACCESS
-}
-
-// 💝 FAVORITE ACTIONS
-enum class FavoriteAction {
-    ADDED,
-    REMOVED,
-    VIEWED_LIST
-}
-
-// ⚡ PERFORMANCE TYPES
-enum class PerformanceType {
-    APP_STARTUP,
-    SCREEN_LOAD,
-    IMAGE_LOAD,
-    API_CALL,
-    DATABASE_QUERY,
-    NETWORK_REQUEST
-}
-
-// 🚨 ERROR SEVERITY
-enum class ErrorSeverity {
-    LOW,
-    MEDIUM,
-    HIGH,
-    CRITICAL
-}
+// Action Enums
+enum class MatchAction { VIEWED, FAVORITED, LIVE_SCORE_VIEWED }
+enum class TeamAction { VIEWED, FAVORITED, ROSTER_VIEWED }
+enum class PlayerAction { VIEWED, STATS_VIEWED }
+enum class SyncAction { STARTED, COMPLETED, FAILED }
+enum class PerformanceType { APP_STARTUP, IMAGE_LOAD, API_RESPONSE }
