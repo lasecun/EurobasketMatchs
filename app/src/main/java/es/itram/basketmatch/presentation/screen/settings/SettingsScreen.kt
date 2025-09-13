@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
@@ -28,6 +29,7 @@ fun SettingsScreen(
     onSyncSettingsClick: () -> Unit,
     onFavoritesClick: () -> Unit,
     onNotificationsClick: () -> Unit,
+    onContactClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -169,6 +171,52 @@ fun SettingsScreen(
                 )
             }
             
+
+            item {
+                // Sección de Soporte
+                ListItem(
+                    headlineContent = {
+                        Text(
+                            text = "Soporte",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    },
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+            }
+
+            item {
+                // Contacto - Nueva opción
+                ListItem(
+                    headlineContent = {
+                        Text(
+                            text = "Contacto",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                    },
+                    supportingContent = {
+                        Text(
+                            text = "Obtén ayuda y reporta problemas",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Default.Email,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.secondary
+                        )
+                    },
+                    modifier = Modifier.clickable { onContactClick() },
+                    colors = ListItemDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
+                )
+            }
             item {
                 // Spacer flexible para empujar la versión al final
                 Spacer(modifier = Modifier.height(48.dp))
@@ -240,7 +288,8 @@ private fun SettingsScreenPreview() {
             onBackClick = {},
             onSyncSettingsClick = {},
             onFavoritesClick = {},
-            onNotificationsClick = {}
+            onNotificationsClick = {},
+            onContactClick = {}
         )
     }
 }

@@ -320,4 +320,22 @@ class AnalyticsManager @Inject constructor(
     fun logCustomEvent(eventName: String, bundle: Bundle) {
         firebaseAnalytics.logEvent(eventName, bundle)
     }
+
+    /**
+     * 🚨 Track error events
+     */
+    fun trackError(errorType: String, errorMessage: String, additionalData: Map<String, String> = emptyMap()) {
+        val bundle = Bundle().apply {
+            putString(PARAM_ERROR_TYPE, errorType)
+            putString("error_message", errorMessage)
+            putLong("timestamp", System.currentTimeMillis())
+            additionalData.forEach { (key, value) ->
+                putString(key, value)
+            }
+        }
+        firebaseAnalytics.logEvent("app_error", bundle)
+
+        // También reportar a Crashlytics
+        recordException(Exception("$errorType: $errorMessage"), additionalData)
+    }
 }
