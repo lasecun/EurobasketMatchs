@@ -144,7 +144,6 @@ class CalendarViewModel @Inject constructor(
     }
 
     fun selectDate(date: LocalDate) {
-        val previousDate = _selectedDate.value
         _selectedDate.value = if (_selectedDate.value == date) null else date
         
         // 📊 Analytics: Track date selection

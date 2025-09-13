@@ -32,7 +32,6 @@ class DataSyncService @Inject constructor(
     
     companion object {
         private const val TAG = "DataSyncService"
-        private const val PREFS_NAME = "euroleague_data_prefs"
         private const val KEY_LAST_SYNC = "last_sync_timestamp"
         private const val KEY_FIRST_LAUNCH = "is_first_launch"
         private const val KEY_DATA_POPULATED = "data_populated"

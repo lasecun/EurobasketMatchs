@@ -14,6 +14,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.Manifest
+import android.os.Build
+import androidx.annotation.RequiresApi
 import es.itram.basketmatch.BuildConfig
 import es.itram.basketmatch.presentation.viewmodel.NotificationSettingsViewModel
 
@@ -25,6 +30,26 @@ fun NotificationSettingsScreen(
 ) {
     val context = LocalContext.current
     val settings by viewModel.notificationSettings.collectAsState()
+    
+    // Launcher para solicitar permisos de notificación
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Permiso concedido, continuar con la configuración
+        } else {
+            // Permiso denegado, mostrar mensaje o desactivar configuración
+        }
+    }
+    
+    // Collector para el evento de solicitud de permisos
+    LaunchedEffect(Unit) {
+        viewModel.requestPermissionEvent.collect {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
     
     Scaffold(
         topBar = {
@@ -126,16 +151,16 @@ fun NotificationSettingsScreen(
                     )
                     
                     if (settings.matchRemindersEnabled) {
-                        Divider(modifier = Modifier.padding(vertical = 8.dp))
-                        
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
                         ReminderTimeSetting(
                             currentTime = settings.reminderTimeMinutes,
                             onTimeChange = { viewModel.setReminderTime(it) }
                         )
                     }
                     
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
-                    
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
                     NotificationSwitchSetting(
                         title = "Resultados de Partidos",
                         description = "Notificaciones cuando terminen los partidos de tus equipos favoritos",
