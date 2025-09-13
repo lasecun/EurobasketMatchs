@@ -2,220 +2,193 @@ package es.itram.basketmatch.analytics.tracking
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.ViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
 import es.itram.basketmatch.analytics.AnalyticsManager
+import es.itram.basketmatch.analytics.events.AnalyticsEvent
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
- * 📱 Screen Tracker - Sistema automático de tracking de pantallas
- * 
- * Proporciona tracking automático de:
- * - Screen views y tiempo de permanencia
- * - User journey y navigation patterns
- * - Session analytics y engagement metrics
- * - Performance de pantallas individuales
- * 
- * Optimizado para SEO móvil y analytics de UX.
+ * 📱 Screen Tracker - Tracking automático de pantallas en Compose
+ *
+ * Facilita el tracking de screen views en aplicaciones Jetpack Compose:
+ * - 🎯 Tracking automático al entrar/salir de pantallas
+ * - ⏱️ Medición de tiempo en pantalla para engagement
+ * - 🔄 Lifecycle-aware para precisión
+ * - 📊 Integración seamless con AnalyticsManager
  */
-@Singleton
+@HiltViewModel
 class ScreenTracker @Inject constructor(
     private val analyticsManager: AnalyticsManager
-) {
-    
-    private var currentScreen: String? = null
-    private var screenStartTime: Long = 0L
-    private val screenSessions = mutableMapOf<String, ScreenSession>()
-    
+) : ViewModel() {
+
+    private val screenStartTimes = mutableMapOf<String, Long>()
+
     /**
-     * 📊 Composable para tracking automático de screen views
-     * Uso: TrackScreen("team_detail") { /* contenido de la pantalla */ }
+     * Composable que trackea automáticamente una pantalla
+     *
+     * Uso:
+     * ```kotlin
+     * @Composable
+     * fun TeamDetailScreen(teamCode: String) {
+     *     val screenTracker = hiltViewModel<ScreenTracker>()
+     *
+     *     screenTracker.TrackScreen(
+     *         screenName = AnalyticsManager.SCREEN_TEAM_DETAIL,
+     *         screenClass = "TeamDetailScreen"
+     *     ) {
+     *         // Contenido de la pantalla
+     *         TeamDetailContent(teamCode = teamCode)
+     *     }
+     * }
+     * ```
      */
     @Composable
     fun TrackScreen(
         screenName: String,
         screenClass: String? = null,
-        lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
         content: @Composable () -> Unit
     ) {
-        val currentOnStart by rememberUpdatedState(newValue = {
-            onScreenStart(screenName, screenClass)
-        })
-        
-        val currentOnStop by rememberUpdatedState(newValue = {
-            onScreenStop(screenName)
-        })
-        
-        DisposableEffect(screenName, lifecycleOwner) {
-            val observer = LifecycleEventObserver { _, event ->
-                when (event) {
-                    Lifecycle.Event.ON_START -> currentOnStart()
-                    Lifecycle.Event.ON_STOP -> currentOnStop()
-                    else -> {}
-                }
-            }
-            
-            lifecycleOwner.lifecycle.addObserver(observer)
-            
+        DisposableEffect(screenName) {
+            // Registrar entrada a la pantalla
+            onScreenEnter(screenName, screenClass)
+
             onDispose {
-                lifecycleOwner.lifecycle.removeObserver(observer)
-                onScreenStop(screenName)
+                // Registrar salida de la pantalla
+                onScreenExit(screenName)
             }
         }
         
+        // Renderizar el contenido
         content()
     }
-    
-    /**
-     * 🎯 Manual screen tracking para casos específicos
-     */
-    fun trackScreenView(
-        screenName: String,
-        screenClass: String? = null,
-        previousScreen: String? = currentScreen
-    ) {
-        analyticsManager.trackScreenView(screenName, screenClass)
-        
-        // Trackear tiempo en pantalla anterior si existe
-        if (previousScreen != null && screenStartTime > 0) {
-            val timeSpent = System.currentTimeMillis() - screenStartTime
-            trackScreenTimeSpent(previousScreen, timeSpent)
-        }
-        
-        currentScreen = screenName
-        screenStartTime = System.currentTimeMillis()
-    }
-    
-    private fun onScreenStart(screenName: String, screenClass: String?) {
-        val previousScreen = currentScreen
-        currentScreen = screenName
-        screenStartTime = System.currentTimeMillis()
-        
-        // Inicializar o actualizar sesión de pantalla
-        val session = screenSessions.getOrPut(screenName) { ScreenSession(screenName) }
-        session.startSession()
-        
-        analyticsManager.trackScreenView(screenName, screenClass)
-        
-        // Log para debugging (solo en desarrollo)
-        analyticsManager.logMessage("Screen started: $screenName")
-    }
-    
-    private fun onScreenStop(screenName: String) {
-        if (currentScreen == screenName && screenStartTime > 0) {
-            val timeSpent = System.currentTimeMillis() - screenStartTime
-            trackScreenTimeSpent(screenName, timeSpent)
-            
-            // Actualizar sesión de pantalla
-            screenSessions[screenName]?.endSession(timeSpent)
-        }
-    }
-    
-    private fun trackScreenTimeSpent(screenName: String, timeSpentMs: Long) {
-        if (timeSpentMs > 0) {
-            analyticsManager.firebaseAnalytics.logEvent("screen_time_spent") {
-                param("screen_name", screenName)
-                param("time_spent_ms", timeSpentMs)
-                param("time_spent_seconds", timeSpentMs / 1000)
-            }
-        }
-    }
-    
-    /**
-     * 📊 Obtener métricas de sesiones de pantalla
-     */
-    fun getScreenMetrics(): Map<String, ScreenMetrics> {
-        return screenSessions.mapValues { (_, session) ->
-            session.getMetrics()
-        }
-    }
-    
-    /**
-     * 🔄 Reset tracking (útil para testing)
-     */
-    fun reset() {
-        currentScreen = null
-        screenStartTime = 0L
-        screenSessions.clear()
-    }
-}
 
-/**
- * 📱 Sesión de pantalla individual
- */
-private class ScreenSession(val screenName: String) {
-    private var sessionCount = 0
-    private var totalTimeMs = 0L
-    private var lastStartTime = 0L
-    private var maxTimeMs = 0L
-    private var minTimeMs = Long.MAX_VALUE
-    
-    fun startSession() {
-        sessionCount++
-        lastStartTime = System.currentTimeMillis()
+    /**
+     * Método manual para trackear entrada a pantalla
+     * Útil para casos donde no se puede usar el Composable automático
+     */
+    fun trackScreenEnter(screenName: String, screenClass: String? = null) {
+        onScreenEnter(screenName, screenClass)
     }
-    
-    fun endSession(durationMs: Long) {
-        if (durationMs > 0) {
-            totalTimeMs += durationMs
-            maxTimeMs = maxOf(maxTimeMs, durationMs)
-            minTimeMs = minOf(minTimeMs, durationMs)
-        }
+
+    /**
+     * Método manual para trackear salida de pantalla
+     */
+    fun trackScreenExit(screenName: String) {
+        onScreenExit(screenName)
     }
-    
-    fun getMetrics(): ScreenMetrics {
-        return ScreenMetrics(
-            screenName = screenName,
-            sessionCount = sessionCount,
-            totalTimeMs = totalTimeMs,
-            averageTimeMs = if (sessionCount > 0) totalTimeMs / sessionCount else 0L,
-            maxTimeMs = if (maxTimeMs > 0) maxTimeMs else 0L,
-            minTimeMs = if (minTimeMs != Long.MAX_VALUE) minTimeMs else 0L
+
+    private fun onScreenEnter(screenName: String, screenClass: String? = null) {
+        // Registrar tiempo de inicio
+        screenStartTimes[screenName] = System.currentTimeMillis()
+
+        // Enviar evento de screen view
+        analyticsManager.trackScreenView(screenName, screenClass)
+        
+        // También trackear con el sistema de eventos tipados
+        analyticsManager.firebaseAnalytics.logEvent(
+            AnalyticsEvent.ScreenViewEvent(screenName, screenClass).eventName,
+            AnalyticsEvent.ScreenViewEvent(screenName, screenClass).toBundle()
         )
     }
-}
 
-/**
- * 📊 Métricas de pantalla
- */
-data class ScreenMetrics(
-    val screenName: String,
-    val sessionCount: Int,
-    val totalTimeMs: Long,
-    val averageTimeMs: Long,
-    val maxTimeMs: Long,
-    val minTimeMs: Long
-)
+    private fun onScreenExit(screenName: String) {
+        // Calcular tiempo en pantalla
+        screenStartTimes[screenName]?.let { startTime ->
+            val timeSpent = System.currentTimeMillis() - startTime
 
-/**
- * 🎯 Extension function para logging de eventos con parámetros
- */
-private inline fun com.google.firebase.analytics.FirebaseAnalytics.logEvent(
-    name: String,
-    block: android.os.Bundle.() -> Unit
-) {
-    val bundle = android.os.Bundle().apply(block)
-    logEvent(name, bundle)
-}
+            // Trackear tiempo en pantalla (solo si es significativo > 1 segundo)
+            if (timeSpent > 1000) {
+                trackScreenEngagement(screenName, timeSpent)
+            }
 
-private fun android.os.Bundle.param(key: String, value: String) {
-    putString(key, value)
-}
+            // Limpiar el tiempo de inicio
+            screenStartTimes.remove(screenName)
+        }
+    }
 
-private fun android.os.Bundle.param(key: String, value: Long) {
-    putLong(key, value)
-}
+    private fun trackScreenEngagement(screenName: String, timeSpentMs: Long) {
+        val bundle = android.os.Bundle().apply {
+            putString("screen_name", screenName)
+            putLong("time_spent_ms", timeSpentMs)
+            putLong("time_spent_seconds", timeSpentMs / 1000)
+        }
 
-private fun android.os.Bundle.param(key: String, value: Int) {
-    putInt(key, value)
-}
+        analyticsManager.firebaseAnalytics.logEvent("screen_engagement", bundle)
+    }
 
-private fun android.os.Bundle.param(key: String, value: Boolean) {
-    putBoolean(key, value)
+    /**
+     * Métodos de conveniencia para pantallas específicas
+     */
+    @Composable
+    fun TrackHomeScreen(content: @Composable () -> Unit) {
+        TrackScreen(
+            screenName = AnalyticsManager.SCREEN_HOME,
+            screenClass = "HomeScreen",
+            content = content
+        )
+    }
+
+    @Composable
+    fun TrackMatchDetailScreen(matchId: String, content: @Composable () -> Unit) {
+        TrackScreen(
+            screenName = AnalyticsManager.SCREEN_MATCH_DETAIL,
+            screenClass = "MatchDetailScreen",
+            content = content
+        )
+    }
+
+    @Composable
+    fun TrackTeamDetailScreen(teamCode: String, content: @Composable () -> Unit) {
+        TrackScreen(
+            screenName = AnalyticsManager.SCREEN_TEAM_DETAIL,
+            screenClass = "TeamDetailScreen",
+            content = content
+        )
+    }
+
+    @Composable
+    fun TrackPlayerDetailScreen(playerCode: String, content: @Composable () -> Unit) {
+        TrackScreen(
+            screenName = AnalyticsManager.SCREEN_PLAYER_DETAIL,
+            screenClass = "PlayerDetailScreen",
+            content = content
+        )
+    }
+
+    @Composable
+    fun TrackMatchesScreen(content: @Composable () -> Unit) {
+        TrackScreen(
+            screenName = AnalyticsManager.SCREEN_MATCHES,
+            screenClass = "MatchesScreen",
+            content = content
+        )
+    }
+
+    @Composable
+    fun TrackTeamsScreen(content: @Composable () -> Unit) {
+        TrackScreen(
+            screenName = AnalyticsManager.SCREEN_TEAMS,
+            screenClass = "TeamsScreen",
+            content = content
+        )
+    }
+
+    @Composable
+    fun TrackStandingsScreen(content: @Composable () -> Unit) {
+        TrackScreen(
+            screenName = AnalyticsManager.SCREEN_STANDINGS,
+            screenClass = "StandingsScreen",
+            content = content
+        )
+    }
+
+    @Composable
+    fun TrackSettingsScreen(content: @Composable () -> Unit) {
+        TrackScreen(
+            screenName = AnalyticsManager.SCREEN_SETTINGS,
+            screenClass = "SettingsScreen",
+            content = content
+        )
+    }
 }

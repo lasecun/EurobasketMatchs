@@ -29,7 +29,7 @@ class NotificationSettingsViewModel @Inject constructor(
 
     private val _notificationSettings = MutableStateFlow(
         NotificationSettings(
-            notificationsEnabled = true,
+            notificationsEnabled = false, // Cambiado a false por defecto
             matchRemindersEnabled = true,
             resultNotificationsEnabled = true,
             teamNewsEnabled = false,
