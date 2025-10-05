@@ -10,7 +10,7 @@
 .DS_Store
 
 # Firebase sensitive files
-google-services.json
+app/google-services.json
 app/google-services.json
 /build
 /app/build
