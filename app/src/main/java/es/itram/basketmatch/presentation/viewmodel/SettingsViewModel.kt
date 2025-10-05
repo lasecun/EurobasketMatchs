@@ -109,7 +109,6 @@ class SettingsViewModel @Inject constructor(
                         putString("source", "sync_settings")
                         putInt("teams_synced", generationResult.teamsGenerated)
                         putInt("matches_synced", generationResult.matchesGenerated)
-                        putLong("sync_timestamp", generationResult.generationTimestamp)
                     })
 
                     // Limpiar mensaje después de un tiempo

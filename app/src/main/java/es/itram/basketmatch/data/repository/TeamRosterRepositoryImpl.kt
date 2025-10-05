@@ -3,8 +3,8 @@ package es.itram.basketmatch.data.repository
 import android.util.Log
 import es.itram.basketmatch.data.datasource.local.dao.PlayerDao
 import es.itram.basketmatch.data.datasource.local.dao.TeamRosterDao
-import es.itram.basketmatch.data.datasource.remote.dto.PlayerDto
-import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueJsonApiScraper
+import es.itram.basketmatch.data.datasource.remote.EuroLeagueOfficialApiDataSource
+import es.itram.basketmatch.data.mapper.SimplePlayerDto
 import es.itram.basketmatch.data.mapper.PlayerMapper
 import es.itram.basketmatch.data.mapper.TeamRosterMapper
 import es.itram.basketmatch.domain.model.PlayerPosition
@@ -20,19 +20,23 @@ import javax.inject.Singleton
 
 /**
  * Implementación del repositorio para roster de equipos
- * Con cache inteligente y logs mejorados para distinguir entre datos de red y cache
+ *
+ * ACTUALIZADO: Ahora usa únicamente la API oficial de EuroLeague
+ * ✅ Sin scraper web
+ * ✅ Datos oficiales de plantillas
+ * ✅ Cache inteligente mejorado
  */
 @Singleton
 class TeamRosterRepositoryImpl @Inject constructor(
-    private val apiScraper: EuroLeagueJsonApiScraper,
+    private val officialApiDataSource: EuroLeagueOfficialApiDataSource,
     private val teamRosterDao: TeamRosterDao,
     private val playerDao: PlayerDao,
     private val matchRepository: MatchRepository
 ) : TeamRosterRepository {
-    
+
     companion object {
         private const val TAG = "TeamRosterRepository"
-        private const val CACHE_VALIDITY_HOURS = 2 // Cache válido por 2 horas
+        private const val CACHE_VALIDITY_HOURS = 24L // Cache válido por 24 horas
     }
     
     // Cache en memoria para logos de equipos para evitar búsquedas repetidas
@@ -63,19 +67,25 @@ class TeamRosterRepositoryImpl @Inject constructor(
             
             // Ejecutar roster y logo en paralelo para optimizar velocidad
             coroutineScope {
-                val playersDeferred = async { apiScraper.getTeamRoster(teamTla, "E2025") }
+                val playersDeferred = async { officialApiDataSource.getTeamRoster(teamTla, "E2025") }
                 val logoDeferred = async { getTeamLogoFromFeeds(teamTla) }
                 
-                val playersDto = playersDeferred.await()
+                val playersResult = playersDeferred.await()
                 val teamLogoUrl = logoDeferred.await()
                 
-                val roster = convertToTeamRoster(teamTla, playersDto, season, teamLogoUrl)
-                
-                // Guardar en cache local
-                saveRosterToCache(roster)
-                
-                Log.d(TAG, "🌐 [NETWORK] ✅ Roster obtenido y guardado en cache para $teamTla (${roster.players.size} jugadores)")
-                Result.success(roster)
+                if (playersResult.isSuccess) {
+                    val playersDto = playersResult.getOrNull() ?: emptyList()
+                    val roster = convertToTeamRoster(teamTla, playersDto, season, teamLogoUrl)
+
+                    // Guardar en cache local
+                    saveRosterToCache(roster)
+
+                    Log.d(TAG, "🌐 [NETWORK] ✅ Roster obtenido y guardado en cache para $teamTla (${roster.players.size} jugadores)")
+                    Result.success(roster)
+                } else {
+                    Log.e(TAG, "❌ Error obteniendo roster desde API: ${playersResult.exceptionOrNull()?.message}")
+                    Result.failure(playersResult.exceptionOrNull() ?: Exception("Error desconocido"))
+                }
             }
             
         } catch (e: Exception) {
@@ -139,19 +149,25 @@ class TeamRosterRepositoryImpl @Inject constructor(
             
             // Ejecutar roster y logo en paralelo para optimizar velocidad
             coroutineScope {
-                val playersDeferred = async { apiScraper.getTeamRoster(teamTla, "E2025") }
+                val playersDeferred = async { officialApiDataSource.getTeamRoster(teamTla, "E2025") }
                 val logoDeferred = async { getTeamLogoFromFeeds(teamTla) }
                 
-                val playersDto = playersDeferred.await()
+                val playersResult = playersDeferred.await()
                 val teamLogoUrl = logoDeferred.await()
                 
-                val roster = convertToTeamRoster(teamTla, playersDto, season, teamLogoUrl)
-                
-                // Guardar en cache local (reemplaza datos existentes)
-                saveRosterToCache(roster)
-                
-                Log.d(TAG, "🌐 [NETWORK] ✅ Roster refrescado y guardado en cache para $teamTla (${roster.players.size} jugadores)")
-                Result.success(roster)
+                if (playersResult.isSuccess) {
+                    val playersDto = playersResult.getOrNull() ?: emptyList()
+                    val roster = convertToTeamRoster(teamTla, playersDto, season, teamLogoUrl)
+
+                    // Guardar en cache local (reemplaza datos existentes)
+                    saveRosterToCache(roster)
+
+                    Log.d(TAG, "🌐 [NETWORK] ✅ Roster refrescado y guardado en cache para $teamTla (${roster.players.size} jugadores)")
+                    Result.success(roster)
+                } else {
+                    Log.e(TAG, "❌ Error refrescando roster desde API: ${playersResult.exceptionOrNull()?.message}")
+                    Result.failure(playersResult.exceptionOrNull() ?: Exception("Error desconocido"))
+                }
             }
             
         } catch (e: Exception) {
@@ -190,21 +206,21 @@ class TeamRosterRepositoryImpl @Inject constructor(
      */
     private suspend fun convertToTeamRoster(
         teamTla: String, 
-        playersDto: List<PlayerDto>, 
+        playersDto: List<SimplePlayerDto>,
         season: String,
         logoUrl: String? = null
     ): TeamRoster {
         Log.d(TAG, "🔄 Convirtiendo ${playersDto.size} jugadores de DTO a domain model para $teamTla")
         
-        // Filtrar primero y luego mapear para reducir trabajo
-        val validPlayerDtos = playersDto.filter { it.type == "J" }
-        Log.d(TAG, "🏀 ${validPlayerDtos.size} jugadores válidos después del filtro")
-        
-        val players = validPlayerDtos.mapNotNull { playerDto ->
+        // Los SimplePlayerDto ya vienen filtrados desde la API oficial
+        Log.d(TAG, "🏀 ${playersDto.size} jugadores válidos desde API oficial")
+
+        val players = playersDto.mapNotNull { playerDto ->
             try {
-                PlayerMapper.fromDto(playerDto, teamTla)
+                // Convertir SimplePlayerDto a Player usando el método correcto
+                PlayerMapper.fromSimpleDto(playerDto, teamTla)
             } catch (e: Exception) {
-                Log.w(TAG, "⚠️ Error convirtiendo jugador ${playerDto.person.name}: ${e.message}")
+                Log.w(TAG, "⚠️ Error convirtiendo jugador ${playerDto.name}: ${e.message}")
                 null
             }
         }
@@ -217,7 +233,7 @@ class TeamRosterRepositoryImpl @Inject constructor(
             season = season,
             players = players.sortedBy { it.jersey ?: 999 },
             coaches = emptyList(),
-            logoUrl = logoUrl // Solo usar logoUrl obtenido desde getTeamLogoFromFeeds, sin fallback obsoleto
+            logoUrl = logoUrl
         ).also { roster ->
             Log.d(TAG, "🔗 TeamRoster creado con logoUrl: ${roster.logoUrl ?: "null (no disponible)"} para equipo: ${roster.teamName}")
         }

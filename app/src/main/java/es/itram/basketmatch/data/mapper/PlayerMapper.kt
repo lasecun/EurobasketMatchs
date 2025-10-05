@@ -90,6 +90,40 @@ object PlayerMapper {
     }
     
     /**
+     * Convierte SimplePlayerDto a Player (modelo de dominio)
+     * Este método funciona con los DTOs simplificados de la API oficial
+     */
+    suspend fun fromSimpleDto(dto: es.itram.basketmatch.data.mapper.SimplePlayerDto, teamCode: String): Player {
+        val playerCode = dto.code ?: generatePlayerCode(
+            dto.name,
+            dto.lastName,
+            dto.dorsal?.toString()
+        )
+
+        // Usar la imagen que viene en el SimplePlayerDto
+        val imageUrl = dto.imageUrl ?: generatePlaceholderImageUrl(dto.name)
+
+        return Player(
+            code = playerCode,
+            name = dto.firstName ?: dto.name,
+            surname = dto.lastName ?: "",
+            fullName = dto.name,
+            jersey = dto.dorsal,
+            position = PlayerPosition.fromString(dto.position),
+            height = dto.height,
+            weight = null, // No disponible en SimplePlayerDto
+            dateOfBirth = null, // No disponible en SimplePlayerDto
+            placeOfBirth = dto.country,
+            nationality = dto.country,
+            experience = null, // No disponible en SimplePlayerDto
+            profileImageUrl = imageUrl,
+            isActive = true, // Asumimos que están activos
+            isStarter = false, // No disponible en SimplePlayerDto
+            isCaptain = false  // No disponible en SimplePlayerDto
+        )
+    }
+
+    /**
      * Convierte PlayerDto a Player (modelo de dominio)
      * Obtiene la imagen del jugador desde la web oficial o genera un placeholder
      */

@@ -25,6 +25,9 @@ interface MatchDao {
     @Query("SELECT COUNT(*) FROM matches")
     suspend fun getMatchCount(): Int
 
+    @Query("SELECT COUNT(*) FROM matches")
+    fun getMatchCountSync(): Int
+
     @Query("SELECT * FROM matches WHERE DATE(dateTime) = DATE(:date) ORDER BY dateTime ASC")
     fun getMatchesByDate(date: LocalDateTime): Flow<List<MatchEntity>>
 
@@ -40,11 +43,20 @@ interface MatchDao {
     @Query("SELECT * FROM matches WHERE id = :matchId")
     fun getMatchById(matchId: String): Flow<MatchEntity?>
 
+    @Query("SELECT * FROM matches WHERE homeScore IS NULL OR awayScore IS NULL OR venue IS NULL ORDER BY dateTime ASC")
+    suspend fun getMatchesWithoutDetails(): List<MatchEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(matches: List<MatchEntity>)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMatches(matches: List<MatchEntity>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMatch(match: MatchEntity)
+
+    @androidx.room.Update
+    suspend fun update(match: MatchEntity)
 
     @Query("DELETE FROM matches")
     suspend fun deleteAllMatches()

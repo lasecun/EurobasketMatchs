@@ -25,7 +25,6 @@ import es.itram.basketmatch.domain.service.DataSyncService
  */
 @Composable
 fun SyncProgressIndicator(
-    syncProgress: DataSyncService.SyncProgress,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -41,40 +40,10 @@ fun SyncProgressIndicator(
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        // Mensaje principal
-        Text(
-            text = syncProgress.message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center
-        )
+
         
         Spacer(modifier = Modifier.height(12.dp))
         
-        // Progreso detallado si hay información de rondas
-        if (syncProgress.totalRounds > 0) {
-            // Barra de progreso
-            LinearProgressIndicator(
-                progress = { 
-                    if (syncProgress.totalRounds > 0) {
-                        syncProgress.currentRound.toFloat() / syncProgress.totalRounds.toFloat()
-                    } else {
-                        0f
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.primary,
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Texto de progreso
-            Text(
-                text = stringResource(R.string.sync_progress, syncProgress.currentRound, syncProgress.totalRounds),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center
-            )
-        }
+
     }
 }

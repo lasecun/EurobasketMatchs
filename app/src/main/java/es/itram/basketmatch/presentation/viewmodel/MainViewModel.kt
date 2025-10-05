@@ -13,14 +13,12 @@ import es.itram.basketmatch.domain.usecase.GetAllMatchesUseCase
 import es.itram.basketmatch.domain.usecase.GetAllTeamsUseCase
 import es.itram.basketmatch.domain.usecase.ManageStaticDataUseCase
 import es.itram.basketmatch.domain.service.DataSyncService
-import es.itram.basketmatch.domain.service.SyncResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
@@ -58,9 +56,6 @@ class MainViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
     
-    // Estado del progreso de sincronización
-    val syncProgress: StateFlow<DataSyncService.SyncProgress> = dataSyncService.syncProgress
-    
     private val _syncMessage = MutableStateFlow<String?>(null)
     val syncMessage: StateFlow<String?> = _syncMessage.asStateFlow()
 
@@ -92,27 +87,7 @@ class MainViewModel @Inject constructor(
             _error.value = null
             
             try {
-                // Verificar si necesitamos sincronizar
-                if (dataSyncService.isSyncNeeded()) {
-                    Log.d("MainViewModel", "🔄 Sincronización necesaria - obteniendo datos desde API...")
-                    _isSyncing.value = true
-                    _syncMessage.value = "Obteniendo datos actualizados..."
-                    
-                    val syncResult = dataSyncService.syncAllData()
-                    
-                    if (syncResult.isSuccess) {
-                        val result = syncResult.getOrNull()!!
-                        Log.d("MainViewModel", "✅ Sincronización exitosa: ${result.teamsCount} equipos, ${result.matchesCount} partidos")
-                        _syncMessage.value = "Datos actualizados: ${result.teamsCount} equipos, ${result.matchesCount} partidos"
-                    } else {
-                        Log.w("MainViewModel", "⚠️ Error en sincronización, usando datos locales: ${syncResult.exceptionOrNull()?.message}")
-                        // No establecer error aquí, cargar datos locales en su lugar
-                    }
-                    
-                    _isSyncing.value = false
-                } else {
-                    Log.d("MainViewModel", "✅ Datos actuales - cargando desde base de datos local")
-                }
+
                 
                 // Cargar datos desde la base de datos local
                 loadLocalData()
@@ -221,7 +196,6 @@ class MainViewModel @Inject constructor(
                         putString("screen", "home")
                         putInt("teams_generated", generationResult.teamsGenerated)
                         putInt("matches_generated", generationResult.matchesGenerated)
-                        putLong("generation_timestamp", generationResult.generationTimestamp)
                     })
                     
                     // Recargar datos locales
@@ -491,9 +465,7 @@ class MainViewModel @Inject constructor(
                 // Esto asegura que el calendario y "próximo partido" funcionen desde el primer momento
                 loadLocalData()
                 
-                // Verificar si necesitamos sincronizar en segundo plano
-                checkForBackgroundSync()
-                
+
             } catch (e: Exception) {
                 Log.e("MainViewModel", "❌ Error en inicialización, fallback a método tradicional", e)
                 checkAndSyncData()
@@ -501,47 +473,7 @@ class MainViewModel @Inject constructor(
         }
     }
     
-    /**
-     * Verifica si es necesario sincronizar en segundo plano (sin bloquear la UI)
-     */
-    private fun checkForBackgroundSync() {
-        viewModelScope.launch {
-            try {
-                if (dataSyncService.isSyncNeeded()) {
-                    Log.d("MainViewModel", "🔄 Sincronización en segundo plano necesaria...")
-                    _isSyncing.value = true
-                    _syncMessage.value = "Verificando actualizaciones..."
-                    
-                    val syncResult = dataSyncService.syncAllData()
-                    
-                    if (syncResult.isSuccess) {
-                        val result = syncResult.getOrNull()!!
-                        Log.d("MainViewModel", "✅ Sincronización en segundo plano exitosa: ${result.teamsCount} equipos, ${result.matchesCount} partidos")
-                        _syncMessage.value = "Datos actualizados: ${result.teamsCount} equipos, ${result.matchesCount} partidos"
-                        
-                        // Recargar datos después de la sincronización
-                        loadLocalData()
-                    } else {
-                        Log.w("MainViewModel", "⚠️ Error en sincronización de segundo plano: ${syncResult.exceptionOrNull()?.message}")
-                        // No mostrar error, los datos locales ya están cargados
-                    }
-                    
-                    _isSyncing.value = false
-                    
-                    // Limpiar mensaje después de un tiempo
-                    kotlinx.coroutines.delay(3000)
-                    _syncMessage.value = null
-                } else {
-                    Log.d("MainViewModel", "✅ No es necesaria sincronización - datos actuales")
-                }
-            } catch (e: Exception) {
-                Log.e("MainViewModel", "❌ Error en verificación de sincronización de segundo plano", e)
-                _isSyncing.value = false
-                // No mostrar error, los datos locales ya están disponibles
-            }
-        }
-    }
-    
+
     /**
      * Sincronización manual de datos dinámicos
      */

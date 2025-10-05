@@ -2,255 +2,328 @@ package es.itram.basketmatch.domain.service
 
 import android.content.SharedPreferences
 import android.util.Log
+import androidx.core.content.edit
 import es.itram.basketmatch.data.datasource.local.dao.MatchDao
 import es.itram.basketmatch.data.datasource.local.dao.TeamDao
-import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueJsonApiScraper
-import es.itram.basketmatch.data.mapper.MatchMapper
-import es.itram.basketmatch.data.mapper.MatchWebMapper
-import es.itram.basketmatch.data.mapper.TeamMapper
-import es.itram.basketmatch.data.mapper.TeamWebMapper
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.withContext
+import es.itram.basketmatch.data.datasource.local.entity.MatchEntity
+import es.itram.basketmatch.data.datasource.local.entity.TeamEntity
+import es.itram.basketmatch.data.datasource.remote.EuroLeagueRemoteDataSource
+import es.itram.basketmatch.domain.entity.Match
+import es.itram.basketmatch.domain.entity.Team
+import kotlinx.coroutines.*
+import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Servicio centralizado para gestionar la sincronización de datos de EuroLeague
+ * 🏀 Servicio de sincronización simplificado - SOLO API OFICIAL
+ *
+ * Funcionalidades:
+ * ✅ Verificar datos locales al arrancar
+ * ✅ Obtener equipos y calendario de API oficial si no existen
+ * ✅ Enriquecer partidos con estadísticas en hilo secundario
+ * ✅ Eliminado completamente scraper web
  */
 @Singleton
 class DataSyncService @Inject constructor(
-    private val jsonApiScraper: EuroLeagueJsonApiScraper,
+    private val euroLeagueRemoteDataSource: EuroLeagueRemoteDataSource,
     private val teamDao: TeamDao,
     private val matchDao: MatchDao,
-    private val teamMapper: TeamWebMapper,
-    private val matchMapper: MatchWebMapper,
     private val prefs: SharedPreferences
 ) {
-    
+
     companion object {
         private const val TAG = "DataSyncService"
-        private const val KEY_LAST_SYNC = "last_sync_timestamp"
-        private const val KEY_FIRST_LAUNCH = "is_first_launch"
-        private const val KEY_DATA_POPULATED = "data_populated"
-        private const val SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000L // 24 horas
+        private const val PREF_LAST_SYNC = "last_sync_timestamp"
+        private const val PREF_TEAMS_SYNCED = "teams_synced"
+        private const val PREF_MATCHES_SYNCED = "matches_synced"
+        private const val SYNC_INTERVAL_HOURS = 6 // Sincronizar cada 6 horas
     }
-    
-    // Estado del progreso de sincronización
-    private val _syncProgress = MutableStateFlow(SyncProgress())
-    val syncProgress: StateFlow<SyncProgress> = _syncProgress.asStateFlow()
-    
-    data class SyncProgress(
-        val isLoading: Boolean = false,
-        val currentRound: Int = 0,
-        val totalRounds: Int = 38,
-        val message: String = ""
-    )
-    
+
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     /**
-     * Verifica si es necesario sincronizar datos
+     * Inicialización al arrancar la aplicación
+     * Verifica datos locales y obtiene de API si es necesario
      */
-    suspend fun isSyncNeeded(): Boolean {
-        return withContext(Dispatchers.IO) {
-            val isDataPopulated = prefs.getBoolean(KEY_DATA_POPULATED, false)
-            val matchCount = matchDao.getMatchCount()
-            
-            Log.d(TAG, "🔍 Verificando necesidad de sync:")
-            Log.d(TAG, "   - DATA_POPULATED flag: $isDataPopulated")
-            Log.d(TAG, "   - Matches en BD: $matchCount")
-            
-            if (!isDataPopulated || matchCount == 0) {
-                Log.d(TAG, "🆕 Base de datos vacía - sync necesario")
-                return@withContext true
-            }
-            
-            val lastSync = prefs.getLong(KEY_LAST_SYNC, 0)
-            val currentTime = System.currentTimeMillis()
-            val timeSinceLastSync = currentTime - lastSync
-            val hoursSinceLastSync = timeSinceLastSync / (1000 * 60 * 60)
-            
-            Log.d(TAG, "   - Última sync: ${if (lastSync == 0L) "nunca" else "$hoursSinceLastSync horas atrás"}")
-            
-            if (timeSinceLastSync > SYNC_INTERVAL_MS) {
-                Log.d(TAG, "⏰ Hace más de 24h desde última sync - sync necesario")
-                return@withContext true
-            }
-            
-            Log.d(TAG, "✅ Datos locales disponibles y actualizados")
-            false
+    suspend fun initializeAppData() {
+        Log.d(TAG, "🚀 Inicializando datos de la aplicación...")
+
+        try {
+            // 1. Verificar y obtener equipos
+            initializeTeams()
+
+            // 2. Verificar y obtener calendario
+            initializeMatches()
+
+            // 3. Enriquecer partidos en segundo plano
+            enrichMatchesInBackground()
+
+            Log.d(TAG, "✅ Inicialización completada")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error en inicialización: ${e.message}", e)
         }
     }
-    
+
     /**
-     * Sincroniza todos los datos desde la API JSON con progreso
+     * Verifica equipos en base de datos local y los obtiene de API si no existen
      */
-    suspend fun syncAllData(): Result<SyncResult> {
-        return withContext(Dispatchers.IO) {
+    private suspend fun initializeTeams() {
+        Log.d(TAG, "🏀 Verificando equipos locales...")
+
+        val localTeamsCount = teamDao.getTeamCount()
+        val teamsAlreadySynced = prefs.getBoolean(PREF_TEAMS_SYNCED, false)
+
+        if (localTeamsCount == 0 || !teamsAlreadySynced || shouldSync()) {
+            Log.d(TAG, "📥 Obteniendo equipos desde API oficial...")
+
+            val result = euroLeagueRemoteDataSource.getAllTeams()
+            if (result.isSuccess) {
+                val teamDtos = result.getOrNull() ?: emptyList()
+                if (teamDtos.isNotEmpty()) {
+                    // Convertir DTOs web a entidades de dominio y luego a entidades de BD
+                    val teamEntities = mutableListOf<TeamEntity>()
+                    teamDtos.forEach { teamDto ->
+                        val domainTeam = es.itram.basketmatch.data.mapper.TeamWebMapper.toDomain(teamDto)
+                        teamEntities.add(convertTeamToEntity(domainTeam))
+                    }
+                    teamDao.insertAll(teamEntities)
+
+                    // Marcar como sincronizado
+                    prefs.edit {
+                        putBoolean(PREF_TEAMS_SYNCED, true)
+                        putLong(PREF_LAST_SYNC, System.currentTimeMillis())
+                    }
+
+                    Log.d(TAG, "✅ ${teamDtos.size} equipos sincronizados correctamente")
+                } else {
+                    Log.w(TAG, "⚠️ No se obtuvieron equipos de la API")
+                }
+            } else {
+                Log.e(TAG, "❌ Error obteniendo equipos: ${result.exceptionOrNull()?.message}")
+            }
+        } else {
+            Log.d(TAG, "✅ Equipos ya disponibles localmente ($localTeamsCount equipos)")
+        }
+    }
+
+    /**
+     * Verifica partidos en base de datos local y los obtiene de API si no existen
+     */
+    private suspend fun initializeMatches() {
+        Log.d(TAG, "⚽ Verificando partidos locales...")
+
+        val localMatchesCount = matchDao.getMatchCount()
+        val matchesAlreadySynced = prefs.getBoolean(PREF_MATCHES_SYNCED, false)
+
+        if (localMatchesCount == 0 || !matchesAlreadySynced || shouldSync()) {
+            Log.d(TAG, "📥 Obteniendo calendario desde API oficial...")
+
+            val result = euroLeagueRemoteDataSource.getAllMatches()
+            if (result.isSuccess) {
+                val matchDtos = result.getOrNull() ?: emptyList()
+                if (matchDtos.isNotEmpty()) {
+                    // Convertir DTOs web a entidades de dominio y luego a entidades de BD
+                    val matchEntities = mutableListOf<MatchEntity>()
+                    matchDtos.forEach { matchDto ->
+                        val domainMatch = es.itram.basketmatch.data.mapper.MatchWebMapper.toDomain(matchDto)
+                        matchEntities.add(convertMatchToEntity(domainMatch))
+                    }
+                    matchDao.insertAll(matchEntities)
+
+                    // Marcar como sincronizado
+                    prefs.edit {
+                        putBoolean(PREF_MATCHES_SYNCED, true)
+                        putLong(PREF_LAST_SYNC, System.currentTimeMillis())
+                    }
+
+                    Log.d(TAG, "✅ ${matchDtos.size} partidos sincronizados correctamente")
+                } else {
+                    Log.w(TAG, "⚠️ No se obtuvieron partidos de la API")
+                }
+            } else {
+                Log.e(TAG, "❌ Error obteniendo partidos: ${result.exceptionOrNull()?.message}")
+            }
+        } else {
+            Log.d(TAG, "✅ Partidos ya disponibles localmente ($localMatchesCount partidos)")
+        }
+    }
+
+    /**
+     * Enriquece partidos con estadísticas y resultados en hilo secundario
+     * Nota: getMatchDetails devuelve MatchWebDto, no Match
+     */
+    private fun enrichMatchesInBackground() {
+        Log.d(TAG, "🔄 Iniciando enriquecimiento de partidos en segundo plano...")
+
+        coroutineScope.launch {
             try {
-                Log.d(TAG, "🔄 Iniciando sincronización completa de datos...")
-                
-                _syncProgress.value = SyncProgress(
-                    isLoading = true,
-                    currentRound = 0,
-                    totalRounds = 38,
-                    message = "Preparando sincronización..."
-                )
-                
-                // 1. Obtener equipos desde JSON API
-                Log.d(TAG, "🏀 Obteniendo equipos...")
-                _syncProgress.value = _syncProgress.value.copy(
-                    message = "Obteniendo información de equipos..."
-                )
-                
-                val teamsFromApi = jsonApiScraper.getTeams()
-                
-                if (teamsFromApi.isEmpty()) {
-                    _syncProgress.value = SyncProgress()
-                    Log.e(TAG, "❌ No se pudieron obtener equipos")
-                    return@withContext Result.failure(Exception("No se pudieron obtener equipos"))
+                // Obtener partidos que necesitan enriquecimiento
+                val matchesToEnrich = matchDao.getMatchesWithoutDetails()
+
+                Log.d(TAG, "📊 Enriqueciendo ${matchesToEnrich.size} partidos...")
+
+                matchesToEnrich.forEach { match ->
+                    try {
+                        // Obtener detalles del partido desde API (devuelve MatchWebDto)
+                        val result = euroLeagueRemoteDataSource.getMatchDetails(match.id)
+
+                        if (result.isSuccess) {
+                            val matchWebDto = result.getOrNull()
+                            if (matchWebDto != null) {
+                                // Convertir DTO a entidad de dominio y luego a entidad de BD
+                                val enrichedMatch = convertWebDtoToDomain(matchWebDto)
+                                val updatedEntity = convertMatchToEntity(enrichedMatch)
+                                matchDao.update(updatedEntity)
+
+                                Log.d(TAG, "✅ Partido enriquecido: ${enrichedMatch.homeTeamName} vs ${enrichedMatch.awayTeamName}")
+                            }
+                        }
+
+                        // Pausa para no sobrecargar la API
+                        delay(500)
+
+                    } catch (e: Exception) {
+                        Log.w(TAG, "⚠️ Error enriqueciendo partido ${match.id}: ${e.message}")
+                    }
                 }
-                
-                // 2. Obtener partidos desde JSON API con progreso
-                Log.d(TAG, "⚽ Obteniendo partidos...")
-                val matchesFromApi = jsonApiScraper.getMatchesWithProgress { current, total ->
-                    _syncProgress.value = SyncProgress(
-                        isLoading = true,
-                        currentRound = current,
-                        totalRounds = total,
-                        message = "Importando jornada $current de $total..."
-                    )
-                }
-                
-                if (matchesFromApi.isEmpty()) {
-                    _syncProgress.value = SyncProgress()
-                    Log.e(TAG, "❌ No se pudieron obtener partidos")
-                    return@withContext Result.failure(Exception("No se pudieron obtener partidos"))
-                }
-                
-                // 3. Limpiar base de datos local
-                Log.d(TAG, "🗑️ Limpiando datos locales...")
-                _syncProgress.value = _syncProgress.value.copy(
-                    message = "Preparando base de datos..."
-                )
-                teamDao.deleteAllTeams()
-                matchDao.deleteAllMatches()
-                
-                // 4. Insertar equipos en base de datos local
-                Log.d(TAG, "💾 Guardando ${teamsFromApi.size} equipos...")
-                _syncProgress.value = _syncProgress.value.copy(
-                    message = "Guardando equipos..."
-                )
-                val teamDomains = teamsFromApi.map { teamMapper.toDomain(it) }
-                val teamEntities = teamDomains.map { TeamMapper.fromDomain(it) }
-                teamDao.insertTeams(teamEntities)
-                
-                // 5. Insertar partidos en base de datos local
-                Log.d(TAG, "💾 Guardando ${matchesFromApi.size} partidos...")
-                _syncProgress.value = _syncProgress.value.copy(
-                    message = "Guardando partidos en base de datos..."
-                )
-                val matchDomains = matchesFromApi.map { matchMapper.toDomain(it) }
-                val matchEntities = matchDomains.map { MatchMapper.fromDomain(it) }
-                matchDao.insertMatches(matchEntities)
-                
-                // 6. Actualizar timestamp de sincronización
-                val currentTime = System.currentTimeMillis()
-                prefs.edit()
-                    .putLong(KEY_LAST_SYNC, currentTime)
-                    .putBoolean(KEY_FIRST_LAUNCH, false)
-                    .putBoolean(KEY_DATA_POPULATED, true)
-                    .apply()
-                
-                _syncProgress.value = SyncProgress() // Reset loading state
-                
-                val result = SyncResult(
-                    teamsCount = teamsFromApi.size,
-                    matchesCount = matchesFromApi.size,
-                    syncTimestamp = currentTime
-                )
-                
-                Log.d(TAG, "✅ Sincronización completada: ${result.teamsCount} equipos, ${result.matchesCount} partidos")
-                
-                Result.success(result)
-                
+
+                Log.d(TAG, "✅ Enriquecimiento de partidos completado")
+
             } catch (e: Exception) {
-                _syncProgress.value = SyncProgress() // Reset loading state
-                Log.e(TAG, "❌ Error durante la sincronización", e)
-                Result.failure(e)
+                Log.e(TAG, "❌ Error en enriquecimiento de partidos: ${e.message}", e)
             }
         }
     }
-    
+
     /**
-     * Refresca los datos de una jornada específica
+     * Sincronización manual forzada
      */
-    suspend fun refreshRound(round: Int): Result<Int> {
-        return withContext(Dispatchers.IO) {
-            try {
-                Log.d(TAG, "🔄 Refrescando jornada $round...")
-                
-                val matchesFromApi = jsonApiScraper.getMatchesForRoundRefresh(round, "2025-26")
-                
-                if (matchesFromApi.isEmpty()) {
-                    Log.w(TAG, "⚠️ No se obtuvieron partidos para la jornada $round")
-                    return@withContext Result.failure(Exception("No se obtuvieron partidos para la jornada $round"))
-                }
-                
-                // Actualizar solo los partidos de esta jornada
-                val matchDomains = matchesFromApi.map { matchMapper.toDomain(it) }
-                val matchEntities = matchDomains.map { MatchMapper.fromDomain(it) }
-                matchDao.insertMatches(matchEntities) // REPLACE strategy actualiza automáticamente
-                
-                Log.d(TAG, "✅ Jornada $round refrescada: ${matchesFromApi.size} partidos actualizados")
-                
-                Result.success(matchesFromApi.size)
-                
-            } catch (e: Exception) {
-                Log.e(TAG, "❌ Error refrescando jornada $round", e)
-                Result.failure(e)
-            }
+    suspend fun forceSyncAll() {
+        Log.d(TAG, "🔄 Iniciando sincronización manual forzada...")
+
+        // Limpiar flags de sincronización
+        prefs.edit {
+            putBoolean(PREF_TEAMS_SYNCED, false)
+            putBoolean(PREF_MATCHES_SYNCED, false)
         }
+
+        // Ejecutar inicialización completa
+        initializeAppData()
     }
-    
+
     /**
-     * Fuerza la sincronización independientemente del tiempo transcurrido
+     * Sincronización solo de partidos (para actualizaciones frecuentes)
      */
-    suspend fun forceSyncData(): Result<SyncResult> {
-        Log.d(TAG, "🔄 Sincronización forzada solicitada")
-        return syncAllData()
+    suspend fun syncMatchesOnly() {
+        Log.d(TAG, "⚽ Sincronizando solo partidos...")
+
+        prefs.edit { putBoolean(PREF_MATCHES_SYNCED, false) }
+        initializeMatches()
+        enrichMatchesInBackground()
     }
-    
+
     /**
-     * Obtiene información sobre la última sincronización
+     * Verifica si es necesario sincronizar basado en tiempo transcurrido
      */
-    fun getLastSyncInfo(): SyncInfo {
-        val lastSync = prefs.getLong(KEY_LAST_SYNC, 0)
-        val isFirstLaunch = prefs.getBoolean(KEY_FIRST_LAUNCH, true)
-        
-        return SyncInfo(
-            lastSyncTimestamp = lastSync,
-            isFirstLaunch = isFirstLaunch,
-            timeSinceLastSync = if (lastSync > 0) System.currentTimeMillis() - lastSync else 0
+    private fun shouldSync(): Boolean {
+        val lastSync = prefs.getLong(PREF_LAST_SYNC, 0)
+        val now = System.currentTimeMillis()
+        val hoursSinceLastSync = (now - lastSync) / (1000 * 60 * 60)
+
+        return hoursSinceLastSync >= SYNC_INTERVAL_HOURS
+    }
+
+    /**
+     * Obtiene estado de sincronización para mostrar en UI
+     */
+    fun getSyncStatus(): SyncStatus {
+        val lastSync = prefs.getLong(PREF_LAST_SYNC, 0)
+        val teamsCount = teamDao.getTeamCountSync()
+        val matchesCount = matchDao.getMatchCountSync()
+
+        return SyncStatus(
+            lastSyncTime = if (lastSync > 0) Date(lastSync) else null,
+            teamsCount = teamsCount,
+            matchesCount = matchesCount,
+            isDataAvailable = teamsCount > 0 && matchesCount > 0
         )
     }
+
+    /**
+     * Limpia recursos al cerrar la aplicación
+     */
+    fun cleanup() {
+        coroutineScope.cancel()
+        Log.d(TAG, "🧹 Recursos de sincronización liberados")
+    }
+
+    /**
+     * Función para convertir Team de dominio a TeamEntity
+     */
+    private fun convertTeamToEntity(team: Team): TeamEntity {
+        return TeamEntity(
+            id = team.id,
+            name = team.name,
+            shortName = team.shortName,
+            code = team.code,
+            city = team.city,
+            country = team.country,
+            founded = team.founded,
+            coach = team.coach,
+            logoUrl = team.logoUrl,
+            isFavorite = team.isFavorite
+        )
+    }
+
+    /**
+     * Función para convertir Match de dominio a MatchEntity
+     */
+    private fun convertMatchToEntity(match: Match): MatchEntity {
+        return MatchEntity(
+            id = match.id,
+            homeTeamId = match.homeTeamId,
+            homeTeamName = match.homeTeamName,
+            homeTeamLogo = match.homeTeamLogo,
+            awayTeamId = match.awayTeamId,
+            awayTeamName = match.awayTeamName,
+            awayTeamLogo = match.awayTeamLogo,
+            dateTime = match.dateTime,
+            venue = match.venue,
+            round = match.round,
+            status = match.status,
+            homeScore = match.homeScore,
+            awayScore = match.awayScore,
+            seasonType = match.seasonType
+        )
+    }
+
+    /**
+     * Función para convertir MatchWebDto a Match de dominio
+     * Reutiliza la lógica del MatchWebMapper
+     */
+    private fun convertWebDtoToDomain(dto: es.itram.basketmatch.data.datasource.remote.dto.MatchWebDto): Match {
+        // Importar el mapper y usarlo
+        return es.itram.basketmatch.data.mapper.MatchWebMapper.toDomain(dto)
+    }
+
+    /**
+     * Extension function para convertir Team de dominio a TeamEntity
+     */
+    private fun Team.toEntity(): TeamEntity = convertTeamToEntity(this)
+
+    /**
+     * Extension function para convertir Match de dominio a MatchEntity
+     */
+    private fun Match.toEntity(): MatchEntity = convertMatchToEntity(this)
 }
 
 /**
- * Resultado de una operación de sincronización
+ * Estado de sincronización para mostrar en UI
  */
-data class SyncResult(
+data class SyncStatus(
+    val lastSyncTime: Date?,
     val teamsCount: Int,
     val matchesCount: Int,
-    val syncTimestamp: Long
-)
-
-/**
- * Información sobre el estado de sincronización
- */
-data class SyncInfo(
-    val lastSyncTimestamp: Long,
-    val isFirstLaunch: Boolean,
-    val timeSinceLastSync: Long
+    val isDataAvailable: Boolean
 )
