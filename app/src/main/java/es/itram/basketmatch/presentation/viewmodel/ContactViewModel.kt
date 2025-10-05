@@ -45,7 +45,8 @@ class ContactViewModel @Inject constructor(
                 // En caso de error, mantener la info por defecto
                 analyticsManager.trackError(
                     errorType = "contact_info_load_error",
-                    errorMessage = e.message ?: "Unknown error loading contact info"
+                    errorMessage = e.message ?: "Unknown error loading contact info",
+                    eventName = "loadContactInfo"
                 )
             } finally {
                 _isLoading.value = false
