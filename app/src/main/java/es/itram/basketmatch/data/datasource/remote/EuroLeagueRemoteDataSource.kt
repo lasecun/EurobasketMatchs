@@ -3,28 +3,25 @@ package es.itram.basketmatch.data.datasource.remote
 import android.util.Log
 import es.itram.basketmatch.data.datasource.remote.dto.MatchWebDto
 import es.itram.basketmatch.data.datasource.remote.dto.TeamWebDto
-import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueJsonApiScraper
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Data source remoto para obtener datos de EuroLeague desde la API JSON oficial
- * 
- * ARQUITECTURA UNIFICADA:
- * - ÚNICA FUENTE: feeds.incrowdsports.com (API de feeds) - Para TODOS los datos
- * - ✅ Equipos, partidos, rosters, estadísticas, imágenes
- * - ✅ Logos de equipos e imágenes de jugadores incluidos
- * 
- * Esta clase es un wrapper sobre EuroLeagueJsonApiScraper que proporciona:
- * - Manejo de errores centralizado
- * - Equipos de fallback si la API falla
- * - Interfaz consistente para los repositorios
- * 
- * Nota: DataSyncService también usa directamente EuroLeagueJsonApiScraper para sincronización masiva
+ * Data source remoto para obtener datos de EuroLeague
+ *
+ * NUEVA ARQUITECTURA SIMPLIFICADA:
+ * 🏆 ÚNICA FUENTE: API oficial de EuroLeague (api-live.euroleague.net)
+ * 🔄 FALLBACK: Datos básicos hardcodeados solo en caso de emergencia
+ *
+ * Esta arquitectura garantiza:
+ * ✅ Datos oficiales y confiables
+ * ✅ Simplicidad y mantenibilidad
+ * ✅ Rendimiento óptimo
+ * ✅ Datos siempre actualizados
  */
 @Singleton
 class EuroLeagueRemoteDataSource @Inject constructor(
-    private val jsonApiScraper: EuroLeagueJsonApiScraper
+    private val officialApiDataSource: EuroLeagueOfficialApiDataSource
 ) {
     
     companion object {
@@ -32,239 +29,149 @@ class EuroLeagueRemoteDataSource @Inject constructor(
     }
     
     /**
-     * Obtiene todos los equipos de EuroLeague usando la API JSON
+     * Obtiene todos los equipos usando únicamente la API oficial
      */
     suspend fun getAllTeams(): Result<List<TeamWebDto>> {
         return try {
-            Log.d(TAG, "🏀 Obteniendo equipos desde API JSON...")
-            
-            val teamsFromJson = jsonApiScraper.getTeams()
-            
-            if (teamsFromJson.isNotEmpty()) {
-                Log.d(TAG, "✅ Equipos obtenidos desde API JSON: ${teamsFromJson.size}")
-                Result.success(teamsFromJson)
+            Log.d(TAG, "🏀 Obteniendo equipos desde API oficial de EuroLeague...")
+
+            val result = officialApiDataSource.getAllTeams()
+            if (result.isSuccess) {
+                val teams = result.getOrNull()
+                if (!teams.isNullOrEmpty()) {
+                    Log.d(TAG, "✅ Equipos obtenidos desde API oficial: ${teams.size}")
+                    Result.success(teams)
+                } else {
+                    Log.w(TAG, "⚠️ API oficial no devolvió equipos, usando fallback de emergencia")
+                    Result.success(getEmergencyTeams())
+                }
             } else {
-                Log.w(TAG, "⚠️ API JSON no devolvió equipos, usando equipos de fallback...")
-                Result.success(getFallbackTeams())
+                Log.e(TAG, "❌ Error en API oficial, usando fallback de emergencia")
+                Result.success(getEmergencyTeams())
             }
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error obteniendo equipos desde API JSON", e)
-            Result.failure(e)
+            Log.e(TAG, "❌ Excepción en API oficial: ${e.message}, usando fallback de emergencia")
+            Result.success(getEmergencyTeams())
         }
     }
     
     /**
-     * Obtiene todos los partidos usando la API JSON
+     * Obtiene todos los partidos usando únicamente la API oficial
      */
-    suspend fun getAllMatches(season: String = "2025-26"): Result<List<MatchWebDto>> {
+    suspend fun getAllMatches(season: String = "2024-25"): Result<List<MatchWebDto>> {
         return try {
-            Log.d(TAG, "⚽ Obteniendo partidos desde API JSON para temporada $season...")
-            
-            val matchesFromJson = jsonApiScraper.getMatches(season)
-            
-            if (matchesFromJson.isNotEmpty()) {
-                Log.d(TAG, "✅ Partidos obtenidos desde API JSON: ${matchesFromJson.size}")
-                
-                // Verificar si hay partidos del 30 de septiembre específicamente
-                val september30Matches = matchesFromJson.filter { it.date == "2025-09-30" }
-                Log.d(TAG, "🎯 Partidos del 30/09/2025 encontrados: ${september30Matches.size}")
-                
-                Result.success(matchesFromJson)
+            Log.d(TAG, "⚽ Obteniendo partidos desde API oficial de EuroLeague...")
+
+            val result = officialApiDataSource.getAllMatches()
+            if (result.isSuccess) {
+                val matches = result.getOrNull()
+                if (!matches.isNullOrEmpty()) {
+                    Log.d(TAG, "✅ Partidos obtenidos desde API oficial: ${matches.size}")
+                    Result.success(matches)
+                } else {
+                    Log.w(TAG, "⚠️ API oficial no devolvió partidos")
+                    Result.success(emptyList())
+                }
             } else {
-                Log.w(TAG, "⚠️ API JSON no devolvió partidos")
+                Log.e(TAG, "❌ Error obteniendo partidos desde API oficial")
                 Result.success(emptyList())
             }
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error obteniendo partidos desde API JSON", e)
+            Log.e(TAG, "❌ Excepción obteniendo partidos: ${e.message}")
+            Result.success(emptyList())
+        }
+    }
+
+    /**
+     * Obtiene partidos por rango de fechas usando la API oficial
+     */
+    suspend fun getMatchesByDateRange(dateFrom: String, dateTo: String): Result<List<MatchWebDto>> {
+        return try {
+            Log.d(TAG, "📅 Obteniendo partidos por fecha desde API oficial: $dateFrom a $dateTo")
+
+            val result = officialApiDataSource.getMatchesByDateRange(dateFrom, dateTo)
+            if (result.isSuccess) {
+                Log.d(TAG, "✅ Partidos por fecha obtenidos: ${result.getOrNull()?.size ?: 0}")
+            } else {
+                Log.w(TAG, "⚠️ No se pudieron obtener partidos por fecha desde API oficial")
+            }
+
+            result
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error obteniendo partidos por fecha", e)
             Result.failure(e)
         }
     }
-    
+
     /**
-     * Equipos de fallback en caso de que la feeds API falle
-     * Todos los datos están alineados con la feeds API unificada
+     * Obtiene detalles de un partido específico usando la API oficial
      */
-    private fun getFallbackTeams(): List<TeamWebDto> {
+    suspend fun getMatchDetails(gameCode: String): Result<MatchWebDto> {
+        return try {
+            Log.d(TAG, "🔍 Obteniendo detalles del partido: $gameCode")
+
+            val result = officialApiDataSource.getMatchDetails(gameCode)
+            if (result.isSuccess) {
+                Log.d(TAG, "✅ Detalles del partido obtenidos")
+            } else {
+                Log.w(TAG, "⚠️ No se pudieron obtener detalles del partido")
+            }
+
+            result
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error obteniendo detalles del partido", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Verifica si la API oficial está disponible
+     */
+    suspend fun isApiAvailable(): Boolean {
+        return officialApiDataSource.isApiAvailable()
+    }
+
+    /**
+     * Datos de emergencia mínimos en caso de fallo total de la API
+     * Solo los equipos más importantes para garantizar funcionalidad básica
+     */
+    private fun getEmergencyTeams(): List<TeamWebDto> {
         return listOf(
             TeamWebDto(
-                id = "real_madrid",
+                id = "MAD",
                 name = "Real Madrid",
                 fullName = "Real Madrid Basketball",
                 shortCode = "MAD",
                 logoUrl = null,
                 country = "Spain",
-                venue = "WiZink Center",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/MAD"
+                venue = "WiZink Center"
             ),
             TeamWebDto(
-                id = "fc_barcelona",
+                id = "BAR",
                 name = "FC Barcelona",
                 fullName = "FC Barcelona Basketball",
                 shortCode = "BAR",
                 logoUrl = null,
                 country = "Spain",
-                venue = "Palau de la Música Catalana",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/BAR"
+                venue = "Palau Sant Jordi"
             ),
             TeamWebDto(
-                id = "panathinaikos",
+                id = "PAO",
                 name = "Panathinaikos",
-                fullName = "Panathinaikos AKTOR Athens",
-                shortCode = "PAN",
+                fullName = "Panathinaikos Athens",
+                shortCode = "PAO",
                 logoUrl = null,
                 country = "Greece",
-                venue = "OAKA",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/PAN"
+                venue = "OAKA"
             ),
             TeamWebDto(
-                id = "olympiacos",
+                id = "OLY",
                 name = "Olympiacos",
                 fullName = "Olympiacos Piraeus",
                 shortCode = "OLY",
                 logoUrl = null,
                 country = "Greece",
-                venue = "Peace and Friendship Stadium",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/OLY"
-            ),
-            TeamWebDto(
-                id = "fenerbahce",
-                name = "Fenerbahce",
-                fullName = "Fenerbahce Beko Istanbul",
-                shortCode = "ULK",
-                logoUrl = null,
-                country = "Turkey",
-                venue = "Ulker Sports and Event Hall",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/ULK"
-            ),
-            TeamWebDto(
-                id = "anadolu_efes",
-                name = "Anadolu Efes",
-                fullName = "Anadolu Efes Istanbul",
-                shortCode = "IST",
-                logoUrl = null,
-                country = "Turkey",
-                venue = "Sinan Erdem Dome",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/IST"
-            ),
-            TeamWebDto(
-                id = "baskonia",
-                name = "Baskonia",
-                fullName = "Baskonia Vitoria-Gasteiz",
-                shortCode = "BAS",
-                logoUrl = null,
-                country = "Spain",
-                venue = "Fernando Buesa Arena",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/BAS"
-            ),
-            TeamWebDto(
-                id = "valencia_basket",
-                name = "Valencia Basket",
-                fullName = "Valencia Basket",
-                shortCode = "PAM",
-                logoUrl = null,
-                country = "Spain",
-                venue = "Pabellón Fuente de San Luis",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/PAM"
-            ),
-            TeamWebDto(
-                id = "zalgiris",
-                name = "Zalgiris",
-                fullName = "Zalgiris Kaunas",
-                shortCode = "ZAL",
-                logoUrl = null,
-                country = "Lithuania",
-                venue = "Zalgiris Arena",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/ZAL"
-            ),
-            TeamWebDto(
-                id = "maccabi_tel_aviv",
-                name = "Maccabi Tel Aviv",
-                fullName = "Maccabi Rapyd Tel Aviv",
-                shortCode = "TEL",
-                logoUrl = null,
-                country = "Israel",
-                venue = "Menora Mivtachim Arena",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/TEL"
-            ),
-            TeamWebDto(
-                id = "as_monaco",
-                name = "AS Monaco",
-                fullName = "AS Monaco Basketball",
-                shortCode = "MCO",
-                logoUrl = null,
-                country = "Monaco",
-                venue = "Salle Gaston Médecin",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/MCO"
-            ),
-            TeamWebDto(
-                id = "bayern_munich",
-                name = "Bayern Munich",
-                fullName = "FC Bayern Munich Basketball",
-                shortCode = "MUN",
-                logoUrl = null,
-                country = "Germany",
-                venue = "BMW Park",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/MUN"
-            ),
-            TeamWebDto(
-                id = "virtus_bologna",
-                name = "Virtus Bologna",
-                fullName = "Virtus Segafredo Bologna",
-                shortCode = "VIR",
-                logoUrl = null,
-                country = "Italy",
-                venue = "Segafredo Arena",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/VIR"
-            ),
-            TeamWebDto(
-                id = "milan",
-                name = "Milan",
-                fullName = "EA7 Emporio Armani Milan",
-                shortCode = "MIL",
-                logoUrl = null,
-                country = "Italy",
-                venue = "Mediolanum Forum",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/MIL"
-            ),
-            TeamWebDto(
-                id = "red_star_belgrade",
-                name = "Red Star Belgrade",
-                fullName = "Crvena Zvezda Meridianbet Belgrade",
-                shortCode = "RED",
-                logoUrl = null,
-                country = "Serbia",
-                venue = "Štark Arena",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/RED"
-            ),
-            TeamWebDto(
-                id = "partizan_belgrade",
-                name = "Partizan Belgrade",
-                fullName = "Partizan Mozzart Bet Belgrade",
-                shortCode = "PAR",
-                logoUrl = null,
-                country = "Serbia",
-                venue = "Štark Arena",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/PAR"
-            ),
-            TeamWebDto(
-                id = "asvel_villeurbanne",
-                name = "ASVEL",
-                fullName = "LDLC ASVEL Villeurbanne",
-                shortCode = "ASV",
-                logoUrl = null,
-                country = "France",
-                venue = "LDLC Arena",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/ASV"
-            ),
-            TeamWebDto(
-                id = "paris_basketball",
-                name = "Paris Basketball",
-                fullName = "Paris Basketball",
-                shortCode = "PRS",
-                logoUrl = null,
-                country = "France",
-                venue = "Adidas Arena",
-                profileUrl = "https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/competitions/E/seasons/E2025/clubs/PRS"
+                venue = "Peace and Friendship Stadium"
             )
         )
     }

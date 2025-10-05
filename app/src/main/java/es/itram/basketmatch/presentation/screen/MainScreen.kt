@@ -59,10 +59,7 @@ fun MainScreen(
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
-    val syncProgress by viewModel.syncProgress.collectAsStateWithLifecycle()
-    val smartSyncState by viewModel.smartSyncState.collectAsStateWithLifecycle()
-    val lastSyncTime by viewModel.lastSyncTime.collectAsStateWithLifecycle()
-    
+
     // Obtener el padding de las barras de navegación del sistema
     val density = LocalDensity.current
     val navigationBarHeight = with(density) {
@@ -136,14 +133,7 @@ fun MainScreen(
                 exit = fadeOut()
             ) {
                 when {
-                    syncProgress.isLoading -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            SyncProgressIndicator(syncProgress = syncProgress)
-                        }
-                    }
+
 
                     isLoading -> {
                         Box(

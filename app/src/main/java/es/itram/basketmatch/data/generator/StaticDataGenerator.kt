@@ -2,30 +2,29 @@ package es.itram.basketmatch.data.generator
 
 import android.content.Context
 import android.util.Log
-import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueJsonApiScraper
+import es.itram.basketmatch.data.datasource.remote.EuroLeagueRemoteDataSource
 import es.itram.basketmatch.data.datasource.local.assets.StaticMatch
 import es.itram.basketmatch.data.datasource.local.assets.StaticMatchesData
 import es.itram.basketmatch.data.datasource.local.assets.StaticTeam
 import es.itram.basketmatch.data.datasource.local.assets.StaticTeamsData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Generador de datos estáticos desde la API real de EuroLeague
- * 
- * Este componente obtiene datos actualizados desde:
- * https://feeds.incrowdsports.com/provider/euroleague-feeds/v2
- * 
- * Y los convierte en archivos JSON estáticos para uso offline.
+ * Generador de datos estáticos desde la API oficial de EuroLeague
+ *
+ * ACTUALIZADO: Ahora usa únicamente la API oficial
+ * ✅ Sin scraper web
+ * ✅ Datos oficiales y confiables
+ * ✅ Arquitectura simplificada
  */
 @Singleton
 class StaticDataGenerator @Inject constructor(
-    private val euroLeagueApiScraper: EuroLeagueJsonApiScraper,
+    private val euroLeagueRemoteDataSource: EuroLeagueRemoteDataSource,
     private val context: Context
 ) {
     
@@ -34,87 +33,98 @@ class StaticDataGenerator @Inject constructor(
         private const val STATIC_DATA_DIR = "static_data"
         private const val TEAMS_FILE = "teams_2025_26.json"
         private const val MATCHES_FILE = "matches_calendar_2025_26.json"
+
+        // JSON instance reutilizable para evitar warnings
+        private val json = Json { prettyPrint = true }
     }
-    
-    private val json = Json { 
-        prettyPrint = true
-        ignoreUnknownKeys = true 
-    }
-    
+
     /**
-     * Genera todos los datos estáticos desde la API real
+     * Genera todos los datos estáticos desde la API oficial
      */
     suspend fun generateAllStaticData(): Result<GenerationResult> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "🏗️ [GENERATOR] Iniciando generación de datos estáticos desde API EuroLeague...")
-            
-            // 1. Obtener equipos desde API
-            Log.d(TAG, "🏗️ [GENERATOR] Paso 1/4: Obteniendo equipos desde API...")
-            val apiTeams = euroLeagueApiScraper.getTeams()
-            Log.d(TAG, "🏗️ [GENERATOR] ✅ Equipos obtenidos desde API: ${apiTeams.size}")
-            
-            // 2. Convertir a formato estático con información completa
-            Log.d(TAG, "🏗️ [GENERATOR] Paso 2/4: Convirtiendo equipos a formato estático...")
-            val staticTeams = apiTeams.map { teamDto ->
+            Log.d(TAG, "🏗️ [GENERATOR] Iniciando generación de datos estáticos desde API oficial EuroLeague...")
+
+            // 1. Obtener equipos desde API oficial
+            val teamsResult = euroLeagueRemoteDataSource.getAllTeams()
+            if (!teamsResult.isSuccess) {
+                Log.e(TAG, "❌ Error obteniendo equipos: ${teamsResult.exceptionOrNull()?.message}")
+                return@withContext Result.failure(teamsResult.exceptionOrNull() ?: Exception("Error desconocido"))
+            }
+
+            val teams = teamsResult.getOrNull() ?: emptyList()
+            Log.d(TAG, "✅ Equipos obtenidos: ${teams.size}")
+
+            // 2. Obtener partidos desde API oficial
+            val matchesResult = euroLeagueRemoteDataSource.getAllMatches()
+            if (!matchesResult.isSuccess) {
+                Log.e(TAG, "❌ Error obteniendo partidos: ${matchesResult.exceptionOrNull()?.message}")
+                return@withContext Result.failure(matchesResult.exceptionOrNull() ?: Exception("Error desconocido"))
+            }
+
+            val matches = matchesResult.getOrNull() ?: emptyList()
+            Log.d(TAG, "✅ Partidos obtenidos: ${matches.size}")
+
+            // 3. Convertir a formato estático
+            val staticTeams = teams.map { team ->
                 StaticTeam(
-                    id = teamDto.shortCode ?: teamDto.id, // Usar shortCode como ID principal
-                    name = teamDto.name,
-                    shortName = teamDto.shortCode ?: teamDto.name.split(" ").firstOrNull() ?: teamDto.name,
-                    logoUrl = teamDto.logoUrl ?: "",
-                    primaryColor = "#000000", // Color por defecto - se puede mejorar con API
-                    secondaryColor = "#FFFFFF", // Color por defecto - se puede mejorar con API
-                    country = teamDto.country ?: "",
-                    city = extractCityFromName(teamDto.name),
-                    venue = teamDto.venue ?: "",
-                    website = "", // No disponible en TeamWebDto actual
-                    president = "", // No disponible en TeamWebDto actual
-                    phone = "", // No disponible en TeamWebDto actual
-                    address = "", // No disponible en TeamWebDto actual
-                    twitterAccount = "", // No disponible en TeamWebDto actual
-                    ticketsUrl = "" // No disponible en TeamWebDto actual
+                    id = team.id,
+                    name = team.name,
+                    shortName = team.shortCode,
+                    logoUrl = team.logoUrl ?: "",
+                    country = team.country ?: "",
+                    city = "",
+                    venue = "", // No disponible en la entidad Team
+                    code = team.shortCode
                 )
             }
             
-            // 3. Obtener partidos desde API (temporada completa)
-            Log.d(TAG, "🏗️ [GENERATOR] Paso 3/4: Obteniendo partidos desde API...")
-            val apiMatches = euroLeagueApiScraper.getMatchesWithProgress("2025-26") { current, total ->
-                Log.d(TAG, "🏗️ [GENERATOR] Progreso partidos: $current/$total jornadas")
-            }
-            Log.d(TAG, "🏗️ [GENERATOR] ✅ Partidos obtenidos desde API: ${apiMatches.size}")
-            
-            // 4. Convertir partidos a formato estático
-            Log.d(TAG, "🏗️ [GENERATOR] Paso 4/4: Convirtiendo partidos a formato estático...")
-            val staticMatches = apiMatches.map { matchDto ->
+            val staticMatches = matches.map { match ->
                 StaticMatch(
-                    id = matchDto.id,
-                    round = matchDto.round?.toIntOrNull() ?: 1,
-                    homeTeamCode = matchDto.homeTeamId,
-                    awayTeamCode = matchDto.awayTeamId,
-                    venue = matchDto.venue ?: "",
+                    id = match.id,
+                    round = Integer.parseInt(match.round ?: "", 10),
+                    homeTeamCode = match.homeTeamId, // Usando homeTeamId como código
+                    awayTeamCode = match.awayTeamId, // Usando awayTeamId como código
+                    venue = match.venue ?: "",
                     season = "2025-26",
-                    status = matchDto.status.name,
-                    dateTime = "${matchDto.date}T${matchDto.time ?: "20:00"}:00", // Formato ISO
-                    homeScore = null, // Los partidos futuros no tienen resultado
-                    awayScore = null
+                    status = match.status.name,
+                    dateTime = match.date,
+                    homeScore = match.homeScore,
+                    awayScore = match.awayScore
                 )
             }
             
-            // 5. Guardar archivos JSON
-            Log.d(TAG, "🏗️ [GENERATOR] Guardando archivos JSON...")
-            saveTeamsToAssets(staticTeams)
-            saveMatchesToAssets(staticMatches)
-            
+            // 4. Guardar archivos JSON
+            val teamsData = StaticTeamsData(
+                version = "1.0",
+                lastUpdated = java.time.LocalDateTime.now().toString(),
+                teams = staticTeams
+            )
+
+            val matchesData = StaticMatchesData(
+                version = "1.0",
+                lastUpdated = java.time.LocalDateTime.now().toString(),
+                season = "2025-26",
+                totalRounds = 34,
+                description = "EuroLeague 2025-26 season calendar generated from API",
+                note = "Generated from https://feeds.incrowdsports.com/provider/euroleague-feeds/v2",
+                matches = staticMatches
+            )
+
+            saveStaticFile(TEAMS_FILE, json.encodeToString(teamsData))
+            saveStaticFile(MATCHES_FILE, json.encodeToString(matchesData))
+
             val result = GenerationResult(
                 teamsGenerated = staticTeams.size,
                 matchesGenerated = staticMatches.size,
-                generationTimestamp = System.currentTimeMillis()
+                timestamp = System.currentTimeMillis()
             )
             
-            Log.d(TAG, "🏗️ [GENERATOR] ✅ Generación completada: ${result.teamsGenerated} equipos, ${result.matchesGenerated} partidos")
+            Log.d(TAG, "✅ [GENERATOR] Generación completada: ${result.teamsGenerated} equipos, ${result.matchesGenerated} partidos")
             Result.success(result)
             
         } catch (e: Exception) {
-            Log.e(TAG, "❌ [GENERATOR] Error generando datos estáticos", e)
+            Log.e(TAG, "❌ [GENERATOR] Error: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -122,28 +132,27 @@ class StaticDataGenerator @Inject constructor(
     /**
      * Genera solo equipos estáticos desde API
      */
-    suspend fun generateTeamsData(): Result<Int> = withContext(Dispatchers.IO) {
+    private suspend fun generateTeamsData(): Result<Int> = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "🏗️ [GENERATOR] Generando solo equipos desde API...")
             
-            val apiTeams = euroLeagueApiScraper.getTeams()
-            val staticTeams = apiTeams.map { teamDto ->
+            val teamsResult = euroLeagueRemoteDataSource.getAllTeams()
+            if (!teamsResult.isSuccess) {
+                Log.e(TAG, "❌ Error obteniendo equipos: ${teamsResult.exceptionOrNull()?.message}")
+                return@withContext Result.failure(teamsResult.exceptionOrNull() ?: Exception("Error desconocido"))
+            }
+
+            val teams = teamsResult.getOrNull() ?: emptyList()
+            val staticTeams = teams.map { team ->
                 StaticTeam(
-                    id = teamDto.shortCode ?: teamDto.id,
-                    name = teamDto.name,
-                    shortName = teamDto.shortCode ?: teamDto.name.split(" ").firstOrNull() ?: teamDto.name,
-                    logoUrl = teamDto.logoUrl ?: "",
-                    primaryColor = "#000000", 
-                    secondaryColor = "#FFFFFF",
-                    country = teamDto.country ?: "",
-                    city = extractCityFromName(teamDto.name),
-                    venue = teamDto.venue ?: "",
-                    website = "",
-                    president = "",
-                    phone = "",
-                    address = "",
-                    twitterAccount = "",
-                    ticketsUrl = ""
+                    id = team.id,
+                    name = team.name,
+                    shortName = team.shortCode,
+                    logoUrl = team.logoUrl ?: "",
+                    country = team.country ?: "",
+                    city = "",
+                    venue = "", // No disponible en la entidad Team
+                    code = team.shortCode
                 )
             }
             
@@ -160,26 +169,29 @@ class StaticDataGenerator @Inject constructor(
     /**
      * Genera solo partidos estáticos desde API
      */
-    suspend fun generateMatchesData(): Result<Int> = withContext(Dispatchers.IO) {
+    private suspend fun generateMatchesData(): Result<Int> = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "🏗️ [GENERATOR] Generando solo partidos desde API...")
             
-            val apiMatches = euroLeagueApiScraper.getMatchesWithProgress("2025-26") { current, total ->
-                Log.d(TAG, "🏗️ [GENERATOR] Progreso: $current/$total jornadas")
+            val matchesResult = euroLeagueRemoteDataSource.getAllMatches()
+            if (!matchesResult.isSuccess) {
+                Log.e(TAG, "❌ Error obteniendo partidos: ${matchesResult.exceptionOrNull()?.message}")
+                return@withContext Result.failure(matchesResult.exceptionOrNull() ?: Exception("Error desconocido"))
             }
             
-            val staticMatches = apiMatches.map { matchDto ->
+            val matches = matchesResult.getOrNull() ?: emptyList()
+            val staticMatches = matches.map { match ->
                 StaticMatch(
-                    id = matchDto.id,
-                    round = matchDto.round?.toIntOrNull() ?: 1,
-                    homeTeamCode = matchDto.homeTeamId,
-                    awayTeamCode = matchDto.awayTeamId,
-                    venue = matchDto.venue ?: "",
+                    id = match.id,
+                    round = match.round ?.toIntOrNull() ?: 0,
+                    homeTeamCode = match.homeTeamId,
+                    awayTeamCode = match.awayTeamId,
+                    venue = match.venue ?: "",
                     season = "2025-26",
-                    status = matchDto.status.name,
-                    dateTime = "${matchDto.date}T${matchDto.time ?: "20:00"}:00",
-                    homeScore = null,
-                    awayScore = null
+                    status = match.status.name,
+                    dateTime = match.date,
+                    homeScore = match.homeScore,
+                    awayScore = match.awayScore
                 )
             }
             
@@ -192,7 +204,22 @@ class StaticDataGenerator @Inject constructor(
             Result.failure(e)
         }
     }
-    
+
+    /**
+     * Guarda un archivo estático en el directorio interno
+     */
+    private fun saveStaticFile(filename: String, content: String) {
+        val internalDir = File(context.filesDir, STATIC_DATA_DIR)
+        if (!internalDir.exists()) {
+            internalDir.mkdirs()
+        }
+
+        val file = File(internalDir, filename)
+        file.writeText(content)
+
+        Log.d(TAG, "💾 [GENERATOR] Archivo guardado: ${file.absolutePath}")
+    }
+
     /**
      * Guarda equipos en archivo JSON interno de la aplicación
      */
@@ -210,7 +237,7 @@ class StaticDataGenerator @Inject constructor(
         )
         
         val teamsFile = File(internalDir, TEAMS_FILE)
-        val jsonContent = json.encodeToString(teamsData)
+        val jsonContent = Json { prettyPrint = true }.encodeToString(teamsData)
         teamsFile.writeText(jsonContent)
         
         Log.d(TAG, "💾 [GENERATOR] Equipos guardados en: ${teamsFile.absolutePath}")
@@ -237,7 +264,7 @@ class StaticDataGenerator @Inject constructor(
         )
         
         val matchesFile = File(internalDir, MATCHES_FILE)
-        val jsonContent = json.encodeToString(matchesData)
+        val jsonContent = Json { prettyPrint = true }.encodeToString(matchesData)
         matchesFile.writeText(jsonContent)
         
         Log.d(TAG, "💾 [GENERATOR] Partidos guardados en: ${matchesFile.absolutePath}")
@@ -291,39 +318,9 @@ class StaticDataGenerator @Inject constructor(
                 lastGenerated = System.currentTimeMillis()
             )
             
-        } catch (e: Exception) {
-            Log.e(TAG, "Error obteniendo info de datos estáticos", e)
+        } catch (_: Exception) {
             StaticDataInfo(false, 0, 0, 0L)
         }
-    }
-    
-    /**
-     * Extrae la ciudad del nombre del equipo
-     */
-    private fun extractCityFromName(teamName: String): String {
-        val cityMappings = mapOf(
-            "anadolu efes" to "Istanbul",
-            "as monaco" to "Monaco",
-            "baskonia" to "Vitoria-Gasteiz",
-            "crvena zvezda" to "Belgrade",
-            "ea7 emporio armani" to "Milan",
-            "fc barcelona" to "Barcelona",
-            "fc bayern munich" to "Munich",
-            "maccabi playtika" to "Tel Aviv",
-            "ldlc asvel" to "Villeurbanne",
-            "olympiacos" to "Athens",
-            "paris basketball" to "Paris",
-            "real madrid" to "Madrid",
-            "valencia basket" to "Valencia",
-            "virtus segafredo" to "Bologna",
-            "zalgiris" to "Kaunas",
-            "fenerbahce" to "Istanbul"
-        )
-        
-        val lowerName = teamName.lowercase()
-        return cityMappings.entries.find { 
-            lowerName.contains(it.key) 
-        }?.value ?: teamName.split(" ").first()
     }
 }
 
@@ -333,7 +330,7 @@ class StaticDataGenerator @Inject constructor(
 data class GenerationResult(
     val teamsGenerated: Int,
     val matchesGenerated: Int,
-    val generationTimestamp: Long
+    val timestamp: Long
 )
 
 /**

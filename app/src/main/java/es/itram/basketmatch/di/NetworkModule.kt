@@ -10,8 +10,7 @@ import dagger.hilt.components.SingletonComponent
 import es.itram.basketmatch.data.datasource.local.dao.MatchDao
 import es.itram.basketmatch.data.datasource.local.dao.TeamDao
 import es.itram.basketmatch.data.datasource.remote.EuroLeagueRemoteDataSource
-
-import es.itram.basketmatch.data.datasource.remote.scraper.EuroLeagueJsonApiScraper
+import es.itram.basketmatch.data.datasource.remote.EuroLeagueOfficialApiDataSource
 import es.itram.basketmatch.data.mapper.MatchWebMapper
 import es.itram.basketmatch.data.mapper.TeamWebMapper
 import es.itram.basketmatch.domain.service.DataSyncService
@@ -20,7 +19,11 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 /**
- * Módulo Hilt para dependencias de red y scraping
+ * Módulo Hilt para dependencias de red - SOLO API OFICIAL
+ *
+ * ✅ Eliminado completamente el scraper web
+ * ✅ Solo API oficial de EuroLeague
+ * ✅ Arquitectura simplificada y limpia
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -38,12 +41,6 @@ object NetworkModule {
     
     @Provides
     @Singleton
-    fun provideEuroLeagueJsonApiScraper(): EuroLeagueJsonApiScraper {
-        return EuroLeagueJsonApiScraper()
-    }
-    
-    @Provides
-    @Singleton
     fun provideTeamWebMapper(): TeamWebMapper {
         return TeamWebMapper
     }
@@ -57,30 +54,30 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideEuroLeagueRemoteDataSource(
-        jsonApiScraper: EuroLeagueJsonApiScraper
+        officialApiDataSource: EuroLeagueOfficialApiDataSource
     ): EuroLeagueRemoteDataSource {
-        return EuroLeagueRemoteDataSource(jsonApiScraper)
+        return EuroLeagueRemoteDataSource(officialApiDataSource)
     }
-    
-    @Provides
-    @Singleton
-    fun provideStaticDataGenerator(
-        euroLeagueApiScraper: EuroLeagueJsonApiScraper,
-        @ApplicationContext context: Context
-    ): es.itram.basketmatch.data.generator.StaticDataGenerator {
-        return es.itram.basketmatch.data.generator.StaticDataGenerator(euroLeagueApiScraper, context)
-    }
-    
+
     @Provides
     @Singleton
     fun provideDataSyncService(
-        jsonApiScraper: EuroLeagueJsonApiScraper,
+        euroLeagueRemoteDataSource: EuroLeagueRemoteDataSource,
         teamDao: TeamDao,
         matchDao: MatchDao,
         teamMapper: TeamWebMapper,
         matchMapper: MatchWebMapper,
-        prefs: SharedPreferences,
+        prefs: SharedPreferences
     ): DataSyncService {
-        return DataSyncService(jsonApiScraper, teamDao, matchDao, teamMapper, matchMapper, prefs)
+        return DataSyncService(euroLeagueRemoteDataSource, teamDao, matchDao, prefs)
+    }
+
+    @Provides
+    @Singleton
+    fun provideStaticDataGenerator(
+        euroLeagueRemoteDataSource: EuroLeagueRemoteDataSource,
+        @ApplicationContext context: Context
+    ): es.itram.basketmatch.data.generator.StaticDataGenerator {
+        return es.itram.basketmatch.data.generator.StaticDataGenerator(euroLeagueRemoteDataSource, context)
     }
 }

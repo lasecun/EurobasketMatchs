@@ -23,6 +23,9 @@ interface TeamDao {
     @Query("SELECT COUNT(*) FROM teams")
     suspend fun getTeamCount(): Int
 
+    @Query("SELECT COUNT(*) FROM teams")
+    fun getTeamCountSync(): Int
+
     @Query("SELECT * FROM teams WHERE id = :teamId")
     fun getTeamById(teamId: String): Flow<TeamEntity?>
 
@@ -34,6 +37,9 @@ interface TeamDao {
 
     @Query("SELECT * FROM teams WHERE name LIKE '%' || :query || '%' OR city LIKE '%' || :query || '%'")
     fun searchTeams(query: String): Flow<List<TeamEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(teams: List<TeamEntity>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTeams(teams: List<TeamEntity>)
