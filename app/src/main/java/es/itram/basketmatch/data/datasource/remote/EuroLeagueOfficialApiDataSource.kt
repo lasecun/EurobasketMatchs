@@ -204,6 +204,72 @@ class EuroLeagueOfficialApiDataSource @Inject constructor(
     }
 
     /**
+     * Obtiene el roster (plantilla) de un equipo
+     */
+    suspend fun getTeamRoster(
+        clubCode: String,
+        competitionCode: String = DEFAULT_COMPETITION,
+        seasonCode: String = DEFAULT_SEASON
+    ): Result<List<es.itram.basketmatch.data.datasource.remote.dto.api.PlayerDto>> {
+        return executeWithRetry("getTeamRoster") {
+            if (!networkManager.isConnected()) {
+                throw Exception("No hay conexión a internet")
+            }
+
+            Log.d(TAG, "🏀 Obteniendo roster del equipo $clubCode temporada $seasonCode...")
+
+            val response = apiService.getTeamRoster(competitionCode, seasonCode, clubCode)
+
+            if (response.isSuccessful) {
+                // La API devuelve directamente un array, no un objeto con campo data
+                val allPersons = response.body() ?: emptyList()
+                Log.d(TAG, "✅ Roster obtenido: ${allPersons.size} personas para $clubCode")
+
+                // FILTRAR: Solo jugadores y entrenadores (excluir staff, árbitros, etc.)
+                val players = allPersons.filter { person ->
+                    person.typeName?.uppercase() in listOf("PLAYER", "COACH") ||
+                    person.type?.uppercase() in listOf("J", "C") // J=Jugador, C=Coach, como fallback
+                }
+
+                Log.d(TAG, "✅ Filtrado: ${players.size} jugadores/coaches de ${allPersons.size} personas totales")
+
+                // Log tipos encontrados para debugging
+                val typesCounts = allPersons.groupBy { it.typeName ?: it.type ?: "UNKNOWN" }.mapValues { it.value.size }
+                Log.d(TAG, "📊 Tipos encontrados: $typesCounts")
+
+                // Log para verificar los datos RAW del primer jugador (sin filtrar)
+                if (players.isNotEmpty()) {
+                    val firstPlayer = players[0]
+                    Log.d(TAG, "📸 PRIMER JUGADOR/COACH FILTRADO:")
+                    Log.d(TAG, "   - person.code: '${firstPlayer.person.code}'")
+                    Log.d(TAG, "   - person.name: '${firstPlayer.person.name}'")
+                    Log.d(TAG, "   - person.passportName: '${firstPlayer.person.passportName}'")
+                    Log.d(TAG, "   - person.passportSurname: '${firstPlayer.person.passportSurname}'")
+                    Log.d(TAG, "   - validCode: '${firstPlayer.validCode}'")
+                    Log.d(TAG, "   - validName: '${firstPlayer.validName}'")
+                    Log.d(TAG, "   - type: '${firstPlayer.type}'")
+                    Log.d(TAG, "   - typeName: '${firstPlayer.typeName}'")
+                    Log.d(TAG, "   - images.action: '${firstPlayer.images?.action}'")
+                    Log.d(TAG, "   - images.headshot: '${firstPlayer.images?.headshot}'")
+                    Log.d(TAG, "   - dorsal: '${firstPlayer.dorsal}'")
+                    Log.d(TAG, "   - position: ${firstPlayer.position}")
+                    Log.d(TAG, "   - positionName: '${firstPlayer.positionName}'")
+                }
+
+                // Contar jugadores con/sin imágenes (usando la estructura correcta)
+                val withImages = players.count { it.images?.action != null || it.images?.headshot != null }
+                val withoutImages = players.size - withImages
+                Log.d(TAG, "📊 Con imágenes: $withImages, Sin imágenes: $withoutImages")
+
+                players
+            } else {
+                Log.e(TAG, "❌ Error API: ${response.code()} - ${response.message()}")
+                throw Exception("Error ${response.code()}: ${response.message()}")
+            }
+        }
+    }
+
+    /**
      * Ejecuta una operación con reintentos automáticos
      */
     private suspend fun <T> executeWithRetry(

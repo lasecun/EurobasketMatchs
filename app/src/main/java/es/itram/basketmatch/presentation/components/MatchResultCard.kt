@@ -109,16 +109,19 @@ fun MatchResultCard(
                     )
                 }
 
-                // Resultado o VS
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                // Resultado o VS - MEJORADO: Centrado verticalmente
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .width(80.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     if (match.status == es.itram.basketmatch.domain.entity.MatchStatus.FINISHED &&
                         match.homeScore != null && match.awayScore != null) {
-                        // Mostrar resultado final
+                        // Mostrar resultado final - CENTRADO
                         Row(
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
                         ) {
                             Text(
                                 text = match.homeScore.toString(),
@@ -128,13 +131,15 @@ fun MatchResultCard(
                                     MaterialTheme.colorScheme.primary
                                 } else {
                                     MaterialTheme.colorScheme.onSurface
-                                }
+                                },
+                                textAlign = TextAlign.Center
                             )
 
                             Text(
                                 text = " - ",
                                 style = MaterialTheme.typography.headlineSmall,
-                                modifier = Modifier.padding(horizontal = 8.dp)
+                                modifier = Modifier.padding(horizontal = 4.dp),
+                                textAlign = TextAlign.Center
                             )
 
                             Text(
@@ -145,25 +150,31 @@ fun MatchResultCard(
                                     MaterialTheme.colorScheme.primary
                                 } else {
                                     MaterialTheme.colorScheme.onSurface
-                                }
+                                },
+                                textAlign = TextAlign.Center
                             )
                         }
                     } else {
-                        // Mostrar VS para partidos programados
-                        Text(
-                            text = "VS",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    if (match.status == es.itram.basketmatch.domain.entity.MatchStatus.SCHEDULED) {
-                        Text(
-                            text = match.dateTime.format(DateTimeFormatter.ofPattern("HH:mm")),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        // Mostrar VS para partidos programados - CENTRADO
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "VS",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                            if (match.status == es.itram.basketmatch.domain.entity.MatchStatus.SCHEDULED) {
+                                Text(
+                                    text = match.dateTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     }
                 }
 

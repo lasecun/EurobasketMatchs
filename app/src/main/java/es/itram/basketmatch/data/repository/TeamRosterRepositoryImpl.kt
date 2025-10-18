@@ -3,9 +3,9 @@ package es.itram.basketmatch.data.repository
 import android.util.Log
 import es.itram.basketmatch.data.datasource.local.dao.PlayerDao
 import es.itram.basketmatch.data.datasource.local.dao.TeamRosterDao
+import es.itram.basketmatch.data.datasource.remote.EuroLeagueOfficialApiDataSource
 import es.itram.basketmatch.data.mapper.PlayerMapper
 import es.itram.basketmatch.data.mapper.TeamRosterMapper
-import es.itram.basketmatch.domain.model.PlayerPosition
 import es.itram.basketmatch.domain.model.TeamRoster
 import es.itram.basketmatch.domain.repository.MatchRepository
 import es.itram.basketmatch.domain.repository.TeamRosterRepository
@@ -17,16 +17,17 @@ import javax.inject.Singleton
 /**
  * Implementación del repositorio para roster de equipos
  *
- * ACTUALIZADO: Ahora usa únicamente la API oficial de EuroLeague
- * ✅ Sin scraper web
- * ✅ Datos oficiales de plantillas
+ * ACTUALIZADO: Usa la API oficial de EuroLeague
+ * ✅ Datos reales de plantillas con imágenes de jugadores
  * ✅ Cache inteligente mejorado
+ * ✅ Sin scraper - API estable y oficial
  */
 @Singleton
 class TeamRosterRepositoryImpl @Inject constructor(
     private val teamRosterDao: TeamRosterDao,
     private val playerDao: PlayerDao,
-    private val matchRepository: MatchRepository
+    private val matchRepository: MatchRepository,
+    private val officialApiDataSource: EuroLeagueOfficialApiDataSource
 ) : TeamRosterRepository {
 
     companion object {
@@ -58,19 +59,50 @@ class TeamRosterRepositoryImpl @Inject constructor(
                 Log.d(TAG, "📱 [LOCAL] ⚠️ Cache vacío para $teamTla, descargando desde API...")
             }
             
-            Log.d(TAG, "🌐 [NETWORK] Obteniendo roster desde API para $teamTla")
-            
-            // NOTA: El método getTeamRoster no existe en EuroLeagueOfficialApiDataSource
-            // Por ahora creamos un roster básico con el equipo solicitado
-            Log.w(TAG, "⚠️ getTeamRoster no está implementado en la API oficial, generando roster básico")
+            Log.d(TAG, "🌐 [NETWORK] Obteniendo roster desde API oficial para $teamTla")
+
+            // Obtener roster real desde la API oficial
+            val seasonCode = if (season.startsWith("E")) season else "E2025"
+            val apiResult = officialApiDataSource.getTeamRoster(teamTla, seasonCode = seasonCode)
+
+            if (apiResult.isFailure) {
+                Log.e(TAG, "❌ Error obteniendo roster desde API: ${apiResult.exceptionOrNull()?.message}")
+                return Result.failure(apiResult.exceptionOrNull() ?: Exception("Error desconocido"))
+            }
+
+            val playerDtos = apiResult.getOrNull() ?: emptyList()
+
+            if (playerDtos.isEmpty()) {
+                Log.w(TAG, "⚠️ No se encontraron jugadores para $teamTla en la API")
+                return Result.failure(Exception("No se encontraron jugadores para $teamTla"))
+            }
+
+            // Convertir DTOs de la API oficial a modelo de dominio
+            val players = playerDtos.map { PlayerMapper.fromApiDto(it, teamTla) }
+
+            // Log detallado de los jugadores convertidos
+            Log.d(TAG, "📋 Jugadores convertidos: ${players.size}")
+            if (players.isNotEmpty()) {
+                val firstPlayer = players.first()
+                Log.d(TAG, "📋 Primer jugador: code=${firstPlayer.code}, name=${firstPlayer.name}, fullName=${firstPlayer.fullName}")
+                Log.d(TAG, "📋 Imagen: ${firstPlayer.profileImageUrl}")
+                Log.d(TAG, "📋 Dorsal: ${firstPlayer.jersey}, Posición: ${firstPlayer.position}")
+            }
 
             val teamLogoUrl = getTeamLogoFromFeeds(teamTla)
-            val roster = createBasicTeamRoster(teamTla, season, teamLogoUrl)
+            val roster = TeamRoster(
+                teamCode = teamTla,
+                teamName = getTeamNameFromTla(teamTla),
+                season = seasonCode,
+                players = players.sortedBy { it.jersey ?: 999 },
+                coaches = emptyList(),
+                logoUrl = teamLogoUrl
+            )
 
             // Guardar en cache local
             saveRosterToCache(roster)
 
-            Log.d(TAG, "🌐 [NETWORK] ✅ Roster básico creado y guardado en cache para $teamTla (${roster.players.size} jugadores)")
+            Log.d(TAG, "🌐 [NETWORK] ✅ Roster obtenido y guardado en cache para $teamTla (${roster.players.size} jugadores)")
             Result.success(roster)
 
         } catch (e: Exception) {
@@ -96,10 +128,33 @@ class TeamRosterRepositoryImpl @Inject constructor(
             }
             
             val players = PlayerMapper.fromEntityListToDomainList(playerEntities)
+
+            // VALIDACIÓN MEJORADA: Detectar datos antiguos o corruptos
+            val playersWithoutImages = players.count { it.profileImageUrl == null || it.profileImageUrl?.contains("ui-avatars.com") == true }
+            val playersWithoutNames = players.count { it.name.isBlank() || it.fullName.isBlank() }
+            val percentageWithoutImages = (playersWithoutImages.toFloat() / players.size) * 100
+            val percentageWithoutNames = (playersWithoutNames.toFloat() / players.size) * 100
+
+            // Si más del 50% no tiene imágenes reales O más del 30% no tiene nombres, invalidar caché
+            if (percentageWithoutImages > 50 || percentageWithoutNames > 30) {
+                Log.w(TAG, "📱 [LOCAL] ⚠️ Cache inválido detectado:")
+                Log.w(TAG, "   - ${percentageWithoutImages.toInt()}% sin imágenes reales")
+                Log.w(TAG, "   - ${percentageWithoutNames.toInt()}% sin nombres")
+                Log.w(TAG, "📱 [LOCAL] 🔄 Forzando recarga desde API para obtener datos actualizados...")
+
+                // Eliminar datos antiguos para forzar recarga
+                playerDao.deletePlayersByTeam(teamTla)
+                teamRosterDao.deleteTeamRoster(teamTla)
+
+                return null
+            }
+
             val roster = TeamRosterMapper.fromEntity(rosterEntity, players)
             
             Log.d(TAG, "📱 [LOCAL] ✅ Roster encontrado en cache para $teamTla (${players.size} jugadores)")
             Log.d(TAG, "📱 [LOCAL] 🔗 Logo URL desde cache: ${roster.logoUrl}")
+            Log.d(TAG, "📱 [LOCAL] 📸 Jugadores con imagen real: ${players.size - playersWithoutImages}/${players.size}")
+            Log.d(TAG, "📱 [LOCAL] 📝 Jugadores con nombre completo: ${players.size - playersWithoutNames}/${players.size}")
             roster
             
         } catch (e: Exception) {
@@ -132,16 +187,39 @@ class TeamRosterRepositoryImpl @Inject constructor(
         return try {
             Log.d(TAG, "🌐 [NETWORK] 🔄 Refrescando roster forzadamente para equipo $teamTla")
 
-            // Como getTeamRoster no existe en la API, crear un roster básico actualizado
-            Log.w(TAG, "⚠️ getTeamRoster no está implementado en la API oficial, generando roster básico actualizado")
+            // Obtener roster real desde la API oficial
+            val seasonCode = if (season.startsWith("E")) season else "E2025"
+            val apiResult = officialApiDataSource.getTeamRoster(teamTla, seasonCode = seasonCode)
+
+            if (apiResult.isFailure) {
+                Log.e(TAG, "❌ Error obteniendo roster desde API: ${apiResult.exceptionOrNull()?.message}")
+                return Result.failure(apiResult.exceptionOrNull() ?: Exception("Error desconocido"))
+            }
+
+            val playerDtos = apiResult.getOrNull() ?: emptyList()
+
+            if (playerDtos.isEmpty()) {
+                Log.w(TAG, "⚠️ No se encontraron jugadores para $teamTla en la API")
+                return Result.failure(Exception("No se encontraron jugadores para $teamTla"))
+            }
+
+            // Convertir DTOs de la API oficial a modelo de dominio
+            val players = playerDtos.map { PlayerMapper.fromApiDto(it, teamTla) }
 
             val teamLogoUrl = getTeamLogoFromFeeds(teamTla)
-            val roster = createBasicTeamRoster(teamTla, season, teamLogoUrl)
+            val roster = TeamRoster(
+                teamCode = teamTla,
+                teamName = getTeamNameFromTla(teamTla),
+                season = seasonCode,
+                players = players.sortedBy { it.jersey ?: 999 },
+                coaches = emptyList(),
+                logoUrl = teamLogoUrl
+            )
 
             // Guardar en cache local (reemplaza datos existentes)
             saveRosterToCache(roster)
 
-            Log.d(TAG, "🌐 [NETWORK] ✅ Roster básico refrescado y guardado en cache para $teamTla (${roster.players.size} jugadores)")
+            Log.d(TAG, "🌐 [NETWORK] ✅ Roster refrescado y guardado en cache para $teamTla (${roster.players.size} jugadores)")
             Result.success(roster)
 
         } catch (e: Exception) {
@@ -231,8 +309,8 @@ class TeamRosterRepositoryImpl @Inject constructor(
     /**
      * Mapea códigos TLA a nombres de equipos
      */
-    private fun getTeamNameFromTla(tla: String): String {
-        return when (tla.lowercase()) {
+    private fun getTeamNameFromTla(teamTla: String): String {
+        return when (teamTla.lowercase()) {
             "ber", "alb" -> "ALBA Berlin"
             "asm", "mon" -> "AS Monaco"
             "bas", "bkn" -> "Baskonia Vitoria-Gasteiz"
@@ -252,70 +330,7 @@ class TeamRosterRepositoryImpl @Inject constructor(
             "vil", "asv" -> "LDLC ASVEL Villeurbanne"
             "zal" -> "Zalgiris Kaunas"
             "val", "pam" -> "Valencia Basket"
-            else -> tla.uppercase()
+            else -> teamTla.uppercase()
         }
-    }
-
-    /**
-     * Crea un roster básico para un equipo cuando no está disponible desde la API
-     */
-    private fun createBasicTeamRoster(teamTla: String, season: String, logoUrl: String?): TeamRoster {
-        Log.d(TAG, "🏗️ Creando roster básico para $teamTla")
-
-        // Crear jugadores básicos para el equipo
-        val basicPlayers = createBasicPlayersForTeam(teamTla)
-
-        return TeamRoster(
-            teamCode = teamTla,
-            teamName = getTeamNameFromTla(teamTla),
-            season = season,
-            players = basicPlayers.sortedBy { it.jersey ?: 999 },
-            coaches = emptyList(),
-            logoUrl = logoUrl
-        ).also { roster ->
-            Log.d(TAG, "🏗️ Roster básico creado para ${roster.teamName} con ${roster.players.size} jugadores")
-        }
-    }
-
-    /**
-     * Crea jugadores básicos para un equipo (datos de placeholder)
-     */
-    private fun createBasicPlayersForTeam(teamTla: String): List<es.itram.basketmatch.domain.model.Player> {
-        return listOf(
-            createBasicPlayer(teamTla, 1, "Capitán", "Equipo", PlayerPosition.POINT_GUARD),
-            createBasicPlayer(teamTla, 7, "Base", "Principal", PlayerPosition.POINT_GUARD),
-            createBasicPlayer(teamTla, 11, "Escolta", "Titular", PlayerPosition.SHOOTING_GUARD),
-            createBasicPlayer(teamTla, 22, "Alero", "Pequeño", PlayerPosition.SMALL_FORWARD),
-            createBasicPlayer(teamTla, 33, "Ala-Pívot", "Grande", PlayerPosition.POWER_FORWARD),
-            createBasicPlayer(teamTla, 44, "Pívot", "Centro", PlayerPosition.CENTER)
-        )
-    }
-
-    /**
-     * Crea un jugador básico
-     */
-    private fun createBasicPlayer(
-        teamTla: String,
-        jersey: Int,
-        firstName: String,
-        lastName: String,
-        position: PlayerPosition
-    ): es.itram.basketmatch.domain.model.Player {
-        return es.itram.basketmatch.domain.model.Player(
-            code = "$teamTla-$jersey",
-            name = firstName,
-            surname = lastName,
-            fullName = "$firstName $lastName",
-            jersey = jersey,
-            position = position,
-            height = null,
-            weight = null,
-            dateOfBirth = null,
-            placeOfBirth = null,
-            nationality = null,
-            experience = null,
-            profileImageUrl = null,
-            isActive = true
-        )
     }
 }
