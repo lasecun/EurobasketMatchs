@@ -209,28 +209,6 @@ private fun MatchHeader(
                     onClick = { onTeamClick(match.homeTeamId, match.homeTeamName) }
                 )
                 
-                // VS y resultado
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = stringResource(R.string.vs),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    
-                    if (match.homeScore != null && match.awayScore != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "${match.homeScore} - ${match.awayScore}",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-                
                 // Equipo visitante
                 TeamSection(
                     teamName = match.awayTeamName,
