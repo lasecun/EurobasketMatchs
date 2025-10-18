@@ -105,14 +105,14 @@ data class GameDetailsResponseDto(
 
 @Serializable
 data class GameApiDto(
-    @SerialName("code") val code: String,
-    @SerialName("date") val date: String, // ISO format
-    @SerialName("local") val local: GameTeamDto,
-    @SerialName("road") val road: GameTeamDto,
+    @SerialName("gameCode") val code: String?,
+    @SerialName("date") val date: String?,
+    @SerialName("local") val local: GameTeamDto?,
+    @SerialName("road") val road: GameTeamDto?,
     @SerialName("venue") val venue: VenueDto? = null,
     @SerialName("phase") val phase: PhaseDto? = null,
     @SerialName("round") val round: RoundDto? = null,
-    @SerialName("gameState") val gameState: GameStateDto,
+    @SerialName("gameState") val gameState: GameStateDto? = null,
     @SerialName("boxscore") val boxscore: BoxscoreDto? = null
 )
 

@@ -9,7 +9,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import es.itram.basketmatch.data.datasource.local.dao.MatchDao
 import es.itram.basketmatch.data.datasource.local.dao.TeamDao
-import es.itram.basketmatch.data.datasource.remote.EuroLeagueRemoteDataSource
 import es.itram.basketmatch.data.datasource.remote.EuroLeagueOfficialApiDataSource
 import es.itram.basketmatch.data.mapper.MatchWebMapper
 import es.itram.basketmatch.data.mapper.TeamWebMapper
@@ -19,10 +18,10 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 /**
- * Módulo Hilt para dependencias de red - SOLO API OFICIAL
+ * Módulo Hilt para dependencias de red - SOLO API OFICIAL E2026
  *
- * ✅ Eliminado completamente el scraper web
- * ✅ Solo API oficial de EuroLeague
+ * ✅ Eliminado completamente EuroLeagueRemoteDataSource
+ * ✅ Solo API oficial de EuroLeague temporada 2025-2026
  * ✅ Arquitectura simplificada y limpia
  */
 @Module
@@ -50,34 +49,24 @@ object NetworkModule {
     fun provideMatchWebMapper(): MatchWebMapper {
         return MatchWebMapper
     }
-    
-    @Provides
-    @Singleton
-    fun provideEuroLeagueRemoteDataSource(
-        officialApiDataSource: EuroLeagueOfficialApiDataSource
-    ): EuroLeagueRemoteDataSource {
-        return EuroLeagueRemoteDataSource(officialApiDataSource)
-    }
 
     @Provides
     @Singleton
     fun provideDataSyncService(
-        euroLeagueRemoteDataSource: EuroLeagueRemoteDataSource,
+        officialApiDataSource: EuroLeagueOfficialApiDataSource,
         teamDao: TeamDao,
         matchDao: MatchDao,
-        teamMapper: TeamWebMapper,
-        matchMapper: MatchWebMapper,
         prefs: SharedPreferences
     ): DataSyncService {
-        return DataSyncService(euroLeagueRemoteDataSource, teamDao, matchDao, prefs)
+        return DataSyncService(officialApiDataSource, teamDao, matchDao, prefs)
     }
 
     @Provides
     @Singleton
     fun provideStaticDataGenerator(
-        euroLeagueRemoteDataSource: EuroLeagueRemoteDataSource,
+        officialApiDataSource: EuroLeagueOfficialApiDataSource,
         @ApplicationContext context: Context
     ): es.itram.basketmatch.data.generator.StaticDataGenerator {
-        return es.itram.basketmatch.data.generator.StaticDataGenerator(euroLeagueRemoteDataSource, context)
+        return es.itram.basketmatch.data.generator.StaticDataGenerator(officialApiDataSource, context)
     }
 }

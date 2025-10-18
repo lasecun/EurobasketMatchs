@@ -2,7 +2,7 @@ package es.itram.basketmatch.data.generator
 
 import android.content.Context
 import android.util.Log
-import es.itram.basketmatch.data.datasource.remote.EuroLeagueRemoteDataSource
+import es.itram.basketmatch.data.datasource.remote.EuroLeagueOfficialApiDataSource
 import es.itram.basketmatch.data.datasource.local.assets.StaticMatch
 import es.itram.basketmatch.data.datasource.local.assets.StaticMatchesData
 import es.itram.basketmatch.data.datasource.local.assets.StaticTeam
@@ -15,16 +15,15 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Generador de datos estáticos desde la API oficial de EuroLeague
+ * Generador de datos estáticos - Temporada 2025-2026
  *
- * ACTUALIZADO: Ahora usa únicamente la API oficial
- * ✅ Sin scraper web
+ * ✅ Solo API oficial de EuroLeague (E2026)
+ * ✅ Sin web scraping
  * ✅ Datos oficiales y confiables
- * ✅ Arquitectura simplificada
  */
 @Singleton
 class StaticDataGenerator @Inject constructor(
-    private val euroLeagueRemoteDataSource: EuroLeagueRemoteDataSource,
+    private val officialApiDataSource: EuroLeagueOfficialApiDataSource,
     private val context: Context
 ) {
     
@@ -34,7 +33,6 @@ class StaticDataGenerator @Inject constructor(
         private const val TEAMS_FILE = "teams_2025_26.json"
         private const val MATCHES_FILE = "matches_calendar_2025_26.json"
 
-        // JSON instance reutilizable para evitar warnings
         private val json = Json { prettyPrint = true }
     }
 
@@ -43,27 +41,26 @@ class StaticDataGenerator @Inject constructor(
      */
     suspend fun generateAllStaticData(): Result<GenerationResult> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "🏗️ [GENERATOR] Iniciando generación de datos estáticos desde API oficial EuroLeague...")
+            Log.d(TAG, "🏗️ Generando datos estáticos temporada 2025-2026...")
 
             // 1. Obtener equipos desde API oficial
-            val teamsResult = euroLeagueRemoteDataSource.getAllTeams()
+            val teamsResult = officialApiDataSource.getAllTeams()
             if (!teamsResult.isSuccess) {
                 Log.e(TAG, "❌ Error obteniendo equipos: ${teamsResult.exceptionOrNull()?.message}")
                 return@withContext Result.failure(teamsResult.exceptionOrNull() ?: Exception("Error desconocido"))
             }
 
-            val teams = teamsResult.getOrNull() ?: emptyList()
-            Log.d(TAG, "✅ Equipos obtenidos: ${teams.size}")
-
             // 2. Obtener partidos desde API oficial
-            val matchesResult = euroLeagueRemoteDataSource.getAllMatches()
+            val matchesResult = officialApiDataSource.getAllMatches()
             if (!matchesResult.isSuccess) {
                 Log.e(TAG, "❌ Error obteniendo partidos: ${matchesResult.exceptionOrNull()?.message}")
                 return@withContext Result.failure(matchesResult.exceptionOrNull() ?: Exception("Error desconocido"))
             }
 
+            val teams = teamsResult.getOrNull() ?: emptyList()
             val matches = matchesResult.getOrNull() ?: emptyList()
-            Log.d(TAG, "✅ Partidos obtenidos: ${matches.size}")
+
+            Log.d(TAG, "✅ Datos obtenidos - Equipos: ${teams.size}, Partidos: ${matches.size}")
 
             // 3. Convertir a formato estático
             val staticTeams = teams.map { team ->
@@ -136,7 +133,7 @@ class StaticDataGenerator @Inject constructor(
         try {
             Log.d(TAG, "🏗️ [GENERATOR] Generando solo equipos desde API...")
             
-            val teamsResult = euroLeagueRemoteDataSource.getAllTeams()
+            val teamsResult = officialApiDataSource.getAllTeams()
             if (!teamsResult.isSuccess) {
                 Log.e(TAG, "❌ Error obteniendo equipos: ${teamsResult.exceptionOrNull()?.message}")
                 return@withContext Result.failure(teamsResult.exceptionOrNull() ?: Exception("Error desconocido"))
@@ -173,7 +170,7 @@ class StaticDataGenerator @Inject constructor(
         try {
             Log.d(TAG, "🏗️ [GENERATOR] Generando solo partidos desde API...")
             
-            val matchesResult = euroLeagueRemoteDataSource.getAllMatches()
+            val matchesResult = officialApiDataSource.getAllMatches()
             if (!matchesResult.isSuccess) {
                 Log.e(TAG, "❌ Error obteniendo partidos: ${matchesResult.exceptionOrNull()?.message}")
                 return@withContext Result.failure(matchesResult.exceptionOrNull() ?: Exception("Error desconocido"))

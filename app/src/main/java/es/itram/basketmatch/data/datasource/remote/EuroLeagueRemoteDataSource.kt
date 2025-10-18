@@ -58,7 +58,7 @@ class EuroLeagueRemoteDataSource @Inject constructor(
     /**
      * Obtiene todos los partidos usando únicamente la API oficial
      */
-    suspend fun getAllMatches(season: String = "2024-25"): Result<List<MatchWebDto>> {
+    suspend fun getAllMatches(): Result<List<MatchWebDto>> {
         return try {
             Log.d(TAG, "⚽ Obteniendo partidos desde API oficial de EuroLeague...")
 
@@ -89,14 +89,15 @@ class EuroLeagueRemoteDataSource @Inject constructor(
         return try {
             Log.d(TAG, "📅 Obteniendo partidos por fecha desde API oficial: $dateFrom a $dateTo")
 
-            val result = officialApiDataSource.getMatchesByDateRange(dateFrom, dateTo)
+            val result = officialApiDataSource.getGamesByDate(dateFrom, dateTo)
             if (result.isSuccess) {
-                Log.d(TAG, "✅ Partidos por fecha obtenidos: ${result.getOrNull()?.size ?: 0}")
+                val matches = result.getOrNull() ?: emptyList()
+                Log.d(TAG, "✅ Partidos por fecha obtenidos: ${matches.size}")
+                Result.success(matches)
             } else {
                 Log.w(TAG, "⚠️ No se pudieron obtener partidos por fecha desde API oficial")
+                Result.failure(result.exceptionOrNull() ?: Exception("Error desconocido"))
             }
-
-            result
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error obteniendo partidos por fecha", e)
             Result.failure(e)
@@ -104,31 +105,35 @@ class EuroLeagueRemoteDataSource @Inject constructor(
     }
 
     /**
-     * Obtiene detalles de un partido específico usando la API oficial
+     * Obtiene detalles de un partido específico
+     * NOTA: Este método no está disponible en la API oficial actualmente
      */
     suspend fun getMatchDetails(gameCode: String): Result<MatchWebDto> {
         return try {
-            Log.d(TAG, "🔍 Obteniendo detalles del partido: $gameCode")
+            Log.d(TAG, "🔍 Intentando obtener detalles del partido: $gameCode")
 
-            val result = officialApiDataSource.getMatchDetails(gameCode)
-            if (result.isSuccess) {
-                Log.d(TAG, "✅ Detalles del partido obtenidos")
+            // Como no tenemos el método getMatchDetails en EuroLeagueOfficialApiDataSource,
+            // intentamos obtener todos los partidos y buscar el específico
+            val allMatchesResult = officialApiDataSource.getAllMatches()
+            if (allMatchesResult.isSuccess) {
+                val matches = allMatchesResult.getOrNull() ?: emptyList()
+                val match = matches.find { it.id == gameCode }
+
+                if (match != null) {
+                    Log.d(TAG, "✅ Detalles del partido encontrados en la lista general")
+                    Result.success(match)
+                } else {
+                    Log.w(TAG, "⚠️ Partido no encontrado en la lista general")
+                    Result.failure(Exception("Partido no encontrado: $gameCode"))
+                }
             } else {
-                Log.w(TAG, "⚠️ No se pudieron obtener detalles del partido")
+                Log.w(TAG, "⚠️ No se pudieron obtener partidos para buscar el específico")
+                Result.failure(Exception("Error obteniendo lista de partidos"))
             }
-
-            result
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error obteniendo detalles del partido", e)
             Result.failure(e)
         }
-    }
-
-    /**
-     * Verifica si la API oficial está disponible
-     */
-    suspend fun isApiAvailable(): Boolean {
-        return officialApiDataSource.isApiAvailable()
     }
 
     /**

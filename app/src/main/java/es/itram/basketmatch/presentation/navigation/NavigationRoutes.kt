@@ -17,6 +17,8 @@ object NavigationRoutes {
     // 🏀 Basketball Content Routes
     const val TEAM_DETAIL = "team_detail/{teamId}"
     const val MATCH_DETAIL = "match_detail/{matchId}"
+    const val MATCH_RESULTS = "match_results"
+    const val MATCH_RESULTS_BY_DATE = "match_results_by_date"
     const val TEAM_ROSTER = "team_roster/{teamTla}/{teamName}"
     const val PLAYER_DETAIL = "player_detail/{playerCode}/{teamName}"
     
