@@ -8,8 +8,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import es.itram.basketmatch.domain.entity.Match
+import es.itram.basketmatch.domain.entity.MatchStatus
+import es.itram.basketmatch.domain.entity.SeasonType
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 /**
@@ -48,17 +52,17 @@ fun MatchResultCard(
 
                 // Estado del partido con colores distintivos
                 val (statusText, statusColor, statusBackgroundColor) = when (match.status) {
-                    es.itram.basketmatch.domain.entity.MatchStatus.FINISHED -> Triple(
+                    MatchStatus.FINISHED -> Triple(
                         "FINALIZADO",
                         MaterialTheme.colorScheme.onPrimary,
                         MaterialTheme.colorScheme.primary
                     )
-                    es.itram.basketmatch.domain.entity.MatchStatus.LIVE -> Triple(
+                    MatchStatus.LIVE -> Triple(
                         "EN VIVO",
                         MaterialTheme.colorScheme.onError,
                         MaterialTheme.colorScheme.error
                     )
-                    es.itram.basketmatch.domain.entity.MatchStatus.SCHEDULED -> Triple(
+                    MatchStatus.SCHEDULED -> Triple(
                         "PROGRAMADO",
                         MaterialTheme.colorScheme.onSecondary,
                         MaterialTheme.colorScheme.secondary
@@ -116,7 +120,7 @@ fun MatchResultCard(
                         .width(80.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (match.status == es.itram.basketmatch.domain.entity.MatchStatus.FINISHED &&
+                    if (match.status == MatchStatus.FINISHED &&
                         match.homeScore != null && match.awayScore != null) {
                         // Mostrar resultado final - CENTRADO
                         Row(
@@ -166,7 +170,7 @@ fun MatchResultCard(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
                             )
-                            if (match.status == es.itram.basketmatch.domain.entity.MatchStatus.SCHEDULED) {
+                            if (match.status == MatchStatus.SCHEDULED) {
                                 Text(
                                     text = match.dateTime.format(DateTimeFormatter.ofPattern("HH:mm")),
                                     style = MaterialTheme.typography.labelMedium,
@@ -232,4 +236,27 @@ fun MatchResultCard(
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewMatchResultCard() {
+    val sampleMatch = Match(
+        id = "1",
+        homeTeamName = "Real Madrid",
+        awayTeamName = "FC Barcelona",
+        homeScore = 85,
+        awayScore = 78,
+        dateTime = LocalDateTime.now().minusDays(1),
+        venue = "WiZink Center",
+        round = 5,
+        status = MatchStatus.FINISHED,
+        homeTeamId = "",
+        homeTeamLogo = "",
+        awayTeamId = "",
+        awayTeamLogo = "",
+        seasonType = SeasonType.REGULAR
+    )
+
+    MatchResultCard(match = sampleMatch, onClick = {})
 }
