@@ -21,6 +21,7 @@ import retrofit2.http.Query
  * Servicio Retrofit para consumir la API oficial de EuroLeague
  * Base URL: https://api-live.euroleague.net/
  *
+ * ACTUALIZADO: Usando API v2 que sí funciona (v3 daba error 405)
  * Esta API oficial proporciona:
  * ✅ Datos en tiempo real y oficiales
  * ✅ Estructura JSON consistente
@@ -32,47 +33,36 @@ interface EuroLeagueApiService {
     /**
      * Obtiene todas las competiciones disponibles
      */
-    @GET("v3/competitions")
+    @GET("v2/competitions")
     suspend fun getCompetitions(): Response<CompetitionsResponseDto>
 
     /**
      * Obtiene información de una temporada específica
      */
-    @GET("v3/competitions/{competitionCode}/seasons/{seasonCode}")
+    @GET("v2/competitions/{competitionCode}/seasons/{seasonCode}")
     suspend fun getSeason(
         @Path("competitionCode") competitionCode: String = "E",
-        @Path("seasonCode") seasonCode: String = "E2024"
+        @Path("seasonCode") seasonCode: String = "E2025"
     ): Response<SeasonResponseDto>
 
     /**
      * Obtiene todos los equipos de una temporada
      */
-    @GET("v3/competitions/{competitionCode}/seasons/{seasonCode}/clubs")
+    @GET("v2/competitions/{competitionCode}/seasons/{seasonCode}/clubs")
     suspend fun getTeams(
         @Path("competitionCode") competitionCode: String = "E",
-        @Path("seasonCode") seasonCode: String = "E2024"
+        @Path("seasonCode") seasonCode: String = "E2025"
     ): Response<TeamsResponseDto>
 
     /**
      * Obtiene información detallada de un equipo
      */
-    @GET("v3/competitions/{competitionCode}/seasons/{seasonCode}/clubs/{clubCode}")
+    @GET("v2/competitions/{competitionCode}/seasons/{seasonCode}/clubs/{clubCode}")
     suspend fun getTeamDetails(
         @Path("competitionCode") competitionCode: String = "E",
-        @Path("seasonCode") seasonCode: String = "E2024",
+        @Path("seasonCode") seasonCode: String = "E2025",
         @Path("clubCode") clubCode: String
     ): Response<TeamDetailsResponseDto>
-
-    /**
-     * Obtiene todos los partidos de una temporada
-     */
-    @GET("v3/competitions/{competitionCode}/seasons/{seasonCode}/games")
-    suspend fun getGames(
-        @Path("competitionCode") competitionCode: String = "E",
-        @Path("seasonCode") seasonCode: String = "E2024",
-        @Query("phaseTypeCode") phaseTypeCode: String? = null,
-        @Query("gameStateCode") gameStateCode: String? = null
-    ): Response<GamesResponseDto>
 
     /**
      * Obtiene información detallada de un partido
@@ -80,58 +70,79 @@ interface EuroLeagueApiService {
     @GET("v3/competitions/{competitionCode}/seasons/{seasonCode}/games/{gameCode}")
     suspend fun getGameDetails(
         @Path("competitionCode") competitionCode: String = "E",
-        @Path("seasonCode") seasonCode: String = "E2024",
+        @Path("seasonCode") seasonCode: String = "E2025",
         @Path("gameCode") gameCode: String
     ): Response<GameDetailsResponseDto>
 
     /**
-     * Obtiene partidos por fecha
+     * Obtiene el reporte completo de un partido (NUEVO - CON RESULTADOS REALES)
+     * Este endpoint SÍ funciona y devuelve los marcadores correctos
+     */
+    @GET("v3/competitions/{competitionCode}/seasons/{seasonCode}/games/{gameCode}/report")
+    suspend fun getGameReport(
+        @Path("competitionCode") competitionCode: String = "E",
+        @Path("seasonCode") seasonCode: String = "E2025",
+        @Path("gameCode") gameCode: String
+    ): Response<GameDetailsResponseDto>
+
+    /**
+     * Obtiene todos los partidos de una temporada (ENDPOINT QUE SÍ FUNCIONA)
      */
     @GET("v3/competitions/{competitionCode}/seasons/{seasonCode}/games")
-    suspend fun getGamesByDate(
+    suspend fun getGames(
         @Path("competitionCode") competitionCode: String = "E",
-        @Path("seasonCode") seasonCode: String = "E2024",
-        @Query("dateFrom") dateFrom: String, // YYYY-MM-DD
-        @Query("dateTo") dateTo: String // YYYY-MM-DD
+        @Path("seasonCode") seasonCode: String = "E2025",
+        @Query("phaseTypeCode") phaseTypeCode: String? = null,
+        @Query("gameStateCode") gameStateCode: String? = null
+    ): Response<GamesResponseDto>
+
+    /**
+     * Obtiene todos los partidos de una temporada usando v2 (FALLBACK)
+     */
+    @GET("v2/competitions/{competitionCode}/seasons/{seasonCode}/games")
+    suspend fun getGamesV2(
+        @Path("competitionCode") competitionCode: String = "E",
+        @Path("seasonCode") seasonCode: String = "E2025",
+        @Query("phaseTypeCode") phaseTypeCode: String? = null
     ): Response<GamesResponseDto>
 
     /**
      * Obtiene estadísticas de un partido
      */
-    @GET("v3/competitions/{competitionCode}/seasons/{seasonCode}/games/{gameCode}/stats")
+    @GET("v2/competitions/{competitionCode}/seasons/{seasonCode}/games/{gameCode}/stats")
     suspend fun getGameStats(
         @Path("competitionCode") competitionCode: String = "E",
-        @Path("seasonCode") seasonCode: String = "E2024",
+        @Path("seasonCode") seasonCode: String = "E2025",
         @Path("gameCode") gameCode: String
     ): Response<GameStatsResponseDto>
 
     /**
      * Obtiene la plantilla de un equipo
      */
-    @GET("v3/competitions/{competitionCode}/seasons/{seasonCode}/clubs/{clubCode}/people")
+    @GET("v2/competitions/{competitionCode}/seasons/{seasonCode}/clubs/{clubCode}/people")
     suspend fun getTeamRoster(
         @Path("competitionCode") competitionCode: String = "E",
-        @Path("seasonCode") seasonCode: String = "E2024",
+        @Path("seasonCode") seasonCode: String = "E2025",
         @Path("clubCode") clubCode: String
     ): Response<TeamRosterResponseDto>
 
     /**
      * Obtiene las clasificaciones
      */
-    @GET("v3/competitions/{competitionCode}/seasons/{seasonCode}/standings")
+    @GET("v2/competitions/{competitionCode}/seasons/{seasonCode}/standings")
     suspend fun getStandings(
         @Path("competitionCode") competitionCode: String = "E",
-        @Path("seasonCode") seasonCode: String = "E2024",
+        @Path("seasonCode") seasonCode: String = "E2025",
         @Query("phaseTypeCode") phaseTypeCode: String? = null
     ): Response<StandingsResponseDto>
 
     /**
      * Obtiene información de un jugador
      */
-    @GET("v3/competitions/{competitionCode}/seasons/{seasonCode}/people/{personCode}")
+    @GET("v2/competitions/{competitionCode}/seasons/{seasonCode}/people/{personCode}")
     suspend fun getPlayer(
         @Path("competitionCode") competitionCode: String = "E",
-        @Path("seasonCode") seasonCode: String = "E2024",
+        @Path("seasonCode") seasonCode: String = "E2025",
         @Path("personCode") personCode: String
     ): Response<PlayerResponseDto>
 }

@@ -22,6 +22,7 @@ import es.itram.basketmatch.presentation.screen.PlayerDetailScreen
 import es.itram.basketmatch.presentation.screen.ContactScreen
 import es.itram.basketmatch.presentation.screen.settings.SettingsScreen
 import es.itram.basketmatch.presentation.screen.settings.SyncSettingsScreen
+import es.itram.basketmatch.presentation.results.MatchResultsScreen
 import es.itram.basketmatch.presentation.viewmodel.MainViewModel
 import es.itram.basketmatch.presentation.viewmodel.SettingsViewModel
 import es.itram.basketmatch.presentation.screen.NotificationSettingsScreen
@@ -116,6 +117,25 @@ fun EuroLeagueNavigation(navController: NavHostController) {
             )
         }
         
+        // 📊 Match Results Screen
+        composable(NavigationRoutes.MATCH_RESULTS) {
+            MatchResultsScreen()
+        }
+
+        // 📅 Match Results By Date Screen (30 de Septiembre 2025)
+        composable(NavigationRoutes.MATCH_RESULTS_BY_DATE) {
+            es.itram.basketmatch.presentation.screen.MatchResultsByDateScreen(
+                onNavigateBack = {
+                    android.util.Log.d("Navigation", "🔙 MatchResultsByDateScreen: navigating back")
+                    navController.popBackStack()
+                },
+                onNavigateToMatchDetail = { matchId ->
+                    android.util.Log.d("Navigation", "🏀 MatchResultsByDateScreen: navigating to match detail $matchId")
+                    navController.navigate(NavigationRoutes.matchDetail(matchId))
+                }
+            )
+        }
+
         composable(
             route = NavigationRoutes.TEAM_ROSTER,
             arguments = listOf(

@@ -2,7 +2,7 @@ package es.itram.basketmatch.data.repository
 
 import android.util.Log
 import es.itram.basketmatch.data.datasource.local.dao.MatchDao
-import es.itram.basketmatch.data.datasource.remote.EuroLeagueRemoteDataSource
+import es.itram.basketmatch.data.datasource.remote.EuroLeagueOfficialApiDataSource
 import es.itram.basketmatch.data.mapper.MatchMapper
 import es.itram.basketmatch.data.mapper.MatchWebMapper
 import es.itram.basketmatch.data.network.NetworkManager
@@ -14,21 +14,28 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Implementación del repositorio de partidos
- * Combina datos locales (Room) con datos remotos (Web scraping)
+ * Repositorio de partidos - Temporada 2025-2026 (E2025)
+ *
+ * Flujo simple:
+ * 1. Al arrancar la app, descarga las 38 jornadas de E2025 (temporada 2025-2026)
+ * 2. Guarda en base de datos local
+ * 3. Filtra por fecha según el selector del usuario
+ * 4. Muestra resultados si ya se jugó, "Programado" si no
  */
 @Singleton
 class MatchRepositoryImpl @Inject constructor(
     private val matchDao: MatchDao,
-    private val remoteDataSource: EuroLeagueRemoteDataSource,
+    private val officialApiDataSource: EuroLeagueOfficialApiDataSource,
     private val networkManager: NetworkManager
 ) : MatchRepository {
 
@@ -36,77 +43,88 @@ class MatchRepositoryImpl @Inject constructor(
         private const val TAG = "MatchRepositoryImpl"
     }
 
-    // Scope para operaciones de background que no deben bloquear el UI
     private val backgroundScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override fun getAllMatches(): Flow<List<Match>> {
-        Log.d(TAG, "📱 [LOCAL] Iniciando obtención de partidos desde cache local...")
+        Log.d(TAG, "📱 Obteniendo partidos de la temporada 2025-2026 (E2025)...")
+
         return matchDao.getAllMatches().map { entities ->
-            Log.d(TAG, "📱 [LOCAL] ✅ Partidos obtenidos desde BD local: ${entities.size}")
+            Log.d(TAG, "✅ Partidos en BD local: ${entities.size}")
+
+            // Verificar si necesitamos recargar por scores en 0
+            if (entities.isNotEmpty()) {
+                val matchesWithNoScores = entities.count {
+                    (it.homeScore == null || it.homeScore == 0) &&
+                    (it.awayScore == null || it.awayScore == 0)
+                }
+                Log.d(TAG, "⚠️ Partidos sin marcadores: $matchesWithNoScores de ${entities.size}")
+
+                // Si más del 90% de partidos no tienen marcadores, forzar recarga
+                if (matchesWithNoScores > entities.size * 0.9) {
+                    Log.w(TAG, "🔄 Detectados muchos partidos sin marcadores, forzando recarga...")
+                    backgroundScope.launch {
+                        try {
+                            matchDao.deleteAllMatches()
+                            Log.d(TAG, "🗑️ Base de datos limpiada")
+                            syncMatchesFromApi()
+                        } catch (e: Exception) {
+                            Log.e(TAG, "❌ Error forzando recarga: ${e.message}")
+                        }
+                    }
+                }
+            }
+
             MatchMapper.toDomainList(entities)
         }.onStart {
-            // Solo ejecutar refresh si la BD local está vacía y hay conexión
             if (networkManager.isConnected()) {
                 backgroundScope.launch {
                     try {
                         val localMatchCount = matchDao.getMatchCount()
-                        Log.d(TAG, "📱 [LOCAL] Verificando cache: $localMatchCount partidos en BD local")
-                        
+
                         if (localMatchCount == 0) {
-                            Log.d(TAG, "📱 [LOCAL] ⚠️ Cache vacío, iniciando descarga desde API...")
-                            refreshMatchesIfNeeded()
+                            Log.d(TAG, "⚠️ Cache vacío, descargando partidos de E2025...")
+                            syncMatchesFromApi()
                         } else {
-                            Log.d(TAG, "📱 [LOCAL] ✅ Cache disponible, usando datos locales")
+                            Log.d(TAG, "✅ Cache disponible ($localMatchCount partidos)")
                         }
                     } catch (e: Exception) {
-                        // En producción se loggearía, en tests se ignora silenciosamente
-                        // Log.w(TAG, "Error en refresh en background", e)
+                        Log.e(TAG, "❌ Error en sincronización: ${e.message}")
                     }
                 }
+            } else {
+                Log.w(TAG, "⚠️ Sin conexión a internet")
             }
         }
     }
 
     override fun getMatchesByDate(date: LocalDateTime): Flow<List<Match>> {
-        Log.d(TAG, "📱 [LOCAL] Obteniendo partidos por fecha desde BD local: $date")
+        Log.d(TAG, "📱 Obteniendo partidos para fecha: $date")
         return matchDao.getMatchesByDate(date).map { entities ->
-            Log.d(TAG, "📱 [LOCAL] ✅ Partidos encontrados para $date: ${entities.size}")
+            Log.d(TAG, "✅ Partidos encontrados: ${entities.size}")
             MatchMapper.toDomainList(entities)
         }
     }
 
     override fun getMatchesByTeam(teamId: String): Flow<List<Match>> {
-        Log.d(TAG, "📱 [LOCAL] Obteniendo partidos por equipo desde BD local: $teamId")
         return matchDao.getMatchesByTeam(teamId).map { entities ->
-            Log.d(TAG, "📱 [LOCAL] ✅ Partidos encontrados para $teamId: ${entities.size}")
             MatchMapper.toDomainList(entities)
         }
     }
 
     override fun getMatchesByStatus(status: MatchStatus): Flow<List<Match>> {
-        Log.d(TAG, "📱 [LOCAL] Obteniendo partidos por estado desde BD local: $status")
         return matchDao.getMatchesByStatus(status).map { entities ->
-            Log.d(TAG, "📱 [LOCAL] ✅ Partidos encontrados con estado $status: ${entities.size}")
             MatchMapper.toDomainList(entities)
         }
     }
 
     override fun getMatchesBySeasonType(seasonType: SeasonType): Flow<List<Match>> {
-        Log.d(TAG, "📱 [LOCAL] Obteniendo partidos por temporada desde BD local: $seasonType")
         return matchDao.getMatchesBySeasonType(seasonType).map { entities ->
-            Log.d(TAG, "📱 [LOCAL] ✅ Partidos encontrados para temporada $seasonType: ${entities.size}")
             MatchMapper.toDomainList(entities)
         }
     }
 
     override fun getMatchById(matchId: String): Flow<Match?> {
-        Log.d(TAG, "📱 [LOCAL] Obteniendo partido específico desde BD local: $matchId")
         return matchDao.getMatchById(matchId).map { entity ->
-            if (entity != null) {
-                Log.d(TAG, "📱 [LOCAL] ✅ Partido encontrado: $matchId")
-            } else {
-                Log.d(TAG, "📱 [LOCAL] ⚠️ Partido no encontrado: $matchId")
-            }
             entity?.let { MatchMapper.toDomain(it) }
         }
     }
@@ -126,41 +144,95 @@ class MatchRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Sincroniza partidos desde la web si es necesario
+     * Sincroniza partidos de la temporada 2024-2025 desde la API oficial
      */
-    private suspend fun refreshMatchesIfNeeded() {
+    private suspend fun syncMatchesFromApi() {
         if (!networkManager.isConnected()) {
-            Log.d(TAG, "📱 [LOCAL] Sin conexión a internet, usando datos locales únicamente")
+            Log.w(TAG, "Sin conexión a internet")
             return
         }
         
         try {
-            Log.d(TAG, "🌐 [NETWORK] Iniciando sincronización de partidos desde API EuroLeague...")
-            
-            val remoteResult = remoteDataSource.getAllMatches()
-            
-            if (remoteResult.isSuccess) {
-                val remoteMatches = remoteResult.getOrNull() ?: emptyList()
+            Log.d(TAG, "🌐 Descargando partidos de temporada E2025 desde API...")
+
+            val result = officialApiDataSource.getAllMatches()
+
+            if (result.isSuccess) {
+                val remoteMatches = result.getOrNull() ?: emptyList()
                 if (remoteMatches.isNotEmpty()) {
-                    Log.d(TAG, "🌐 [NETWORK] ✅ Partidos obtenidos desde API: ${remoteMatches.size}")
-                    
-                    // Convertir DTOs web a entidades de dominio
+                    Log.d(TAG, "✅ Partidos descargados: ${remoteMatches.size}")
+
                     val domainMatches = MatchWebMapper.toDomainList(remoteMatches)
-                    
-                    // Convertir a entidades de base de datos y guardar
                     val entities = MatchMapper.fromDomainList(domainMatches)
                     matchDao.insertMatches(entities)
                     
-                    Log.d(TAG, "💾 [SAVE] Partidos guardados en BD local: ${domainMatches.size}")
+                    Log.d(TAG, "💾 Partidos guardados en BD local")
                 } else {
-                    Log.w(TAG, "🌐 [NETWORK] ⚠️ API devolvió lista vacía de partidos")
+                    Log.w(TAG, "⚠️ API devolvió lista vacía")
                 }
             } else {
-                Log.e(TAG, "❌ [NETWORK] Error en sincronización remota de partidos", remoteResult.exceptionOrNull())
+                Log.e(TAG, "❌ Error en API: ${result.exceptionOrNull()?.message}")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "❌ [NETWORK] Error sincronizando partidos desde la API", e)
-            // Continuar con datos locales en caso de error
+            Log.e(TAG, "❌ Error sincronizando: ${e.message}", e)
+        }
+    }
+
+    /**
+     * Obtiene partidos de una fecha específica desde la API
+     */
+    fun getMatchResultsByDateFromApi(date: LocalDateTime): Flow<List<Match>> = flow {
+        if (!networkManager.isConnected()) {
+            Log.w(TAG, "Sin conexión a internet")
+            emit(emptyList())
+            return@flow
+        }
+
+        try {
+            val targetDateString = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+            Log.d(TAG, "🌐 Obteniendo partidos para: $targetDateString")
+
+            val result = officialApiDataSource.getGamesByDate(
+                dateFrom = targetDateString,
+                dateTo = targetDateString
+            )
+
+            if (result.isSuccess) {
+                val games = result.getOrNull() ?: emptyList()
+                Log.d(TAG, "✅ Partidos encontrados: ${games.size}")
+
+                val matches = games.map { game ->
+                    Match(
+                        id = game.id,
+                        homeTeamId = game.homeTeamId,
+                        homeTeamName = game.homeTeamName,
+                        homeTeamLogo = game.homeTeamLogo,
+                        awayTeamId = game.awayTeamId,
+                        awayTeamName = game.awayTeamName,
+                        awayTeamLogo = game.awayTeamLogo,
+                        homeScore = game.homeScore,
+                        awayScore = game.awayScore,
+                        dateTime = LocalDateTime.parse(game.date + "T" + (game.time ?: "20:00")),
+                        status = when (game.status) {
+                            es.itram.basketmatch.data.datasource.remote.dto.MatchStatus.FINISHED -> MatchStatus.FINISHED
+                            es.itram.basketmatch.data.datasource.remote.dto.MatchStatus.LIVE -> MatchStatus.LIVE
+                            es.itram.basketmatch.data.datasource.remote.dto.MatchStatus.SCHEDULED -> MatchStatus.SCHEDULED
+                            else -> MatchStatus.SCHEDULED
+                        },
+                        round = 1,
+                        seasonType = SeasonType.REGULAR,
+                        venue = game.venue ?: "Por determinar"
+                    )
+                }
+
+                emit(matches.sortedBy { it.dateTime })
+            } else {
+                Log.e(TAG, "❌ Error: ${result.exceptionOrNull()?.message}")
+                emit(emptyList())
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Excepción: ${e.message}", e)
+            emit(emptyList())
         }
     }
 }

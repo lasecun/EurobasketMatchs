@@ -29,24 +29,53 @@ object EuroLeagueApiMapper {
 
     /**
      * Convierte GameApiDto (API oficial) a MatchWebDto (proyecto existente)
+     * Devuelve null si faltan datos críticos
      */
-    fun GameApiDto.toMatchWebDto(): MatchWebDto {
+    fun GameApiDto.toMatchWebDto(): MatchWebDto? {
+        // Validar que los campos críticos no sean null
+        val gameCode = this.code
+        val gameDate = this.date
+        val localTeam = this.local
+        val roadTeam = this.road
+
+        if (gameCode == null || gameDate == null || localTeam == null || roadTeam == null) {
+            android.util.Log.w("ApiMapper", "⚠️ Partido con datos incompletos ignorado: code=$gameCode, date=$gameDate")
+            return null
+        }
+
+        // Logging detallado para debugging de marcadores
+        android.util.Log.d("ApiMapper", "🔍 Partido: $gameCode")
+        android.util.Log.d("ApiMapper", "   Estado RAW: '${this.gameState?.code}' - '${this.gameState?.name}'")
+        android.util.Log.d("ApiMapper", "   ${localTeam.club.code} score: ${localTeam.score}")
+        android.util.Log.d("ApiMapper", "   ${roadTeam.club.code} score: ${roadTeam.score}")
+        android.util.Log.d("ApiMapper", "   Boxscore local: ${this.boxscore?.local?.score}")
+        android.util.Log.d("ApiMapper", "   Boxscore road: ${this.boxscore?.road?.score}")
+
+        // Priorizar boxscore sobre score directo (más confiable para partidos finalizados)
+        val homeScore = this.boxscore?.local?.score ?: localTeam.score
+        val awayScore = this.boxscore?.road?.score ?: roadTeam.score
+
+        val mappedStatus = this.gameState?.toMatchStatus() ?: MatchStatus.SCHEDULED
+
+        android.util.Log.d("ApiMapper", "   Estado mapeado: $mappedStatus")
+        android.util.Log.d("ApiMapper", "   Marcadores finales: $homeScore - $awayScore")
+
         return MatchWebDto(
-            id = this.code,
-            homeTeamId = this.local.club.code,
-            homeTeamName = this.local.club.tvName ?: this.local.club.name,
-            homeTeamLogo = this.local.club.imageUrls?.logo,
-            awayTeamId = this.road.club.code,
-            awayTeamName = this.road.club.tvName ?: this.road.club.name,
-            awayTeamLogo = this.road.club.imageUrls?.logo,
-            date = this.date.substring(0, 10), // Extraer solo fecha (YYYY-MM-DD)
-            time = this.date.substring(11, 16), // Extraer solo hora (HH:MM)
+            id = gameCode,
+            homeTeamId = localTeam.club.code,
+            homeTeamName = localTeam.club.tvName ?: localTeam.club.name,
+            homeTeamLogo = localTeam.club.imageUrls?.logo,
+            awayTeamId = roadTeam.club.code,
+            awayTeamName = roadTeam.club.tvName ?: roadTeam.club.name,
+            awayTeamLogo = roadTeam.club.imageUrls?.logo,
+            date = gameDate.substring(0, 10), // Extraer solo fecha (YYYY-MM-DD)
+            time = if (gameDate.length > 11) gameDate.substring(11, 16) else null, // Extraer solo hora (HH:MM)
             venue = this.venue?.name,
-            status = this.gameState.toMatchStatus(),
-            homeScore = this.local.score ?: this.boxscore?.local?.score,
-            awayScore = this.road.score ?: this.boxscore?.road?.score,
+            status = mappedStatus,
+            homeScore = homeScore,
+            awayScore = awayScore,
             round = this.round?.name ?: "Jornada ${this.round?.number ?: ""}",
-            season = "2024-25" // Temporada actual
+            season = "2025-26"
         )
     }
 
@@ -75,7 +104,7 @@ object EuroLeagueApiMapper {
      * Convierte una lista de partidos de la API oficial
      */
     fun List<GameApiDto>.toMatchWebDtoList(): List<MatchWebDto> {
-        return this.map { it.toMatchWebDto() }
+        return this.mapNotNull { it.toMatchWebDto() }
     }
 
     /**

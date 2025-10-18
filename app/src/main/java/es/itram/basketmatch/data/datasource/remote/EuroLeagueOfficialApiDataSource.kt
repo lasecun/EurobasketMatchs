@@ -6,9 +6,6 @@ import es.itram.basketmatch.data.datasource.remote.dto.TeamWebDto
 import es.itram.basketmatch.data.mapper.EuroLeagueApiMapper.toMatchWebDto
 import es.itram.basketmatch.data.mapper.EuroLeagueApiMapper.toMatchWebDtoList
 import es.itram.basketmatch.data.mapper.EuroLeagueApiMapper.toTeamWebDtoList
-import es.itram.basketmatch.data.mapper.SimplePlayerDto
-import es.itram.basketmatch.data.mapper.EuroLeagueApiMapper.toSimplePlayerList
-import es.itram.basketmatch.data.mapper.EuroLeagueApiMapper.toTeamWebDto
 import es.itram.basketmatch.data.network.EuroLeagueApiService
 import es.itram.basketmatch.data.network.NetworkManager
 import kotlinx.coroutines.delay
@@ -16,19 +13,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * 🏀 EuroLeague Official API Data Source
+ * 🏀 EuroLeague Official API Data Source - Temporada 2025-2026
  *
- * Nueva implementación que usa la API oficial de EuroLeague en lugar de scraping
- * Esta es MUCHO más confiable, rápida y mantenible que el scraping web.
- *
- * Ventajas de la API oficial:
- * ✅ Datos oficiales y en tiempo real
- * ✅ Estructura JSON consistente
- * ✅ No hay riesgo de cambios en HTML
- * ✅ Mejor rendimiento y confiabilidad
- * ✅ Documentación Swagger completa
- * ✅ Incluye estadísticas detalladas
- * ✅ Soporte para múltiples temporadas
+ * Fuente de datos que usa ÚNICAMENTE la API oficial de EuroLeague
+ * Solo temporada 2025-2026 (E2025), sin fallbacks ni datos de prueba
  */
 @Singleton
 class EuroLeagueOfficialApiDataSource @Inject constructor(
@@ -39,13 +27,13 @@ class EuroLeagueOfficialApiDataSource @Inject constructor(
     companion object {
         private const val TAG = "EuroLeagueOfficialApi"
         private const val DEFAULT_COMPETITION = "E" // EuroLeague
-        private const val DEFAULT_SEASON = "E2024" // Temporada 2024-25
+        private const val DEFAULT_SEASON = "E2025" // Temporada 2025-26 (código API oficial)
         private const val RETRY_DELAY_MS = 1000L
         private const val MAX_RETRIES = 3
     }
 
     /**
-     * Obtiene todos los equipos de EuroLeague usando la API oficial
+     * Obtiene todos los equipos de la temporada 2025-2026
      */
     suspend fun getAllTeams(
         competitionCode: String = DEFAULT_COMPETITION,
@@ -56,191 +44,167 @@ class EuroLeagueOfficialApiDataSource @Inject constructor(
                 throw Exception("No hay conexión a internet")
             }
 
-            Log.d(TAG, "🏀 Obteniendo equipos desde API oficial...")
+            Log.d(TAG, "🏀 Obteniendo equipos temporada $seasonCode...")
 
             val response = apiService.getTeams(competitionCode, seasonCode)
 
             if (response.isSuccessful) {
                 val teams = response.body()?.data?.toTeamWebDtoList() ?: emptyList()
-                Log.d(TAG, "✅ Equipos obtenidos desde API oficial: ${teams.size}")
+                Log.d(TAG, "✅ Equipos obtenidos: ${teams.size}")
                 teams
             } else {
-                Log.e(TAG, "❌ Error en respuesta API: ${response.code()} - ${response.message()}")
+                Log.e(TAG, "❌ Error API: ${response.code()} - ${response.message()}")
                 throw Exception("Error ${response.code()}: ${response.message()}")
             }
         }
     }
 
     /**
-     * Obtiene todos los partidos de EuroLeague usando la API oficial
+     * Obtiene todos los partidos de la temporada 2025-2026
+     * Incluye las 38 jornadas completas
      */
     suspend fun getAllMatches(
         competitionCode: String = DEFAULT_COMPETITION,
         seasonCode: String = DEFAULT_SEASON,
-        phaseTypeCode: String? = null // "RS" para Regular Season, "PO" para Playoffs
+        phaseTypeCode: String? = null
     ): Result<List<MatchWebDto>> {
         return executeWithRetry("getAllMatches") {
             if (!networkManager.isConnected()) {
                 throw Exception("No hay conexión a internet")
             }
 
-            Log.d(TAG, "🏀 Obteniendo partidos desde API oficial...")
+            Log.d(TAG, "🏀 Obteniendo partidos temporada $seasonCode usando API v2...")
 
-            val response = apiService.getGames(competitionCode, seasonCode, phaseTypeCode)
+            val response = apiService.getGamesV2(competitionCode, seasonCode, phaseTypeCode)
 
             if (response.isSuccessful) {
                 val matches = response.body()?.data?.toMatchWebDtoList() ?: emptyList()
-                Log.d(TAG, "✅ Partidos obtenidos desde API oficial: ${matches.size}")
-                matches
+                Log.d(TAG, "✅ Partidos obtenidos desde API: ${matches.size}")
+
+                // Log estados de los partidos para debugging
+                val statusCount = matches.groupBy { it.status }.mapValues { it.value.size }
+                Log.d(TAG, "📊 Estados de partidos: $statusCount")
+
+                enrichFinishedMatches(matches, competitionCode, seasonCode)
             } else {
-                Log.e(TAG, "❌ Error en respuesta API: ${response.code()} - ${response.message()}")
+                Log.e(TAG, "❌ Error API: ${response.code()} - ${response.message()}")
                 throw Exception("Error ${response.code()}: ${response.message()}")
             }
         }
     }
 
     /**
-     * Obtiene partidos por rango de fechas
+     * Obtiene partidos filtrados por fecha
      */
-    suspend fun getMatchesByDateRange(
-        dateFrom: String, // YYYY-MM-DD
-        dateTo: String, // YYYY-MM-DD
+    suspend fun getGamesByDate(
+        dateFrom: String,
+        dateTo: String,
         competitionCode: String = DEFAULT_COMPETITION,
         seasonCode: String = DEFAULT_SEASON
     ): Result<List<MatchWebDto>> {
-        return executeWithRetry("getMatchesByDateRange") {
+        return executeWithRetry("getGamesByDate") {
             if (!networkManager.isConnected()) {
                 throw Exception("No hay conexión a internet")
             }
 
-            Log.d(TAG, "🏀 Obteniendo partidos por fecha: $dateFrom a $dateTo")
+            Log.d(TAG, "🏀 Obteniendo partidos fecha: $dateFrom - $dateTo")
 
-            val response = apiService.getGamesByDate(competitionCode, seasonCode, dateFrom, dateTo)
+            // Obtener todos los partidos y filtrar localmente
+            val allMatchesResult = getAllMatches(competitionCode, seasonCode)
 
-            if (response.isSuccessful) {
-                val matches = response.body()?.data?.toMatchWebDtoList() ?: emptyList()
-                Log.d(TAG, "✅ Partidos obtenidos por fecha: ${matches.size}")
-                matches
-            } else {
-                Log.e(TAG, "❌ Error en respuesta API: ${response.code()} - ${response.message()}")
-                throw Exception("Error ${response.code()}: ${response.message()}")
-            }
-        }
-    }
+            if (allMatchesResult.isSuccess) {
+                val allMatches = allMatchesResult.getOrNull() ?: emptyList()
 
-    /**
-     * Obtiene detalles de un partido específico
-     */
-    suspend fun getMatchDetails(
-        gameCode: String,
-        competitionCode: String = DEFAULT_COMPETITION,
-        seasonCode: String = DEFAULT_SEASON
-    ): Result<MatchWebDto> {
-        return executeWithRetry("getMatchDetails") {
-            if (!networkManager.isConnected()) {
-                throw Exception("No hay conexión a internet")
-            }
-
-            Log.d(TAG, "🏀 Obteniendo detalles del partido: $gameCode")
-
-            val response = apiService.getGameDetails(competitionCode, seasonCode, gameCode)
-
-            if (response.isSuccessful) {
-                val gameDto = response.body()?.data
-                if (gameDto != null) {
-                    val match = gameDto.toMatchWebDto()
-                    Log.d(TAG, "✅ Detalles del partido obtenidos: ${match.homeTeamName} vs ${match.awayTeamName}")
-                    match
-                } else {
-                    throw Exception("No se encontraron datos del partido")
+                val filteredMatches = allMatches.filter { match ->
+                    try {
+                        val matchDate = java.time.LocalDate.parse(match.date)
+                        val fromDate = java.time.LocalDate.parse(dateFrom)
+                        val toDate = java.time.LocalDate.parse(dateTo)
+                        matchDate in fromDate..toDate
+                    } catch (_: Exception) {
+                        false
+                    }
                 }
+
+                Log.d(TAG, "✅ Partidos filtrados: ${filteredMatches.size}")
+                filteredMatches
             } else {
-                Log.e(TAG, "❌ Error en respuesta API: ${response.code()} - ${response.message()}")
-                throw Exception("Error ${response.code()}: ${response.message()}")
+                throw Exception("Error obteniendo partidos: ${allMatchesResult.exceptionOrNull()?.message}")
             }
         }
     }
 
     /**
-     * Obtiene la plantilla de un equipo
+     * Enriquece los partidos terminados con sus resultados reales
+     * Usa API v3 para obtener el reporte detallado con marcadores
      */
-    suspend fun getTeamRoster(
-        clubCode: String,
-        competitionCode: String = DEFAULT_COMPETITION,
-        seasonCode: String = DEFAULT_SEASON
-    ): Result<List<SimplePlayerDto>> {
-        return executeWithRetry("getTeamRoster") {
-            if (!networkManager.isConnected()) {
-                throw Exception("No hay conexión a internet")
-            }
+    private suspend fun enrichFinishedMatches(
+        matches: List<MatchWebDto>,
+        competitionCode: String,
+        seasonCode: String
+    ): List<MatchWebDto> {
+        Log.d(TAG, "🔍 Iniciando enriquecimiento de ${matches.size} partidos...")
 
-            Log.d(TAG, "🏀 Obteniendo plantilla del equipo: $clubCode")
+        // Contar partidos por estado
+        val finishedCount = matches.count { it.status == es.itram.basketmatch.data.datasource.remote.dto.MatchStatus.FINISHED }
+        val scheduledCount = matches.count { it.status == es.itram.basketmatch.data.datasource.remote.dto.MatchStatus.SCHEDULED }
+        val liveCount = matches.count { it.status == es.itram.basketmatch.data.datasource.remote.dto.MatchStatus.LIVE }
 
-            val response = apiService.getTeamRoster(competitionCode, seasonCode, clubCode)
+        Log.d(TAG, "📊 Resumen: Finalizados=$finishedCount, Programados=$scheduledCount, En vivo=$liveCount")
 
-            if (response.isSuccessful) {
-                val players = response.body()?.data?.toSimplePlayerList() ?: emptyList()
-                Log.d(TAG, "✅ Plantilla obtenida: ${players.size} jugadores")
-                players
-            } else {
-                Log.e(TAG, "❌ Error en respuesta API: ${response.code()} - ${response.message()}")
-                throw Exception("Error ${response.code()}: ${response.message()}")
-            }
-        }
-    }
+        return matches.map { match ->
+            try {
+                // Log el estado de CADA partido
+                Log.d(TAG, "🔹 ${match.id}: Estado=${match.status}, Fecha=${match.date}")
 
-    /**
-     * Obtiene información detallada de un equipo
-     */
-    suspend fun getTeamDetails(
-        clubCode: String,
-        competitionCode: String = DEFAULT_COMPETITION,
-        seasonCode: String = DEFAULT_SEASON
-    ): Result<TeamWebDto> {
-        return executeWithRetry("getTeamDetails") {
-            if (!networkManager.isConnected()) {
-                throw Exception("No hay conexión a internet")
-            }
+                // Verificar si es un partido finalizado
+                val isFinished = match.status == es.itram.basketmatch.data.datasource.remote.dto.MatchStatus.FINISHED
 
-            Log.d(TAG, "🏀 Obteniendo detalles del equipo: $clubCode")
+                if (isFinished) {
+                    Log.d(TAG, "📊 ✅ PARTIDO FINALIZADO ${match.id} - Obteniendo marcador real...")
 
-            val response = apiService.getTeamDetails(competitionCode, seasonCode, clubCode)
+                    // Obtener el reporte completo del partido desde v3/report
+                    val reportResponse = apiService.getGameReport(competitionCode, seasonCode, match.id)
 
-            if (response.isSuccessful) {
-                val teamDto = response.body()?.data
-                if (teamDto != null) {
-                    val team = teamDto.toTeamWebDto()
-                    Log.d(TAG, "✅ Detalles del equipo obtenidos: ${team.name}")
-                    team
-                } else {
-                    throw Exception("No se encontraron datos del equipo")
+                    if (reportResponse.isSuccessful) {
+                        val gameDetails = reportResponse.body()?.data
+                        if (gameDetails != null) {
+                            // Convertir el GameApiDto completo con todos los datos
+                            val enrichedMatch = gameDetails.toMatchWebDto()
+
+                            if (enrichedMatch != null) {
+                                val homeScore = enrichedMatch.homeScore ?: 0
+                                val awayScore = enrichedMatch.awayScore ?: 0
+
+                                if (homeScore > 0 || awayScore > 0) {
+                                    Log.d(TAG, "✅ ${match.id}: ${enrichedMatch.homeTeamName} $homeScore - $awayScore ${enrichedMatch.awayTeamName}")
+                                    return@map enrichedMatch
+                                } else {
+                                    Log.w(TAG, "⚠️ ${match.id}: Marcadores en 0, usando datos originales")
+                                    return@map match
+                                }
+                            } else {
+                                Log.w(TAG, "⚠️ ${match.id}: Datos incompletos en reporte, usando datos originales")
+                                return@map match
+                            }
+                        } else {
+                            Log.w(TAG, "⚠️ ${match.id}: Sin datos en response")
+                        }
+                    } else {
+                        Log.w(TAG, "⚠️ ${match.id}: Error ${reportResponse.code()}")
+                    }
                 }
-            } else {
-                Log.e(TAG, "❌ Error en respuesta API: ${response.code()} - ${response.message()}")
-                throw Exception("Error ${response.code()}: ${response.message()}")
+
+                match
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error procesando partido ${match.id}: ${e.message}")
+                match
             }
         }
     }
 
     /**
-     * Verifica si la API oficial está disponible
-     */
-    suspend fun isApiAvailable(): Boolean {
-        return try {
-            if (!networkManager.isConnected()) {
-                false
-            } else {
-                val response = apiService.getCompetitions()
-                response.isSuccessful
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "⚠️ API oficial no disponible: ${e.message}")
-            false
-        }
-    }
-
-    /**
-     * Ejecuta una operación con reintentos automáticos en caso de fallo
+     * Ejecuta una operación con reintentos automáticos
      */
     private suspend fun <T> executeWithRetry(
         operation: String,
@@ -258,12 +222,12 @@ class EuroLeagueOfficialApiDataSource @Inject constructor(
                 Log.w(TAG, "⚠️ Intento ${attempt + 1}/$maxRetries falló para $operation: ${e.message}")
 
                 if (attempt < maxRetries - 1) {
-                    delay(RETRY_DELAY_MS * (attempt + 1)) // Backoff exponencial
+                    delay(RETRY_DELAY_MS * (attempt + 1))
                 }
             }
         }
 
-        Log.e(TAG, "❌ Operación $operation falló después de $maxRetries intentos")
-        return Result.failure(lastException ?: Exception("Operación fallida después de $maxRetries intentos"))
+        Log.e(TAG, "❌ $operation falló después de $maxRetries intentos")
+        return Result.failure(lastException ?: Exception("Operación fallida"))
     }
 }

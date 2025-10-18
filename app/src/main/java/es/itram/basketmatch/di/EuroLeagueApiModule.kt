@@ -1,10 +1,15 @@
 package es.itram.basketmatch.di
 
+import com.google.gson.GsonBuilder
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import es.itram.basketmatch.data.datasource.remote.dto.api.GameApiDto
+import es.itram.basketmatch.data.datasource.remote.dto.api.RoundDto
 import es.itram.basketmatch.data.network.EuroLeagueApiService
+import es.itram.basketmatch.data.network.GameApiDtoAdapter
+import es.itram.basketmatch.data.network.RoundDtoAdapter
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -63,10 +68,16 @@ object EuroLeagueApiModule {
     fun provideEuroLeagueRetrofit(
         @Named("EuroLeagueOfficialClient") okHttpClient: OkHttpClient
     ): Retrofit {
+        // Configurar Gson con adaptadores personalizados
+        val gson = GsonBuilder()
+            .registerTypeAdapter(RoundDto::class.java, RoundDtoAdapter())
+            .registerTypeAdapter(GameApiDto::class.java, GameApiDtoAdapter())
+            .create()
+
         return Retrofit.Builder()
             .baseUrl(EUROLEAGUE_API_BASE_URL)
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }
 

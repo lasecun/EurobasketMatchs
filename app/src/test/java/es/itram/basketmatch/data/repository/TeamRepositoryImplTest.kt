@@ -1,7 +1,7 @@
 package es.itram.basketmatch.data.repository
 
 import es.itram.basketmatch.data.datasource.local.dao.TeamDao
-import es.itram.basketmatch.data.datasource.remote.EuroLeagueRemoteDataSource
+import es.itram.basketmatch.data.datasource.remote.EuroLeagueOfficialApiDataSource
 import es.itram.basketmatch.data.mapper.TeamMapper
 import es.itram.basketmatch.data.network.NetworkManager
 import es.itram.basketmatch.testutil.TestDataFactory
@@ -18,20 +18,20 @@ import org.junit.Test
 import com.google.common.truth.Truth.assertThat
 
 /**
- * Tests para TeamRepositoryImpl
+ * Tests para TeamRepositoryImpl - Temporada 2025-2026
  */
 class TeamRepositoryImplTest {
 
     private lateinit var repository: TeamRepositoryImpl
     private val teamDao: TeamDao = mockk()
-    private val remoteDataSource: EuroLeagueRemoteDataSource = mockk()
+    private val officialApiDataSource: EuroLeagueOfficialApiDataSource = mockk()
     private val networkManager: NetworkManager = mockk()
 
     @Before
     fun setup() {
         repository = TeamRepositoryImpl(
             teamDao = teamDao,
-            remoteDataSource = remoteDataSource,
+            officialApiDataSource = officialApiDataSource,
             networkManager = networkManager
         )
     }
