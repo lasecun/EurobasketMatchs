@@ -20,7 +20,7 @@ object EuroLeagueApiMapper {
             name = this.tvName ?: this.name,
             fullName = this.clubName ?: this.name,
             shortCode = this.code,
-            logoUrl = this.imageUrls?.logo,
+            logoUrl = this.images?.crest ?: this.images?.logo,  // ✅ Correcto: usar "crest" primero, "logo" como fallback
             country = this.country?.name,
             venue = this.venue?.name,
             profileUrl = "" // La API oficial no proporciona URL de perfil
@@ -50,12 +50,23 @@ object EuroLeagueApiMapper {
         android.util.Log.d("ApiMapper", "   ${roadTeam.club.code} score: ${roadTeam.score}")
         android.util.Log.d("ApiMapper", "   Boxscore local: ${this.boxscore?.local?.score}")
         android.util.Log.d("ApiMapper", "   Boxscore road: ${this.boxscore?.road?.score}")
+        android.util.Log.d("ApiMapper", "   Logo local: ${localTeam.club.images?.crest}")  // ✅ Correcto: usar "images.crest"
+        android.util.Log.d("ApiMapper", "   Logo visitante: ${roadTeam.club.images?.crest}")  // ✅ Correcto: usar "images.crest"
 
         // Priorizar boxscore sobre score directo (más confiable para partidos finalizados)
         val homeScore = this.boxscore?.local?.score ?: localTeam.score
         val awayScore = this.boxscore?.road?.score ?: roadTeam.score
 
-        val mappedStatus = this.gameState?.toMatchStatus() ?: MatchStatus.SCHEDULED
+        // Mapear estado, pero si es null e inferir FINISHED si hay marcadores
+        val mappedStatus = when {
+            this.gameState != null -> this.gameState.toMatchStatus()
+            homeScore != null && awayScore != null && (homeScore > 0 || awayScore > 0) -> {
+                // Si hay marcadores pero gameState es null, inferir que está finalizado
+                android.util.Log.d("ApiMapper", "   ⚠️ gameState es null pero hay marcadores → Inferido como FINISHED")
+                MatchStatus.FINISHED
+            }
+            else -> MatchStatus.SCHEDULED
+        }
 
         android.util.Log.d("ApiMapper", "   Estado mapeado: $mappedStatus")
         android.util.Log.d("ApiMapper", "   Marcadores finales: $homeScore - $awayScore")
@@ -64,10 +75,10 @@ object EuroLeagueApiMapper {
             id = gameCode,
             homeTeamId = localTeam.club.code,
             homeTeamName = localTeam.club.tvName ?: localTeam.club.name,
-            homeTeamLogo = localTeam.club.imageUrls?.logo,
+            homeTeamLogo = localTeam.club.images?.crest ?: localTeam.club.images?.logo,  // ✅ Correcto: usar "crest" primero
             awayTeamId = roadTeam.club.code,
             awayTeamName = roadTeam.club.tvName ?: roadTeam.club.name,
-            awayTeamLogo = roadTeam.club.imageUrls?.logo,
+            awayTeamLogo = roadTeam.club.images?.crest ?: roadTeam.club.images?.logo,  // ✅ Correcto: usar "crest" primero
             date = gameDate.substring(0, 10), // Extraer solo fecha (YYYY-MM-DD)
             time = if (gameDate.length > 11) gameDate.substring(11, 16) else null, // Extraer solo hora (HH:MM)
             venue = this.venue?.name,
@@ -120,7 +131,7 @@ object EuroLeagueApiMapper {
             dorsal = this.dorsal,
             height = this.height,
             country = this.country?.name,
-            imageUrl = this.imageUrls?.profile ?: this.imageUrls?.headshot
+            imageUrl = this.imageUrls?.profile ?: this.imageUrls?.headshot  // ✅ Correcto: jugadores usan "imageUrls"
         )
     }
 
