@@ -123,15 +123,15 @@ object EuroLeagueApiMapper {
      */
     fun PlayerDto.toSimplePlayer(): SimplePlayerDto {
         return SimplePlayerDto(
-            code = this.code,
-            name = this.name,
+            code = this.validCode, // Usar validCode que siempre devuelve un valor válido
+            name = this.validName, // Usar validName que nunca es null
             firstName = this.firstName,
             lastName = this.lastName,
-            position = this.position,
-            dorsal = this.dorsal,
+            position = this.positionName, // ✅ CORRECTO: usar positionName (String) en lugar de position (Int)
+            dorsal = this.dorsalNumber,
             height = this.height,
             country = this.country?.name,
-            imageUrl = this.imageUrls?.profile ?: this.imageUrls?.headshot  // ✅ Correcto: jugadores usan "imageUrls"
+            imageUrl = this.imageUrls?.action ?: this.imageUrls?.profile ?: this.imageUrls?.headshot  // ✅ CORRECTO: prioridad action > profile > headshot
         )
     }
 

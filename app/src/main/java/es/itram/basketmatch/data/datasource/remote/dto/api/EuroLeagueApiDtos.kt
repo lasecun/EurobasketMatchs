@@ -132,33 +132,85 @@ data class PlayerStatsDto(
 )
 
 // ============================================================================
-// JUGADORES
+// ROSTER DE EQUIPOS Y JUGADORES
 // ============================================================================
 
-data class TeamRosterResponseDto(
-    @SerializedName("data") val data: List<PlayerDto>
-)
+// La API devuelve directamente un array de jugadores, no un objeto con campo data
+typealias TeamRosterResponseDto = List<PlayerDto>
 
 data class PlayerResponseDto(
     @SerializedName("data") val data: PlayerDto
 )
 
+/**
+ * DTO para jugadores que mapea la estructura REAL de la API oficial
+ * La API devuelve objetos anidados: person, images, club, season
+ */
 data class PlayerDto(
-    @SerializedName("code") val code: String,
-    @SerializedName("name") val name: String,
-    @SerializedName("firstName") val firstName: String? = null,
-    @SerializedName("lastName") val lastName: String? = null,
-    @SerializedName("imageUrls") val imageUrls: PlayerImageUrlsDto? = null,
-    @SerializedName("position") val position: String? = null,
-    @SerializedName("height") val height: String? = null,
-    @SerializedName("birthDate") val birthDate: String? = null,
+    @SerializedName("person") val person: PersonDto,
+    @SerializedName("type") val type: String? = null, // "J" = Jugador, "C" = Coach, "Z" = Staff
+    @SerializedName("typeName") val typeName: String? = null,
+    @SerializedName("active") val active: Boolean = true,
+    @SerializedName("dorsal") val dorsal: String? = null,
+    @SerializedName("dorsalRaw") val dorsalRaw: String? = null,
+    @SerializedName("position") val position: Int? = null, // Número de posición
+    @SerializedName("positionName") val positionName: String? = null, // Nombre de la posición
+    @SerializedName("images") val images: PlayerImageUrlsDto? = null,
+    @SerializedName("club") val club: TeamApiDto? = null,
+    @SerializedName("season") val season: SeasonDto? = null
+) {
+    // Propiedades computadas para compatibilidad con código existente
+    val code: String? get() = person.code
+    val name: String? get() = person.name
+    val firstName: String? get() = person.passportName
+    val lastName: String? get() = person.passportSurname
+    val imageUrls: PlayerImageUrlsDto? get() = images
+    val height: String? get() = person.height?.let { "${it}cm" }
+    val birthDate: String? get() = person.birthDate
+    val country: CountryDto? get() = person.country
+
+    // Propiedad computada para obtener el dorsal como Int de forma segura
+    val dorsalNumber: Int? get() = dorsal?.toIntOrNull() ?: dorsalRaw?.toIntOrNull()
+
+    // Propiedad computada para obtener un nombre válido
+    val validName: String get() = person.name ?: person.passportName ?: person.passportSurname ?: "Unknown"
+
+    // Propiedad computada para obtener un código válido (genera uno si no existe)
+    val validCode: String get() {
+        if (!person.code.isNullOrBlank()) return person.code
+
+        // Generar código basado en nombre y dorsal
+        val namePart = (person.passportName ?: person.name ?: person.passportSurname ?: "UNK").take(3).uppercase()
+        val dorsalPart = (dorsal ?: dorsalRaw ?: "00").take(2).padStart(2, '0')
+        return "${namePart}${dorsalPart}"
+    }
+}
+
+/**
+ * DTO para la información personal del jugador (objeto anidado "person")
+ */
+data class PersonDto(
+    @SerializedName("code") val code: String? = null,
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("passportName") val passportName: String? = null,
+    @SerializedName("passportSurname") val passportSurname: String? = null,
+    @SerializedName("jerseyName") val jerseyName: String? = null,
+    @SerializedName("abbreviatedName") val abbreviatedName: String? = null,
     @SerializedName("country") val country: CountryDto? = null,
-    @SerializedName("dorsal") val dorsal: Int? = null
+    @SerializedName("height") val height: Int? = null, // En centímetros
+    @SerializedName("weight") val weight: Int? = null, // En kilogramos
+    @SerializedName("birthDate") val birthDate: String? = null,
+    @SerializedName("birthCountry") val birthCountry: CountryDto? = null,
+    @SerializedName("twitterAccount") val twitterAccount: String? = null,
+    @SerializedName("instagramAccount") val instagramAccount: String? = null,
+    @SerializedName("facebookAccount") val facebookAccount: String? = null,
+    @SerializedName("isReferee") val isReferee: Boolean = false
 )
 
 data class PlayerImageUrlsDto(
-    @SerializedName("profile") val profile: String? = null,
-    @SerializedName("headshot") val headshot: String? = null
+    @SerializedName("action") val action: String? = null,      // ✅ CORRECTO: imagen principal del jugador
+    @SerializedName("headshot") val headshot: String? = null,  // ✅ Imagen headshot
+    @SerializedName("profile") val profile: String? = null     // Mantener por compatibilidad si existe
 )
 
 // ============================================================================

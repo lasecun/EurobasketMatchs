@@ -86,32 +86,37 @@ class DataSyncService @Inject constructor(
     }
 
     /**
-     * Descarga partidos (38 jornadas) si no existen localmente
+     * Descarga partidos (38 jornadas) y ACTUALIZA siempre con datos frescos de la API
      */
     private suspend fun initializeMatches() {
-        val localMatchesCount = matchDao.getMatchCount()
+        Log.d(TAG, "📥 Actualizando partidos de E2025 desde API...")
 
-        if (localMatchesCount == 0) {
-            Log.d(TAG, "📥 Descargando partidos de E2025 (38 jornadas)...")
+        val result = officialApiDataSource.getAllMatches()
+        if (result.isSuccess) {
+            val matchDtos = result.getOrNull() ?: emptyList()
+            if (matchDtos.isNotEmpty()) {
+                val domainMatches = MatchWebMapper.toDomainList(matchDtos)
+                val entities = MatchMapper.fromDomainList(domainMatches)
 
-            val result = officialApiDataSource.getAllMatches()
-            if (result.isSuccess) {
-                val matchDtos = result.getOrNull() ?: emptyList()
-                if (matchDtos.isNotEmpty()) {
-                    val domainMatches = MatchWebMapper.toDomainList(matchDtos)
-                    val entities = MatchMapper.fromDomainList(domainMatches)
-                    matchDao.insertMatches(entities)
+                // Usar REPLACE para actualizar automáticamente los partidos existentes
+                // Esto actualiza logos, estados y marcadores sin perder otros datos
+                matchDao.insertMatches(entities)
 
-                    prefs.edit {
-                        putBoolean(PREF_MATCHES_SYNCED, true)
-                        putLong(PREF_LAST_SYNC, System.currentTimeMillis())
-                    }
-
-                    Log.d(TAG, "✅ ${matchDtos.size} partidos sincronizados")
+                prefs.edit {
+                    putBoolean(PREF_MATCHES_SYNCED, true)
+                    putLong(PREF_LAST_SYNC, System.currentTimeMillis())
                 }
+
+                Log.d(TAG, "✅ ${matchDtos.size} partidos actualizados (logos, estados y marcadores)")
             }
         } else {
-            Log.d(TAG, "✅ Partidos ya disponibles: $localMatchesCount")
+            Log.w(TAG, "⚠️ No se pudieron obtener partidos de la API")
+
+            // Si falla la API, verificar si hay datos locales
+            val localMatchesCount = matchDao.getMatchCount()
+            if (localMatchesCount > 0) {
+                Log.d(TAG, "ℹ️ Usando ${localMatchesCount} partidos en caché")
+            }
         }
     }
 

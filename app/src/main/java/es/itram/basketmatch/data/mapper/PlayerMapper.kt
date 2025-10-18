@@ -1,25 +1,17 @@
 package es.itram.basketmatch.data.mapper
 
-import android.util.Log
 import es.itram.basketmatch.data.datasource.local.entity.PlayerEntity
 import es.itram.basketmatch.data.datasource.local.entity.TeamRosterEntity
 import es.itram.basketmatch.data.datasource.remote.dto.PlayerDto
 import es.itram.basketmatch.domain.model.Player
 import es.itram.basketmatch.domain.model.PlayerPosition
 import es.itram.basketmatch.domain.model.TeamRoster
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import java.util.regex.Pattern
 
 /**
  * Mapper para convertir entre diferentes representaciones de jugadores y rosters
+ * ACTUALIZADO: Mapea correctamente la estructura anidada de la API oficial
  */
 object PlayerMapper {
-    
-    private const val TAG = "PlayerMapper"
-    private val httpClient = OkHttpClient()
     
     /**
      * Genera un código único para jugadores que no tienen código en la API
@@ -33,101 +25,78 @@ object PlayerMapper {
     
     /**
      * Genera una URL de imagen placeholder basada en las iniciales del jugador
+     * Maneja de forma segura strings vacíos, null y caracteres especiales
      */
-    private fun generatePlaceholderImageUrl(playerName: String): String {
-        val initials = playerName.split(" ")
-            .take(2)
-            .map { it.firstOrNull()?.uppercase() ?: "" }
-            .joinToString("")
-        
+    private fun generatePlaceholderImageUrl(playerName: String?): String {
+        // Si el nombre es null, está vacío o es solo espacios, usar "??" como iniciales
+        if (playerName.isNullOrBlank()) {
+            return "https://ui-avatars.com/api/?name=??&size=400&background=004996&color=ffffff&font-size=0.4"
+        }
+
+        val initials = try {
+            playerName.trim()
+                .split(" ", "-", "_")
+                .filter { it.isNotBlank() }
+                .take(2)
+                .mapNotNull { it.firstOrNull()?.uppercase() }
+                .joinToString("")
+                .ifEmpty { "??" }
+        } catch (_: Exception) {
+            "??"
+        }
+
         // Usar un servicio de avatares con las iniciales
         return "https://ui-avatars.com/api/?name=$initials&size=400&background=004996&color=ffffff&font-size=0.4"
     }
-    
-    /**
-     * Obtiene la URL de imagen real del jugador desde el sitio web oficial
-     */
-    private suspend fun getPlayerImageFromWeb(playerCode: String?, playerName: String): String? = withContext(Dispatchers.IO) {
-        try {
-            if (playerCode.isNullOrBlank()) return@withContext null
-            
-            val normalizedName = playerName.lowercase()
-                .replace(" ", "-")
-                .replace(",", "")
-                .replace(".", "")
-                .replace("'", "")
-            
-            val url = "https://www.euroleaguebasketball.net/euroleague/players/$normalizedName/$playerCode/"
-            Log.d(TAG, "🌐 Trying to get image for $playerName from: $url")
-            
-            val request = Request.Builder()
-                .url(url)
-                .addHeader("User-Agent", "Mozilla/5.0 (Android 14)")
-                .build()
-            
-            val response = httpClient.newCall(request).execute()
-            if (!response.isSuccessful) return@withContext null
-            
-            val html = response.body?.string() ?: return@withContext null
-            
-            // Buscar el patrón "photo":"https://media-cdn.incrowdsports.com/[UUID].png"
-            val pattern = Pattern.compile("\"photo\":\"(https://media-cdn\\.incrowdsports\\.com/[^\"]+\\.(?:png|jpg))\"")
-            val matcher = pattern.matcher(html)
-            
-            if (matcher.find()) {
-                val imageUrl = matcher.group(1)
-                Log.d(TAG, "✅ Found image for $playerName: $imageUrl")
-                return@withContext imageUrl
-            }
-            
-            Log.d(TAG, "❌ No image found for $playerName")
-            return@withContext null
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting image for $playerName", e)
-            return@withContext null
-        }
-    }
-    
-    /**
-     * Convierte SimplePlayerDto a Player (modelo de dominio)
-     * Este método funciona con los DTOs simplificados de la API oficial
-     */
-    suspend fun fromSimpleDto(dto: es.itram.basketmatch.data.mapper.SimplePlayerDto, teamCode: String): Player {
-        val playerCode = dto.code ?: generatePlayerCode(
-            dto.name,
-            dto.lastName,
-            dto.dorsal?.toString()
-        )
 
-        // Usar la imagen que viene en el SimplePlayerDto
-        val imageUrl = dto.imageUrl ?: generatePlaceholderImageUrl(dto.name)
+    /**
+     * Convierte PlayerDto de la API oficial a Player (modelo de dominio)
+     * Usa la estructura anidada REAL: person.name, person.height, images.action, etc.
+     */
+    fun fromApiDto(
+        dto: es.itram.basketmatch.data.datasource.remote.dto.api.PlayerDto,
+        teamCode: String
+    ): Player {
+        val playerCode = dto.validCode // Usar validCode que siempre devuelve un valor válido
+        val playerName = dto.validName // Usar el nombre válido que nunca es null
+
+        // Usar las imágenes que vienen directamente en el DTO desde la API oficial
+        // La API usa los campos "action" (principal) y "headshot"
+        val actionImage = dto.images?.action
+        val headshotImage = dto.images?.headshot
+        val profileImage = dto.images?.profile // Por compatibilidad
+
+        // Prioridad: action > profile > headshot > placeholder
+        val imageUrl = actionImage
+            ?: profileImage
+            ?: headshotImage
+            ?: generatePlaceholderImageUrl(playerName)
 
         return Player(
             code = playerCode,
-            name = dto.firstName ?: dto.name,
-            surname = dto.lastName ?: "",
-            fullName = dto.name,
-            jersey = dto.dorsal,
-            position = PlayerPosition.fromString(dto.position),
-            height = dto.height,
-            weight = null, // No disponible en SimplePlayerDto
-            dateOfBirth = null, // No disponible en SimplePlayerDto
-            placeOfBirth = dto.country,
-            nationality = dto.country,
-            experience = null, // No disponible en SimplePlayerDto
+            name = dto.person.passportName ?: dto.person.name ?: playerName,
+            surname = dto.person.passportSurname ?: dto.person.jerseyName ?: "",
+            fullName = playerName,
+            jersey = dto.dorsalNumber, // Usar la propiedad computada que maneja strings vacíos
+            position = PlayerPosition.fromString(dto.positionName), // ✅ Usar positionName (String), no position (Int)
+            height = dto.height, // Ya formateado como "XXXcm"
+            weight = dto.person.weight?.let { "${it}kg" },
+            dateOfBirth = dto.person.birthDate,
+            placeOfBirth = dto.person.birthCountry?.name ?: dto.person.country?.name,
+            nationality = dto.person.country?.name,
+            experience = null, // No disponible en la API
             profileImageUrl = imageUrl,
-            isActive = true, // Asumimos que están activos
-            isStarter = false, // No disponible en SimplePlayerDto
-            isCaptain = false  // No disponible en SimplePlayerDto
+            isActive = dto.active,
+            isStarter = false, // No disponible en la API oficial
+            isCaptain = false  // No disponible en la API oficial
         )
     }
 
     /**
-     * Convierte PlayerDto a Player (modelo de dominio)
-     * Obtiene la imagen del jugador desde la web oficial o genera un placeholder
+     * Convierte PlayerDto del scraper (DEPRECATED - solo para compatibilidad)
+     * Este método se mantiene para el scraper viejo pero ya no se usa
      */
-    suspend fun fromDto(dto: PlayerDto, teamCode: String): Player {
+    fun fromDto(dto: PlayerDto, teamCode: String): Player {
         val playerCode = dto.person.code ?: generatePlayerCode(
             dto.person.name, 
             dto.person.passportSurname, 
@@ -138,10 +107,9 @@ object PlayerMapper {
         val profileImage = dto.images?.profile
         val headshotImage = dto.images?.headshot
         
-        // Si las imágenes de la API están vacías, intentar obtener desde el web oficial
-        val imageUrl = profileImage 
+        // Simplemente usar las imágenes de la API o generar placeholder
+        val imageUrl = profileImage
             ?: headshotImage 
-            ?: getPlayerImageFromWeb(dto.person.code, dto.person.name)
             ?: generatePlaceholderImageUrl(dto.person.name)
         
         return Player(
@@ -213,20 +181,6 @@ object PlayerMapper {
             isStarter = entity.isStarter,
             isCaptain = entity.isCaptain
         )
-    }
-    
-    /**
-     * Convierte lista de PlayerDto a lista de PlayerEntity
-     * Filtra solo los jugadores (type="J"), excluyendo entrenadores
-     * Nota: Esta función ya no se usa con las nuevas imágenes, se mantiene para compatibilidad
-     */
-    suspend fun fromDtoListToEntityList(dtoList: List<PlayerDto>, teamCode: String): List<PlayerEntity> {
-        return dtoList
-            .filter { it.type == "J" } // Solo jugadores, no entrenadores
-            .map { dto ->
-                val player = fromDto(dto, teamCode)
-                toEntity(player, teamCode)
-            }
     }
     
     /**

@@ -77,19 +77,10 @@ fun EnhancedMatchCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(
-                elevation = if (isLive) 8.dp else 4.dp,
-                shape = RoundedCornerShape(20.dp),
-                ambientColor = if (isLive) MaterialTheme.colorScheme.error else Color.Gray
-            )
             .clickable { onMatchClick(match.id) },
         colors = CardDefaults.cardColors(containerColor = cardBackgroundColor),
-        border = BorderStroke(
-            width = if (isLive) 2.dp else 0.5.dp,
-            color = borderColor
-        ),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
@@ -108,7 +99,7 @@ fun EnhancedMatchCard(
                         )
                     }
                 )
-                .padding(20.dp)
+                .padding(16.dp) // Padding interno reducido
         ) {
             // Header con estado del partido y fecha
             Row(
@@ -138,12 +129,12 @@ fun EnhancedMatchCard(
                 }
             }
             
-            Spacer(modifier = Modifier.height(20.dp))
-            
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Equipos y resultado
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Equipo local
@@ -160,9 +151,8 @@ fun EnhancedMatchCard(
                 ScoreSection(
                     homeScore = match.homeScore,
                     awayScore = match.awayScore,
-                    status = match.status,
                     isLive = isLive,
-                    modifier = Modifier.weight(0.6f)
+                    modifier = Modifier.wrapContentWidth()
                 )
                 
                 // Equipo visitante
@@ -177,23 +167,31 @@ fun EnhancedMatchCard(
                 )
             }
             
-            // Información adicional si está disponible
+            // Información adicional - MÁS COMPACTA
             if (match.venue.isNotBlank()) {
                 Spacer(modifier = Modifier.height(12.dp))
+                HorizontalDivider(
+                    modifier = Modifier.fillMaxWidth(),
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.Place,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp)
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = match.venue,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -287,9 +285,9 @@ private fun TeamSection(
             modifier = Modifier.fillMaxWidth()
         ) {
             TeamLogo(logoUrl = logoUrl, teamCode = teamCode)
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Nombre del equipo con indicador de favorito
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -304,7 +302,7 @@ private fun TeamSection(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                 }
-                
+
                 Text(
                     text = teamName,
                     style = MaterialTheme.typography.bodyMedium.copy(
@@ -315,7 +313,7 @@ private fun TeamSection(
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                
+
                 if (isFavorite && isAway) {
                     Spacer(modifier = Modifier.width(4.dp))
                     Icon(
@@ -365,36 +363,70 @@ private fun TeamLogo(
     }
 }
 
+/**
+ * Sección de marcador REDISEÑADA - Más compacta y legible
+ */
 @Composable
 private fun ScoreSection(
     homeScore: Int?,
     awayScore: Int?,
-    status: MatchStatus,
     isLive: Boolean,
     modifier: Modifier = Modifier
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.padding(horizontal = 8.dp)
+        modifier = modifier.padding(horizontal = 16.dp)
     ) {
         if (homeScore != null && awayScore != null) {
-            Text(
-                text = "$homeScore - $awayScore",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = if (isLive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-            )
+            // Marcador con alineación mejorada
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                // Marcador local
+                Text(
+                    text = homeScore.toString(),
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = if (isLive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.widthIn(min = 32.dp)
+                )
+
+                // Separador
+                Text(
+                    text = "-",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = if (isLive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(horizontal = 6.dp)
+                )
+
+                // Marcador visitante
+                Text(
+                    text = awayScore.toString(),
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = if (isLive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.widthIn(min = 32.dp)
+                )
+            }
         } else {
+            // VS para partidos programados
             Text(
                 text = "vs",
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Medium
                 ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
             )
         }
-        
+
         if (isLive) {
             Spacer(modifier = Modifier.height(4.dp))
             Surface(
