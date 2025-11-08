@@ -271,12 +271,12 @@ class AnalyticsManager @Inject constructor(
     fun setUserProperty(name: String, value: String?) {
         firebaseAnalytics.setUserProperty(name, value)
     }
-    
+
     fun setFavoriteTeam(teamCode: String, teamName: String) {
         firebaseAnalytics.setUserProperty("favorite_team_code", teamCode)
         firebaseAnalytics.setUserProperty("favorite_team_name", teamName)
     }
-    
+
     /**
      * 🔥 Crashlytics integration
      */
@@ -284,7 +284,7 @@ class AnalyticsManager @Inject constructor(
         firebaseAnalytics.setUserId(userId)
         crashlytics.setUserId(userId)
     }
-    
+
     fun recordException(exception: Throwable, customData: Map<String, String> = emptyMap()) {
         customData.forEach { (key, value) ->
             crashlytics.setCustomKey(key, value)
@@ -319,23 +319,5 @@ class AnalyticsManager @Inject constructor(
      */
     fun logCustomEvent(eventName: String, bundle: Bundle) {
         firebaseAnalytics.logEvent(eventName, bundle)
-    }
-
-    /**
-     * 🚨 Track error events
-     */
-    fun trackError(errorType: String, errorMessage: String, additionalData: Map<String, String> = emptyMap()) {
-        val bundle = Bundle().apply {
-            putString(PARAM_ERROR_TYPE, errorType)
-            putString("error_message", errorMessage)
-            putLong("timestamp", System.currentTimeMillis())
-            additionalData.forEach { (key, value) ->
-                putString(key, value)
-            }
-        }
-        firebaseAnalytics.logEvent("app_error", bundle)
-
-        // También reportar a Crashlytics
-        recordException(Exception("$errorType: $errorMessage"), additionalData)
     }
 }

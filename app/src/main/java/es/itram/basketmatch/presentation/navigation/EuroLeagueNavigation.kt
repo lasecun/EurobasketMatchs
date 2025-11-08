@@ -6,26 +6,30 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import androidx.navigation.NavType
-import es.itram.basketmatch.presentation.screen.MainScreen
+import dagger.hilt.android.EntryPointAccessors
+import es.itram.basketmatch.analytics.AnalyticsManager
+import es.itram.basketmatch.di.AnalyticsEntryPoint
 import es.itram.basketmatch.presentation.screen.CalendarScreen
-import es.itram.basketmatch.presentation.screen.TeamDetailScreen
-import es.itram.basketmatch.presentation.screen.MatchDetailScreen
-import es.itram.basketmatch.presentation.screen.TeamRosterScreen
-import es.itram.basketmatch.presentation.screen.PlayerDetailScreen
 import es.itram.basketmatch.presentation.screen.ContactScreen
+import es.itram.basketmatch.presentation.screen.MainScreen
+import es.itram.basketmatch.presentation.screen.MatchDetailScreen
+import es.itram.basketmatch.presentation.screen.NotificationSettingsScreen
+import es.itram.basketmatch.presentation.screen.PlayerDetailScreen
+import es.itram.basketmatch.presentation.screen.TeamDetailScreen
+import es.itram.basketmatch.presentation.screen.TeamRosterScreen
 import es.itram.basketmatch.presentation.screen.settings.SettingsScreen
 import es.itram.basketmatch.presentation.screen.settings.SyncSettingsScreen
 import es.itram.basketmatch.presentation.results.MatchResultsScreen
 import es.itram.basketmatch.presentation.viewmodel.MainViewModel
 import es.itram.basketmatch.presentation.viewmodel.SettingsViewModel
-import es.itram.basketmatch.presentation.screen.NotificationSettingsScreen
 
 /**
  * Configuración de navegación de la aplicación
@@ -34,7 +38,16 @@ import es.itram.basketmatch.presentation.screen.NotificationSettingsScreen
 fun EuroLeagueNavigation(navController: NavHostController) {
     // ViewModel compartido a nivel de navegación para evitar recreaciones
     val mainViewModel: MainViewModel = hiltViewModel()
-    
+
+    // Obtener AnalyticsManager desde Hilt usando EntryPoint
+    val context = LocalContext.current
+    val analyticsManager = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            AnalyticsEntryPoint::class.java
+        ).analyticsManager()
+    }
+
     NavHost(
         navController = navController,
         startDestination = NavigationRoutes.MAIN
@@ -42,6 +55,7 @@ fun EuroLeagueNavigation(navController: NavHostController) {
         composable(NavigationRoutes.MAIN) {
             MainScreen(
                 viewModel = mainViewModel,
+                analyticsManager = analyticsManager,
                 onNavigateToCalendar = {
                     navController.navigate(NavigationRoutes.CALENDAR)
                 },
@@ -61,7 +75,7 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                 },
                 onDateSelected = { selectedDate ->
                     // Usar el ViewModel compartido directamente
-                    mainViewModel.setSelectedDate(selectedDate)
+                    mainViewModel.selectDate(selectedDate)
                     navController.popBackStack()
                 },
                 onNavigateToMatchDetail = { matchId ->
@@ -105,10 +119,9 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                     android.util.Log.d("Navigation", "🏀 MatchDetailScreen: navigating to team roster $teamTla")
                     
                     // 📊 Analytics: Track team click from match detail
-                    mainViewModel.trackTeamClickedFromMatch(
-                        teamId = teamTla,
-                        teamName = teamName, 
-                        matchId = matchId,
+                    analyticsManager.trackTeamViewed(
+                        teamCode = teamTla,
+                        teamName = teamName,
                         source = "match_detail_screen"
                     )
                     
@@ -234,7 +247,8 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                 }
             )
         }
-        
+
+        // ⭐ Favorites Screen
         composable(NavigationRoutes.FAVORITES) {
             es.itram.basketmatch.presentation.screen.settings.FavoritesScreen(
                 onBackClick = {
@@ -246,10 +260,9 @@ fun EuroLeagueNavigation(navController: NavHostController) {
                     val team = mainViewModel.getTeamById(teamId)
                     if (team != null) {
                         // 📊 Analytics: Track team click from favorites
-                        mainViewModel.trackTeamClickedFromMatch(
-                            teamId = team.code,
+                        analyticsManager.trackTeamViewed(
+                            teamCode = team.code,
                             teamName = team.name,
-                            matchId = "favorites_screen",
                             source = "favorites_screen"
                         )
                         
