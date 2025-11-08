@@ -32,7 +32,6 @@ class TeamRepositoryImpl @Inject constructor(
         private const val TAG = "TeamRepositoryImpl"
     }
 
-    // Scope para operaciones de background que no deben bloquear el UI
     private val backgroundScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override fun getAllTeams(): Flow<List<Team>> {

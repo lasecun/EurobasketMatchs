@@ -13,19 +13,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,31 +27,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.delay
 import es.itram.basketmatch.R
-import es.itram.basketmatch.presentation.component.ErrorMessage
-import es.itram.basketmatch.presentation.component.HeaderDateSelector
+import es.itram.basketmatch.analytics.AnalyticsManager
+import es.itram.basketmatch.domain.entity.MatchStatus
+import es.itram.basketmatch.presentation.component.AppTopBar
 import es.itram.basketmatch.presentation.component.EnhancedLoadingIndicator
 import es.itram.basketmatch.presentation.component.EnhancedMatchCard
+import es.itram.basketmatch.presentation.component.ErrorMessage
+import es.itram.basketmatch.presentation.component.HeaderDateSelector
 import es.itram.basketmatch.presentation.component.NoMatchesTodayCard
-import es.itram.basketmatch.presentation.component.AppTopBar
-import es.itram.basketmatch.presentation.component.SyncProgressIndicator
 import es.itram.basketmatch.presentation.viewmodel.MainViewModel
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.CardDefaults
 
-/**
- * Pantalla principal con la lista de partidos filtrada por fecha
- * Versión mejorada con animaciones y mejor diseño visual
- */
 @Composable
 fun MainScreen(
     viewModel: MainViewModel,
+    analyticsManager: AnalyticsManager,
     onNavigateToCalendar: () -> Unit,
     onNavigateToMatchDetail: (String) -> Unit,
     onNavigateToSettings: () -> Unit
@@ -76,7 +61,10 @@ fun MainScreen(
 
     // 📊 Analytics: Track screen view
     LaunchedEffect(Unit) {
-        viewModel.trackMainScreenView()
+        analyticsManager.trackScreenView(
+            screenName = AnalyticsManager.SCREEN_HOME,
+            screenClass = "MainScreen"
+        )
     }
 
     Box(
@@ -100,127 +88,140 @@ fun MainScreen(
                 title = stringResource(R.string.app_name),
                 onSettingsClick = onNavigateToSettings
             )
-            
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(start = 16.dp, end = 16.dp, top = 8.dp)
             ) {
-            // Header con navegación de fechas - Con animación suave
-            AnimatedVisibility(
-                visible = true,
-                enter = slideInVertically(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessLow
+                AnimatedVisibility(
+                    visible = true,
+                    enter = slideInVertically(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessLow
+                        )
+                    ) + fadeIn(),
+                    exit = slideOutVertically() + fadeOut()
+                ) {
+                    HeaderDateSelector(
+                        selectedDate = selectedDate,
+                        onDateClick = {
+                            // 📊 Analytics: Track calendar navigation from main screen
+                            analyticsManager.logCustomEvent("calendar_navigation", android.os.Bundle().apply {
+                                putString("source_screen", "home")
+                                putString("selected_date", selectedDate.toString())
+                                putInt("current_matches", matches.size)
+                            })
+                            onNavigateToCalendar()
+                        },
+                        onPreviousDay = { viewModel.goToPreviousDay() },
+                        onNextDay = { viewModel.goToNextDay() }
                     )
-                ) + fadeIn(),
-                exit = slideOutVertically() + fadeOut()
-            ) {
-                HeaderDateSelector(
-                    selectedDate = selectedDate,
-                    onDateClick = {
-                        // 📊 Analytics: Track calendar navigation from main screen
-                        viewModel.trackCalendarNavigation()
-                        onNavigateToCalendar()
-                    },
-                    onPreviousDay = { viewModel.goToPreviousDay() },
-                    onNextDay = { viewModel.goToNextDay() }
-                )
-            }
+                }
 
-            // Contenido principal con animaciones mejoradas
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMedium
-                    )
-                ),
-                exit = fadeOut()
-            ) {
-                when {
-
-
-                    isLoading -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            EnhancedLoadingIndicator(
-                                message = "Cargando partidos de EuroLeague...",
-                                showMessage = true
-                            )
+                AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMedium
+                        )
+                    ),
+                    exit = fadeOut()
+                ) {
+                    when {
+                        isLoading -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                EnhancedLoadingIndicator(
+                                    message = "Cargando partidos de EuroLeague...",
+                                    showMessage = true
+                                )
+                            }
                         }
-                    }
 
-                    error != null -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            ErrorMessage(
-                                message = error ?: stringResource(R.string.error_unknown),
-                                onRetry = { /* viewModel.retryLoading() */ }
-                            )
+                        error != null -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                ErrorMessage(
+                                    message = error ?: stringResource(R.string.error_unknown),
+                                    onRetry = { /* viewModel.retryLoading() */ }
+                                )
+                            }
                         }
-                    }
 
-                    matches.isEmpty() -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            NoMatchesTodayCard(
-                                isToday = viewModel.isSelectedDateToday(),
-                                nextMatchDay = viewModel.findNextMatchDay(),
-                                onNavigateToNextMatchDay = { viewModel.goToNextAvailableMatchDay() },
-                                modifier = Modifier.padding(16.dp)
-                            )
+                        matches.isEmpty() -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                NoMatchesTodayCard(
+                                    isToday = viewModel.isSelectedDateToday(),
+                                    nextMatchDay = viewModel.findNextMatchDay(),
+                                    onNavigateToNextMatchDay = { viewModel.goToNextAvailableMatchDay() },
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
                         }
-                    }
 
-                    else -> {
-                        LazyColumn(
-                            contentPadding = PaddingValues(
-                                top = 8.dp,
-                                bottom = navigationBarHeight + 16.dp // Padding dinámico para barras de navegación
-                            ),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            itemsIndexed(matches) { index, match ->
-                                // Animación escalonada para cada card
-                                AnimatedVisibility(
-                                    visible = true,
-                                    enter = slideInVertically(
-                                        animationSpec = spring(
-                                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                                            stiffness = Spring.StiffnessMedium
-                                        ),
-                                        initialOffsetY = { it * (index + 1) }
-                                    ) + fadeIn(
-                                        animationSpec = spring(
-                                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                                            stiffness = Spring.StiffnessMedium
+                        else -> {
+                            LazyColumn(
+                                contentPadding = PaddingValues(
+                                    top = 8.dp,
+                                    bottom = navigationBarHeight + 16.dp
+                                ),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                itemsIndexed(matches) { index, match ->
+                                    AnimatedVisibility(
+                                        visible = true,
+                                        enter = slideInVertically(
+                                            animationSpec = spring(
+                                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                stiffness = Spring.StiffnessMedium
+                                            ),
+                                            initialOffsetY = { it * (index + 1) }
+                                        ) + fadeIn(
+                                            animationSpec = spring(
+                                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                stiffness = Spring.StiffnessMedium
+                                            )
                                         )
-                                    )
-                                ) {
-                                    EnhancedMatchCard(
-                                        match = match,
-                                        onMatchClick = { matchId ->
-                                            // 📊 Analytics: Track match selection from main screen
-                                            viewModel.trackMatchClicked(match)
-                                            onNavigateToMatchDetail(matchId)
-                                        }
-                                    )
+                                    ) {
+                                        EnhancedMatchCard(
+                                            match = match,
+                                            onMatchClick = { matchId ->
+                                                // 📊 Analytics: Track match selection from main screen
+                                                analyticsManager.trackMatchViewed(
+                                                    matchId = match.id,
+                                                    homeTeam = match.homeTeamName,
+                                                    awayTeam = match.awayTeamName,
+                                                    isLive = match.status == MatchStatus.LIVE
+                                                )
+                                                analyticsManager.logCustomEvent("match_clicked_from_home", android.os.Bundle().apply {
+                                                    putString("match_id", match.id)
+                                                    putString("home_team", match.homeTeamName)
+                                                    putString("away_team", match.awayTeamName)
+                                                    putString("match_status", match.status.name)
+                                                    putString("source", "home_screen")
+                                                    putString("selected_date", selectedDate.toString())
+                                                })
+                                                onNavigateToMatchDetail(matchId)
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-            } // Cierre del Column interno
-        } // Cierre del Column principal
+        }
     }
 }
+

@@ -74,7 +74,6 @@ class SmartSyncManager @Inject constructor(
                 status = "Cargando datos estáticos..."
             )
             
-            // Verificar si ya tenemos datos estáticos cargados
             val hasStaticData = hasStaticDataLoaded()
             
             if (!hasStaticData) {
@@ -300,9 +299,7 @@ class SmartSyncManager @Inject constructor(
      * Verifica si ya tenemos datos estáticos cargados
      */
     private suspend fun hasStaticDataLoaded(): Boolean {
-        // Verificar si la base de datos tiene datos estáticos
         return try {
-            // Ejemplo: verificar si hay equipos en la base de datos
             val teams = teamRepository.getAllTeams().first()
             teams.isNotEmpty()
         } catch (e: Exception) {
