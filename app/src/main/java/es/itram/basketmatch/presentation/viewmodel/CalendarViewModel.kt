@@ -131,18 +131,6 @@ class CalendarViewModel @Inject constructor(
         })
     }
 
-    fun goToCurrentMonth() {
-        val currentMonth = YearMonth.now()
-        _currentMonth.value = currentMonth
-        
-        // 📊 Analytics: Track return to current month
-        analyticsManager.logCustomEvent("calendar_month_navigation", Bundle().apply {
-            putString("direction", "current")
-            putString("new_month", currentMonth.toString())
-            putString("screen", "calendar")
-        })
-    }
-
     fun selectDate(date: LocalDate) {
         _selectedDate.value = if (_selectedDate.value == date) null else date
         

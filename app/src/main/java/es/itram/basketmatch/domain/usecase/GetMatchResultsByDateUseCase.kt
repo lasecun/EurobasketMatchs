@@ -40,30 +40,4 @@ class GetMatchResultsByDateUseCase @Inject constructor(
                 }
         }
     }
-
-    /**
-     * Obtiene resultados de partidos en un rango de fechas
-     */
-    fun getResultsInDateRange(
-        startDate: LocalDateTime,
-        endDate: LocalDateTime
-    ): Flow<List<Match>> {
-        return matchRepository.getAllMatches()
-            .map { matches ->
-                matches.filter { match ->
-                    match.status == MatchStatus.FINISHED &&
-                    match.dateTime.isAfter(startDate) &&
-                    match.dateTime.isBefore(endDate)
-                }.sortedByDescending { it.dateTime }
-            }
-    }
-
-    /**
-     * Obtiene resultados específicos del 30 de septiembre de 2025
-     * Método de conveniencia para el caso de uso específico solicitado
-     */
-    fun getResultsForSeptember30th2025(): Flow<List<Match>> {
-        val targetDate = LocalDateTime.of(2025, 9, 30, 0, 0)
-        return invoke(targetDate)
-    }
 }

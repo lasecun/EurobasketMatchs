@@ -104,19 +104,6 @@ class StaticDataManager @Inject constructor(
     }
     
     /**
-     * Verifica si los datos estáticos están actualizados
-     */
-    suspend fun areStaticDataUpdated(): Boolean {
-        return try {
-            val versionInfo = loadDataVersion().getOrNull()
-            versionInfo?.syncConfig?.manualSyncOnly == true
-        } catch (e: Exception) {
-            Log.w(TAG, "Could not verify static data version", e)
-            false
-        }
-    }
-    
-    /**
      * Lee un archivo desde assets
      */
     private fun readAssetFile(fileName: String): String {

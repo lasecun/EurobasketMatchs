@@ -119,18 +119,4 @@ class DataSyncService @Inject constructor(
             }
         }
     }
-
-    /**
-     * Fuerza una sincronización completa
-     */
-    suspend fun forceSync() {
-        Log.d(TAG, "🔄 Forzando sincronización...")
-
-        prefs.edit {
-            putBoolean(PREF_TEAMS_SYNCED, false)
-            putBoolean(PREF_MATCHES_SYNCED, false)
-        }
-
-        initializeAppData()
-    }
 }
