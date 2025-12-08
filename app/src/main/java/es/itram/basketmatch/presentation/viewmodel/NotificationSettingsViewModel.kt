@@ -145,55 +145,6 @@ class NotificationSettingsViewModel @Inject constructor(
             }
         }
     }
-
-    /**
-     * Suscribe a notificaciones de un equipo específico
-     */
-    fun subscribeToTeam(teamCode: String) {
-        viewModelScope.launch {
-            try {
-                notificationManager.subscribeToTeam(teamCode)
-                Log.d(TAG, "✅ Suscrito a notificaciones del equipo: $teamCode")
-            } catch (e: Exception) {
-                Log.e(TAG, "❌ Error suscribiéndose al equipo: $teamCode", e)
-            }
-        }
-    }
-
-    /**
-     * Desuscribe de notificaciones de un equipo específico
-     */
-    fun unsubscribeFromTeam(teamCode: String) {
-        viewModelScope.launch {
-            try {
-                notificationManager.unsubscribeFromTeam(teamCode)
-                Log.d(TAG, "✅ Desuscrito de notificaciones del equipo: $teamCode")
-            } catch (e: Exception) {
-                Log.e(TAG, "❌ Error desuscribiéndose del equipo: $teamCode", e)
-            }
-        }
-    }
-
-    /**
-     * Obtiene el token FCM actual
-     */
-    fun getCurrentFCMToken(): String? {
-        return try {
-            val token = notificationManager.getCurrentFCMToken()
-            Log.d(TAG, "🔑 Token FCM actual: ${token?.take(20)}...")
-            token
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error obteniendo token FCM", e)
-            null
-        }
-    }
-
-    /**
-     * Recarga la configuración de notificaciones
-     */
-    fun refreshSettings() {
-        loadNotificationSettings()
-    }
     
     // Funciones DEBUG para testing
     fun debugPrintFCMToken() {

@@ -63,97 +63,6 @@ class SmartSyncManager @Inject constructor(
     val lastSyncTime: StateFlow<LocalDateTime?> = _lastSyncTime.asStateFlow()
     
     /**
-     * Inicialización: Carga datos estáticos si es la primera vez
-     */
-    suspend fun initializeStaticData(): Result<Unit> {
-        return try {
-            Log.i(TAG, "🚀 Initializing static data...")
-            
-            _syncState.value = _syncState.value.copy(
-                isInitializing = true,
-                status = "Cargando datos estáticos..."
-            )
-            
-            val hasStaticData = hasStaticDataLoaded()
-            
-            if (!hasStaticData) {
-                Log.i(TAG, "📦 Loading static data for first time...")
-                loadStaticDataIntoDatabase()
-            } else {
-                Log.i(TAG, "✅ Static data already loaded")
-            }
-            
-            _syncState.value = _syncState.value.copy(
-                isInitializing = false,
-                status = "Datos estáticos listos"
-            )
-            
-            // 📊 Analytics: Track static data initialization
-            analyticsManager.logCustomEvent("static_data_initialized", bundleOf(
-                "first_time_load" to (!hasStaticData).toString(),
-                "timestamp" to LocalDateTime.now().toString()
-            ))
-            
-            Result.success(Unit)
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error initializing static data", e)
-            _syncState.value = _syncState.value.copy(
-                isInitializing = false,
-                status = "Error cargando datos estáticos",
-                error = e.message
-            )
-            Result.failure(e)
-        }
-    }
-    
-    /**
-     * Sincronización inteligente: Solo datos dinámicos
-     */
-    suspend fun syncDynamicData(forceSync: Boolean = false): Result<Unit> {
-        return try {
-            Log.i(TAG, "🔄 Starting smart sync (dynamic data only)...")
-            
-            _syncState.value = _syncState.value.copy(
-                isSyncing = true,
-                status = "Sincronizando resultados...",
-                error = null
-            )
-            
-            // Solo sincronizar datos que cambian frecuentemente
-            syncMatchResults()
-            syncTeamStandings()
-            
-            _lastSyncTime.value = LocalDateTime.now()
-            
-            _syncState.value = _syncState.value.copy(
-                isSyncing = false,
-                status = "Sincronización completada",
-                lastSyncSuccess = true
-            )
-            
-            // 📊 Analytics: Track smart sync
-            analyticsManager.logCustomEvent("smart_sync_completed", bundleOf(
-                "sync_type" to "dynamic_only",
-                "force_sync" to forceSync.toString(),
-                "timestamp" to LocalDateTime.now().toString()
-            ))
-            
-            Result.success(Unit)
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error in smart sync", e)
-            _syncState.value = _syncState.value.copy(
-                isSyncing = false,
-                status = "Error en sincronización",
-                error = e.message,
-                lastSyncSuccess = false
-            )
-            Result.failure(e)
-        }
-    }
-    
-    /**
      * Verificación manual: Permite al usuario verificar actualizaciones
      */
     suspend fun checkForUpdates(): Result<UpdateCheckResult> {
@@ -280,37 +189,9 @@ class SmartSyncManager @Inject constructor(
     }
     
     /**
-     * Sincroniza solo los resultados de partidos (datos dinámicos)
-     */
-    private suspend fun syncMatchResults() {
-        Log.d(TAG, "🎯 Syncing match results...")
-        // Implementar sincronización de solo resultados, estados de partidos
-    }
-    
-    /**
-     * Sincroniza solo las clasificaciones (datos dinámicos)
-     */
-    private suspend fun syncTeamStandings() {
-        Log.d(TAG, "📊 Syncing team standings...")
-        // Implementar sincronización de solo standings/clasificaciones
-    }
-    
-    /**
-     * Verifica si ya tenemos datos estáticos cargados
-     */
-    private suspend fun hasStaticDataLoaded(): Boolean {
-        return try {
-            val teams = teamRepository.getAllTeams().first()
-            teams.isNotEmpty()
-        } catch (e: Exception) {
-            false
-        }
-    }
-    
-    /**
      * Verifica si hay actualizaciones de datos estáticos disponibles
      */
-    private suspend fun checkStaticDataUpdates(currentVersion: String): Boolean {
+    private fun checkStaticDataUpdates(currentVersion: String): Boolean {
         // En una implementación real, esto verificaría con un servidor
         // si hay nuevas versiones de datos estáticos disponibles
         return false // Por ahora, asumimos que no hay actualizaciones

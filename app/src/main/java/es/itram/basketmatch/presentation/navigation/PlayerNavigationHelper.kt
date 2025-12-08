@@ -17,8 +17,6 @@ object PlayerNavigationHelper {
     
     fun getSelectedPlayer(): Player? = selectedPlayer
     
-    fun getSelectedTeamName(): String? = selectedTeamName
-    
     fun clearSelection() {
         selectedPlayer = null
         selectedTeamName = null
