@@ -106,49 +106,50 @@ fun TeamRosterScreen(
         }
     }
     
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        text = uiState.teamRoster?.teamName ?: teamName.ifEmpty { teamTla },
-                        fontWeight = FontWeight.Bold
-                    ) 
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        TopAppBar(
+            title = {
+                Text(
+                    text = uiState.teamRoster?.teamName ?: teamName.ifEmpty { teamTla },
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            navigationIcon = {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.back)
+                    )
+                }
+            },
+            actions = {
+                // Botón de favoritos
+                uiState.teamRoster?.let {
+                    IconButton(
+                        onClick = { viewModel.toggleFavorite() }
+                    ) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
+                            imageVector = if (uiState.isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
+                            contentDescription = if (uiState.isFavorite)
+                                stringResource(R.string.remove_from_favorites)
+                            else
+                                stringResource(R.string.add_to_favorites),
+                            tint = if (uiState.isFavorite)
+                                Color(0xFFFFD700) // Dorado para favorito
+                            else
+                                MaterialTheme.colorScheme.onSurface
                         )
                     }
-                },
-                actions = {
-                    // Botón de favoritos
-                    uiState.teamRoster?.let { roster ->
-                        IconButton(
-                            onClick = { viewModel.toggleFavorite() }
-                        ) {
-                            Icon(
-                                imageVector = if (uiState.isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
-                                contentDescription = if (uiState.isFavorite)
-                                    stringResource(R.string.remove_from_favorites)
-                                else
-                                    stringResource(R.string.add_to_favorites),
-                                tint = if (uiState.isFavorite)
-                                    Color(0xFFFFD700) // Dorado para favorito
-                                else
-                                    MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
-                    }
+                }
 
-                    // Botón de refresh (existente)
-                    IconButton(
-                        onClick = { viewModel.refreshTeamRoster(teamTla) },
-                        enabled = !uiState.isRefreshing
-                    ) {
-                        if (uiState.isRefreshing) {
+                // Botón de refresh (existente)
+                IconButton(
+                    onClick = { viewModel.refreshTeamRoster(teamTla) },
+                    enabled = !uiState.isRefreshing
+                ) {
+                    if (uiState.isRefreshing) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
                                 strokeWidth = 2.dp
@@ -168,12 +169,10 @@ fun TeamRosterScreen(
                     actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
-        }
-    ) { paddingValues ->
+
         TeamRosterContent(
             uiState = uiState,
             viewModel = viewModel,
-            modifier = Modifier.padding(paddingValues),
             onRetry = { viewModel.loadTeamRoster(teamTla) },
             onClearError = { viewModel.clearError() },
             onPlayerClick = onPlayerClick
