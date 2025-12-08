@@ -72,11 +72,12 @@ fun StandingRow(
                 .padding(vertical = 4.dp)
                 .clickable { onClick() },
             elevation = CardDefaults.cardElevation(
-                defaultElevation = if (isFavorite) 4.dp else 2.dp
+                defaultElevation = 2.dp // Misma elevation para todos (sin sombra exagerada)
             ),
             colors = CardDefaults.cardColors(
                 containerColor = if (isFavorite) {
-                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    // Tinte muy sutil para favoritos (8% de alpha en lugar de 30%)
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
                 } else {
                     MaterialTheme.colorScheme.surface
                 }
