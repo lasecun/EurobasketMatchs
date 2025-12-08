@@ -25,7 +25,6 @@ import es.itram.basketmatch.ui.theme.TTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onBackClick: () -> Unit,
     onSyncSettingsClick: () -> Unit,
     onFavoritesClick: () -> Unit,
     onNotificationsClick: () -> Unit,
@@ -35,27 +34,12 @@ fun SettingsScreen(
     Column(
         modifier = modifier.fillMaxSize()
     ) {
-        // Top Bar con Material Design 3
-        TopAppBar(
-            title = {
-                Text(
-                    text = stringResource(R.string.settings),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.back)
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                titleContentColor = MaterialTheme.colorScheme.onSurface
-            )
+        // Header con título
+        Text(
+            text = stringResource(R.string.settings),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
         )
         
         // Content
@@ -285,7 +269,6 @@ private fun VersionInfo(
 private fun SettingsScreenPreview() {
     TTheme {
         SettingsScreen(
-            onBackClick = {},
             onSyncSettingsClick = {},
             onFavoritesClick = {},
             onNotificationsClick = {},
