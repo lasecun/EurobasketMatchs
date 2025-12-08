@@ -222,9 +222,6 @@ fun EuroLeagueNavigation(navController: NavHostController) {
         
         composable(NavigationRoutes.SETTINGS) {
             SettingsScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                },
                 onSyncSettingsClick = {
                     navController.navigate(NavigationRoutes.SYNC_SETTINGS)
                 },
