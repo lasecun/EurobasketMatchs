@@ -22,6 +22,9 @@ object NavigationRoutes {
     const val TEAM_ROSTER = "team_roster/{teamTla}/{teamName}"
     const val PLAYER_DETAIL = "player_detail/{playerCode}/{teamName}"
     
+    // 📊 Standings Route
+    const val STANDINGS = "standings"
+
     // ⚙️ Settings Routes
     const val SYNC_SETTINGS = "sync_settings"
     const val FAVORITES = "favorites"

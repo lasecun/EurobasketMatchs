@@ -23,6 +23,7 @@ import es.itram.basketmatch.presentation.screen.MainScreen
 import es.itram.basketmatch.presentation.screen.MatchDetailScreen
 import es.itram.basketmatch.presentation.screen.NotificationSettingsScreen
 import es.itram.basketmatch.presentation.screen.PlayerDetailScreen
+import es.itram.basketmatch.presentation.screen.StandingsScreen
 import es.itram.basketmatch.presentation.screen.TeamDetailScreen
 import es.itram.basketmatch.presentation.screen.TeamRosterScreen
 import es.itram.basketmatch.presentation.screen.settings.SettingsScreen
@@ -275,6 +276,16 @@ fun EuroLeagueNavigation(navController: NavHostController) {
             )
         }
         
+        // 📊 Standings Screen
+        composable(NavigationRoutes.STANDINGS) {
+            StandingsScreen(
+                onNavigateToTeam = { teamCode, teamName ->
+                    android.util.Log.d("Navigation", "🏀 StandingsScreen: navigating to team roster $teamCode")
+                    navController.navigate(NavigationRoutes.teamRoster(teamCode, teamName))
+                }
+            )
+        }
+
         composable(NavigationRoutes.SYNC_SETTINGS) {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val lastSyncTime by settingsViewModel.lastSyncTime.collectAsStateWithLifecycle()

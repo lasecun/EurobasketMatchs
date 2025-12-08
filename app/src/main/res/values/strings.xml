@@ -93,7 +93,38 @@
     <string name="remove_from_favorites">Quitar de favoritos</string>
     <string name="favorite_team">Favorito</string>
     <string name="no_favorite_teams">No tienes equipos favoritos</string>
-    <string name="no_favorite_teams_subtitle">Añade equipos a favoritos desde sus páginas de detalle para verlos aquí</string>    <!-- Roster Related -->
+    <string name="no_favorite_teams_subtitle">Añade equipos a favoritos desde sus páginas de detalle para verlos aquí</string>
+
+    <!-- Standings / Clasificación -->
+    <string name="standings">Clasificación</string>
+    <string name="standings_title">Clasificación EuroLeague</string>
+    <string name="standings_subtitle">Temporada %s</string>
+    <string name="loading_standings">Cargando clasificación...</string>
+    <string name="error_loading_standings">Error al cargar la clasificación</string>
+    <string name="no_standings_data">No hay datos de clasificación disponibles</string>
+    <string name="no_standings_subtitle">La clasificación se actualizará con los resultados de los partidos</string>
+    <string name="standings_position">Pos</string>
+    <string name="standings_team">Equipo</string>
+    <string name="standings_played">J</string>
+    <string name="standings_won">G</string>
+    <string name="standings_lost">P</string>
+    <string name="standings_percentage">%</string>
+    <string name="standings_points_for">PF</string>
+    <string name="standings_points_against">PC</string>
+    <string name="standings_difference">Dif</string>
+    <string name="standings_difference_with_sign">%+d</string>
+    <string name="standings_tap_team_hint">Toca un equipo para ver detalles</string>
+    <string name="standings_last_update">Última actualización: %s</string>
+    <string name="standings_regular_season">Temporada Regular</string>
+    <string name="standings_playoffs">Playoffs</string>
+
+    <!-- Bottom Navigation -->
+    <string name="bottom_nav_matches">Partidos</string>
+    <string name="bottom_nav_standings">Clasificación</string>
+    <string name="bottom_nav_favorites">Favoritos</string>
+    <string name="bottom_nav_more">Más</string>
+
+    <!-- Roster Related -->
     <string name="season_with_year">Temporada %s</string>
     <string name="captain_short">C</string>
     <string name="player_photo_description">Foto de %s</string>
