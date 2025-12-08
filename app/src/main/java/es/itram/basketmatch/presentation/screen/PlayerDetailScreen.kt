@@ -26,11 +26,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -69,27 +66,41 @@ fun PlayerDetailScreen(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        TopAppBar(
-            title = {
-                Text(
-                    text = player.fullName,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            navigationIcon = {
+        // TopBar compacta personalizada (48dp en lugar de 64dp)
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            color = MaterialTheme.colorScheme.primary,
+            shadowElevation = 4.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Botón back
                 IconButton(onClick = onNavigateBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.back)
+                        contentDescription = stringResource(R.string.back),
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-            )
-        )
+
+                // Título
+                Text(
+                    text = player.fullName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1
+                )
+            }
+        }
 
         PlayerDetailContent(
             player = player,
