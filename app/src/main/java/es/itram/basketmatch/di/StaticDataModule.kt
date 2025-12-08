@@ -41,12 +41,14 @@ object StaticDataModule {
         staticDataManager: StaticDataManager,
         teamRepository: es.itram.basketmatch.domain.repository.TeamRepository,
         matchRepository: es.itram.basketmatch.domain.repository.MatchRepository,
+        standingRepository: es.itram.basketmatch.domain.repository.StandingRepository,
         analyticsManager: es.itram.basketmatch.analytics.AnalyticsManager
     ): SmartSyncManager {
         return SmartSyncManager(
             staticDataManager,
             teamRepository,
             matchRepository,
+            standingRepository,
             analyticsManager
         )
     }

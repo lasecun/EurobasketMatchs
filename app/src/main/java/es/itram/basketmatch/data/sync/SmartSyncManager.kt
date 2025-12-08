@@ -49,6 +49,7 @@ class SmartSyncManager @Inject constructor(
     private val staticDataManager: StaticDataManager,
     private val teamRepository: TeamRepository,
     private val matchRepository: MatchRepository,
+    private val standingRepository: es.itram.basketmatch.domain.repository.StandingRepository,
     private val analyticsManager: AnalyticsManager
 ) {
     
@@ -139,6 +140,29 @@ class SmartSyncManager @Inject constructor(
                 Log.w(TAG, "⚠️ No matches were converted successfully")
             }
             
+            // Cargar standings (clasificación) estáticos
+            Log.d(TAG, "📥 Loading static standings into database...")
+            try {
+                val standingsData = staticDataManager.loadStaticStandings().getOrThrow()
+                val allStandings = mutableListOf<es.itram.basketmatch.domain.entity.Standing>()
+
+                // Convertir standings de cada tipo de temporada
+                standingsData.standings.forEach { (_, standings) ->
+                    standings.forEach { staticStanding: es.itram.basketmatch.data.datasource.local.assets.StaticStanding ->
+                        val standing = staticStanding.toStanding()
+                        allStandings.add(standing)
+                    }
+                }
+
+                if (allStandings.isNotEmpty()) {
+                    standingRepository.insertStandings(allStandings)
+                    Log.d(TAG, "✅ Loaded ${allStandings.size} standings into database")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "⚠️ Could not load standings (this is optional): ${e.message}")
+                // No fallar si standings no están disponibles
+            }
+
             Log.i(TAG, "✅ Static data loaded successfully - ${teams.size} teams, ${matches.size} matches")
             
         } catch (e: Exception) {
@@ -285,3 +309,29 @@ private fun StaticMatch.toMatch(teams: List<StaticTeam>): Match {
         seasonType = SeasonType.REGULAR // Asumimos temporada regular
     )
 }
+
+/**
+ * Convierte un StaticStanding a Standing (dominio)
+ */
+private fun es.itram.basketmatch.data.datasource.local.assets.StaticStanding.toStanding(): es.itram.basketmatch.domain.entity.Standing {
+    // Convertir el string de seasonType a enum
+    val seasonTypeEnum = when (this.seasonType.uppercase()) {
+        "REGULAR" -> SeasonType.REGULAR
+        "PLAYOFFS" -> SeasonType.PLAYOFFS
+        "FINAL_FOUR" -> SeasonType.FINAL_FOUR
+        else -> SeasonType.REGULAR
+    }
+
+    return es.itram.basketmatch.domain.entity.Standing(
+        teamId = this.teamId,
+        position = this.position,
+        played = this.played,
+        won = this.won,
+        lost = this.lost,
+        pointsFor = this.pointsFor,
+        pointsAgainst = this.pointsAgainst,
+        pointsDifference = this.pointsDifference,
+        seasonType = seasonTypeEnum
+    )
+}
+

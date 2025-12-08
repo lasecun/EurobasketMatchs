@@ -37,6 +37,7 @@ class StaticDataManager @Inject constructor(
         private const val ASSETS_PATH = "static_data"
         private const val TEAMS_FILE = "teams_2025_26.json"
         private const val MATCHES_FILE = "matches_calendar_2025_26.json"
+        private const val STANDINGS_FILE = "standings_2025_26.json"
         private const val VERSION_FILE = "data_version.json"
     }
     
@@ -103,6 +104,30 @@ class StaticDataManager @Inject constructor(
         }
     }
     
+    /**
+     * Carga los standings (clasificación) estáticos desde assets
+     */
+    suspend fun loadStaticStandings(): Result<StaticStandingsData> = withContext(Dispatchers.IO) {
+        try {
+            val internalFile = File(context.filesDir, "$ASSETS_PATH/$STANDINGS_FILE")
+            val jsonString = if (internalFile.exists()) {
+                Log.d(TAG, "📱 Loading standings from internal generated file")
+                internalFile.readText()
+            } else {
+                Log.d(TAG, "📦 Loading standings from assets")
+                readAssetFile(STANDINGS_FILE)
+            }
+
+            val standingsData = json.decodeFromString<StaticStandingsData>(jsonString)
+            val totalStandings = standingsData.standings.values.sumOf { it.size }
+            Log.d(TAG, "✅ Loaded $totalStandings static standings")
+            Result.success(standingsData)
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error loading static standings", e)
+            Result.failure(e)
+        }
+    }
+
     /**
      * Lee un archivo desde assets
      */
@@ -174,6 +199,27 @@ data class StaticMatch(
     val dateTime: String,
     val homeScore: Int?,
     val awayScore: Int?
+)
+
+@Serializable
+data class StaticStandingsData(
+    val version: String,
+    val season: String,
+    val lastUpdate: String,
+    val standings: Map<String, List<StaticStanding>>
+)
+
+@Serializable
+data class StaticStanding(
+    val teamId: String,
+    val position: Int,
+    val played: Int,
+    val won: Int,
+    val lost: Int,
+    val pointsFor: Int,
+    val pointsAgainst: Int,
+    val pointsDifference: Int,
+    val seasonType: String
 )
 
 @Serializable
