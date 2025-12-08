@@ -50,6 +50,7 @@ class SmartSyncManager @Inject constructor(
     private val teamRepository: TeamRepository,
     private val matchRepository: MatchRepository,
     private val standingRepository: es.itram.basketmatch.domain.repository.StandingRepository,
+    private val calculateStandingsUseCase: es.itram.basketmatch.domain.usecase.CalculateStandingsUseCase,
     private val analyticsManager: AnalyticsManager
 ) {
     
@@ -140,27 +141,14 @@ class SmartSyncManager @Inject constructor(
                 Log.w(TAG, "⚠️ No matches were converted successfully")
             }
             
-            // Cargar standings (clasificación) estáticos
-            Log.d(TAG, "📥 Loading static standings into database...")
+            // Calcular clasificación dinámicamente desde resultados de partidos
+            Log.d(TAG, "📊 Calculating standings from match results...")
             try {
-                val standingsData = staticDataManager.loadStaticStandings().getOrThrow()
-                val allStandings = mutableListOf<es.itram.basketmatch.domain.entity.Standing>()
-
-                // Convertir standings de cada tipo de temporada
-                standingsData.standings.forEach { (_, standings) ->
-                    standings.forEach { staticStanding: es.itram.basketmatch.data.datasource.local.assets.StaticStanding ->
-                        val standing = staticStanding.toStanding()
-                        allStandings.add(standing)
-                    }
-                }
-
-                if (allStandings.isNotEmpty()) {
-                    standingRepository.insertStandings(allStandings)
-                    Log.d(TAG, "✅ Loaded ${allStandings.size} standings into database")
-                }
+                calculateStandingsUseCase.recalculateAll().getOrThrow()
+                Log.d(TAG, "✅ Standings calculated and saved successfully")
             } catch (e: Exception) {
-                Log.w(TAG, "⚠️ Could not load standings (this is optional): ${e.message}")
-                // No fallar si standings no están disponibles
+                Log.w(TAG, "⚠️ Could not calculate standings (this is optional): ${e.message}")
+                // No fallar si el cálculo de standings falla
             }
 
             Log.i(TAG, "✅ Static data loaded successfully - ${teams.size} teams, ${matches.size} matches")

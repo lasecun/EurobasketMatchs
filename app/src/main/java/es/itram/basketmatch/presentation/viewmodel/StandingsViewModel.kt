@@ -27,6 +27,7 @@ import javax.inject.Inject
 @HiltViewModel
 class StandingsViewModel @Inject constructor(
     private val getStandingsUseCase: GetStandingsUseCase,
+    private val calculateStandingsUseCase: es.itram.basketmatch.domain.usecase.CalculateStandingsUseCase,
     private val teamRepository: TeamRepository,
     private val analyticsManager: AnalyticsManager
 ) : ViewModel() {
@@ -109,16 +110,31 @@ class StandingsViewModel @Inject constructor(
     }
 
     /**
-     * Recarga la clasificación
+     * Recarga la clasificación (recalcula desde partidos)
      */
     fun refresh() {
-        _uiState.value = StandingsUiState.Loading
-        loadStandings()
+        viewModelScope.launch {
+            _uiState.value = StandingsUiState.Loading
 
-        // 📊 Analytics: Track manual refresh
-        analyticsManager.logCustomEvent("standings_refreshed", android.os.Bundle().apply {
-            putString("season_type", _selectedSeasonType.value.toString())
-        })
+            try {
+                // Recalcular standings desde resultados de partidos
+                calculateStandingsUseCase.calculateAndSave(_selectedSeasonType.value)
+                    .getOrThrow()
+
+                // Recargar datos actualizados
+                loadStandings()
+
+                // 📊 Analytics: Track manual refresh
+                analyticsManager.logCustomEvent("standings_refreshed", android.os.Bundle().apply {
+                    putString("season_type", _selectedSeasonType.value.toString())
+                    putBoolean("recalculated", true)
+                })
+            } catch (e: Exception) {
+                _uiState.value = StandingsUiState.Error(
+                    "Error al recalcular clasificación: ${e.message}"
+                )
+            }
+        }
     }
 
     /**

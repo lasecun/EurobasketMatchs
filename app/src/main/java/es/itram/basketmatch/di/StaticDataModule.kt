@@ -42,6 +42,7 @@ object StaticDataModule {
         teamRepository: es.itram.basketmatch.domain.repository.TeamRepository,
         matchRepository: es.itram.basketmatch.domain.repository.MatchRepository,
         standingRepository: es.itram.basketmatch.domain.repository.StandingRepository,
+        calculateStandingsUseCase: es.itram.basketmatch.domain.usecase.CalculateStandingsUseCase,
         analyticsManager: es.itram.basketmatch.analytics.AnalyticsManager
     ): SmartSyncManager {
         return SmartSyncManager(
@@ -49,6 +50,7 @@ object StaticDataModule {
             teamRepository,
             matchRepository,
             standingRepository,
+            calculateStandingsUseCase,
             analyticsManager
         )
     }
