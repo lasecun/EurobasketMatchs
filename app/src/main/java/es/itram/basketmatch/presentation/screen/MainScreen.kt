@@ -82,43 +82,33 @@ fun MainScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp)
         ) {
-            // Top Bar con settings
-            AppTopBar(
-                title = stringResource(R.string.app_name),
-                onSettingsClick = onNavigateToSettings
-            )
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp)
-            ) {
-                AnimatedVisibility(
-                    visible = true,
-                    enter = slideInVertically(
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessLow
-                        )
-                    ) + fadeIn(),
-                    exit = slideOutVertically() + fadeOut()
-                ) {
-                    HeaderDateSelector(
-                        selectedDate = selectedDate,
-                        onDateClick = {
-                            // 📊 Analytics: Track calendar navigation from main screen
-                            analyticsManager.logCustomEvent("calendar_navigation", android.os.Bundle().apply {
-                                putString("source_screen", "home")
-                                putString("selected_date", selectedDate.toString())
-                                putInt("current_matches", matches.size)
-                            })
-                            onNavigateToCalendar()
-                        },
-                        onPreviousDay = { viewModel.goToPreviousDay() },
-                        onNextDay = { viewModel.goToNextDay() }
+            AnimatedVisibility(
+                visible = true,
+                enter = slideInVertically(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
                     )
-                }
+                ) + fadeIn(),
+                exit = slideOutVertically() + fadeOut()
+            ) {
+                HeaderDateSelector(
+                    selectedDate = selectedDate,
+                    onDateClick = {
+                        // 📊 Analytics: Track calendar navigation from main screen
+                        analyticsManager.logCustomEvent("calendar_navigation", android.os.Bundle().apply {
+                            putString("source_screen", "home")
+                            putString("selected_date", selectedDate.toString())
+                            putInt("current_matches", matches.size)
+                        })
+                        onNavigateToCalendar()
+                    },
+                    onPreviousDay = { viewModel.goToPreviousDay() },
+                    onNextDay = { viewModel.goToNextDay() }
+                )
+            }
 
                 AnimatedVisibility(
                     visible = true,
@@ -215,7 +205,6 @@ fun MainScreen(
                                             }
                                         )
                                     }
-                                }
                             }
                         }
                     }

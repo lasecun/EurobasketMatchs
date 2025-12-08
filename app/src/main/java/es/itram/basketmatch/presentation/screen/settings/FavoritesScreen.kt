@@ -60,19 +60,12 @@ fun FavoritesScreen(
     Column(
         modifier = modifier.fillMaxSize()
     ) {
-        // Top Bar con Material Design 3
-        TopAppBar(
-            title = {
-                Text(
-                    text = stringResource(R.string.favorites),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                titleContentColor = MaterialTheme.colorScheme.onSurface
-            )
+        // Header con título
+        Text(
+            text = stringResource(R.string.favorites),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
         )
 
         // Content
