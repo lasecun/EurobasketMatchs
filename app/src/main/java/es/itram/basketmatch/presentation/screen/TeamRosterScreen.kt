@@ -37,11 +37,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -109,27 +106,43 @@ fun TeamRosterScreen(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        TopAppBar(
-            title = {
-                Text(
-                    text = uiState.teamRoster?.teamName ?: teamName.ifEmpty { teamTla },
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            navigationIcon = {
+        // TopBar compacta personalizada (48dp en lugar de 64dp de TopAppBar)
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            color = MaterialTheme.colorScheme.primary,
+            shadowElevation = 4.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Botón back
                 IconButton(onClick = onNavigateBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.back)
+                        contentDescription = stringResource(R.string.back),
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
-            },
-            actions = {
+
+                // Título
+                Text(
+                    text = uiState.teamRoster?.teamName ?: teamName.ifEmpty { teamTla },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1
+                )
+
                 // Botón de favoritos
                 uiState.teamRoster?.let {
-                    IconButton(
-                        onClick = { viewModel.toggleFavorite() }
-                    ) {
+                    IconButton(onClick = { viewModel.toggleFavorite() }) {
                         Icon(
                             imageVector = if (uiState.isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
                             contentDescription = if (uiState.isFavorite)
@@ -137,38 +150,34 @@ fun TeamRosterScreen(
                             else
                                 stringResource(R.string.add_to_favorites),
                             tint = if (uiState.isFavorite)
-                                Color(0xFFFFD700) // Dorado para favorito
+                                Color(0xFFFFD700)
                             else
-                                MaterialTheme.colorScheme.onSurface
+                                MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 }
 
-                // Botón de refresh (existente)
+                // Botón de refresh
                 IconButton(
                     onClick = { viewModel.refreshTeamRoster(teamTla) },
                     enabled = !uiState.isRefreshing
                 ) {
                     if (uiState.isRefreshing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = stringResource(R.string.refresh)
-                            )
-                        }
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = stringResource(R.string.refresh),
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
+                }
+            }
+        }
 
         TeamRosterContent(
             uiState = uiState,
