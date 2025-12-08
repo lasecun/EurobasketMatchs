@@ -5,6 +5,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -72,16 +73,18 @@ fun StandingRow(
                 .padding(vertical = 4.dp)
                 .clickable { onClick() },
             elevation = CardDefaults.cardElevation(
-                defaultElevation = 2.dp // Misma elevation para todos (sin sombra exagerada)
+                defaultElevation = if (isFavorite) 0.dp else 2.dp // Sin elevation para favoritos
             ),
             colors = CardDefaults.cardColors(
-                containerColor = if (isFavorite) {
-                    // Tinte muy sutil para favoritos (8% de alpha en lugar de 30%)
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
-                } else {
-                    MaterialTheme.colorScheme.surface
-                }
-            )
+                containerColor = MaterialTheme.colorScheme.surface // Mismo fondo para todos
+            ),
+            border = if (isFavorite) {
+                // Solo un borde sutil de color para favoritos
+                BorderStroke(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                )
+            } else null
         ) {
             Column(
                 modifier = Modifier.padding(12.dp)
